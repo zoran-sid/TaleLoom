@@ -2,47 +2,66 @@
 
 更新日期：2026-11-08。课程要求见 [课程要求全文](course-requirements.md)，交给 AI 的开工提示词见 [提示词](prompts.md)。截止日期以 Moodle 为准，收到后按第 5 节倒推。
 
-**常规模块阶段聚焦代码。** 实现、测试、剧本 JSON、通关脚本与文档字符串随模块交付；最终报告、PPT、视频和测试报告在第 7 节统一完成。总设计者要求变更范围／接口／分工时，及时同步必要的需求与协作指引。
+**交付目标：一个 Python 核心，三个展示端。** 命令行（已完成）、桌面 GUI（Tkinter，`python main.py` 无参数启动）、网页试玩（Pyodide 在浏览器中运行同一份 Python 核心，GitHub 推送后由 Cloudflare 自动部署）。架构、验收与里程碑 M1–M5 见 [GUI／网页实施要求](gui-web-plan.md)。
 
-**新增交付目标：桌面 GUI、网页试玩、Cloudflare 监听 GitHub 推送自动部署。** [实施要求](gui-web-plan.md) 定义新架构、路径归属和验收。先完成共享接口与序章闭环，再并行扩写。
+**模块阶段聚焦代码。** 实现、测试、剧本 JSON、通关脚本与文档字符串随模块交付；最终报告、PPT、视频和测试报告在第 7 节统一完成。总设计者调整范围、接口或分工时，同步更新必要的需求与协作指引。
+
+## 0 当前进度与每人下一步
+
+更新于 2026-11-08。每人从最新 `develop` 开分支做“下一个 PR”；“接入点”是你的成果替换临时实现的位置，替换由你在同一个 PR 内完成。
+
+| 里程碑 | 状态 |
+| --- | --- |
+| M1 共享契约 | 已完成：`taleloom/ui_contract.py`、`tests/ui_fakes.py`（PR #3） |
+| M2 桌面闭环 | 入口已接好：`python main.py` 无参数时调用 `taleloom.gui.run(...)`，GUI 包不存在时回退命令行；GUI 待 ZRS |
+| M3 浏览器核心 | 已完成（序章）：两个序章在 Pyodide 与 CPython 中状态一致，11 项浏览器测试（PR #4） |
+| M4 网页与存档 | 临时试玩界面与单槽存档可用（`web/preview/`）；正式界面与存储待 ZRS、LQ |
+| M5 自动发布 | Cloudflare 构建与检查通过，部署被配置冲突拦下；完成[部署指南](cloudflare-deploy.md) 2.1 节的一次性同步后可用 |
+
+| 成员 | 已完成 | 下一个 PR | 接入点 |
+| --- | --- | --- | --- |
+| YHT | 加载、参数与结构校验、场景图（PR #2） | 剧本可选展示字段：公开资源（变量、名称、上限）与素材路径；加载、校验与测试 | 删除 `taleloom/legacy_session.py` 中按剧本 ID 硬编码的 `PUBLIC_RESOURCES`，改读剧本字段 |
+| ZQO | — | `taleloom/session.py`：实现 `GameSession`（快照、结构化动作、revision、纯读取）；先通过 `tests/integration/test_ui_contract.py` 的同类约定，再通过真实剧本回放 | `taleloom/session_factory.py` 改一行，桌面和网页同时切换 |
+| ZRS | — | `taleloom/gui/`：提供 `run(stories_dir, saves_dir) -> int`；先用 `tests.ui_fakes.FakeGameSession` 开发，再用 `taleloom.session_factory.create_session` 接真实剧本 | `main.py` 无参数自动打开；网页正式界面 `web/ui/` 之后替换 `web/preview/` |
+| ZC | 共享契约、网页运行时与部署基础（PR #3、#4）、启动入口 | 推理插件：深入搜证、审问及其结构化动作；剧本 A 扩写 | — |
+| LQ | — | `save.py` 拆出纯数据编码与校验，加桌面文件 `SaveStore`；之后 `web/storage/` | `taleloom/legacy_session.py` 的 `export_save`／`_decode` 改用 LQ 的编码器；`web/preview/storage.js` 由 `web/storage/` 替换 |
+
 ## 1 分工总览
 
-| 编号 | 成员 | 负责模块 | 负责文件 | 测试目录 |
+| 编号 | 成员 | 负责模块 | 负责文件（未注明目录的在 `taleloom/` 下） | 测试目录 |
 | --- | --- | --- | --- | --- |
-| 1 | YHT | 剧本格式、加载与静态校验 | `model.py` `loader.py` `validator.py` `walk.py` | `tests/yht/` |
-| 2 | ZQO | 运行时核心与插件接口 | `state.py` `rules.py` `engine.py` `mechanics/base.py` | `tests/zqo/` |
-| 3 | ZRS | 命令解析、命令行界面、道具谜题插件 | `parser.py` `cli.py` `mechanics/puzzle.py` | `tests/zrs/` |
-| 4 | ZC | 推理插件、剧本 A《雾港旧案》、整合与发布 | `mechanics/mystery.py`、`stories/fog_harbor/`、`main.py` | `tests/zc/`、`tests/integration/` |
-| 5 | LQ | 存档、通关回放与探索测试、剧本 B《深空回声》 | `save.py` `replay.py`、`stories/deep_space/` | `tests/lq/` |
+| 1 | YHT | 剧本格式、加载与静态校验；展示数据类型 | `model.py` `loader.py` `validator.py` `walk.py`；`ui_contract.py` 中的展示类型 | `tests/yht/` |
+| 2 | ZQO | 运行时核心与插件接口；正式会话与展示快照 | `state.py` `rules.py` `engine.py` `mechanics/base.py`；`session.py` `presentation.py`（新建） | `tests/zqo/` |
+| 3 | ZRS | 命令行与桌面／网页界面；道具谜题插件 | `parser.py` `cli.py` `mechanics/puzzle.py`；`gui/`（新建）；`web/ui/` `web/styles/`（新建） | `tests/zrs/` |
+| 4 | ZC | 推理插件、剧本 A《雾港旧案》、整合与发布 | `mechanics/mystery.py` `session_factory.py` `legacy_session.py`（临时）；`main.py`、`.vscode/launch.json`、`stories/fog_harbor/`；`web/runtime/`、`web/preview/`（临时）、`tools/`、CI 与 Cloudflare 配置 | `tests/zc/`、`tests/integration/`、`tests/browser/` |
+| 5 | LQ | 存档与存储、回放与探索测试、剧本 B《深空回声》 | `save.py` `replay.py`；`web/storage/`（新建）；`stories/deep_space/` | `tests/lq/` |
 
-文件都在 `taleloom/` 下（`main.py` 与 `stories/` 在仓库根目录）。每人负责一个可独立测试的代码模块。ZC 和 LQ 各写一个剧本，同时都是插件或测试工具的作者，剧本工作量用插件/工具量平衡；YHT、ZQO、ZRS 的模块是两个剧本共同依赖的底座。
-
-新增路径归属见 [实施要求第 5 节](gui-web-plan.md#5-目录归属与工作量)：YHT 负责共享数据类型；ZQO 负责会话与展示数据；ZRS 负责桌面／网页展示；ZC 负责启动、浏览器 Python 桥接与构建部署；LQ 负责存档适配。共用接口在 `taleloom/ui_contract.py`，固定样例在 `tests/ui_fakes.py`；其余新路径在对应实现 PR 创建。
-
-部署基础已在独立 `web/runtime/` 与 `web/preview/` 提供。各成员继续上述正式模块任务；替换兼容层的接入点见 [部署指南第 5 节](cloudflare-deploy.md#5-与成员任务的边界)。最小试玩界面与单槽存储不计作 ZRS／LQ 的任务完成。
+- 共享接口 `taleloom/ui_contract.py` 与测试替身 `tests/ui_fakes.py` 的改动走 contract PR（[接口约定](contracts.md) 第 5 节）。
+- [`.github/CODEOWNERS`](../.github/CODEOWNERS) 与本表一致：PR 改到别人的文件时，GitHub 自动请求该成员审阅。两处修改时保持同步。
+- “临时”文件是为了让网页先跑起来的兼容实现，不计作对应成员的任务完成；接入点见第 0 节。
+- ZC 和 LQ 各写一个剧本，同时都是插件或工具的作者，剧本工作量用插件／工具量平衡；YHT、ZQO、ZRS 的模块是两个剧本共同依赖的底座。
 
 ## 2 架构与依赖方向
 
-下图为已有 CLI 架构。目标新增 Tkinter 与浏览器界面，通过共享会话接口接入同一 Python 核心；见 [实施要求](gui-web-plan.md)。
-
 ```text
-             main.py（入口：play / validate / replay）
-                 │
-   ┌─────────────┼───────────────┐
- cli.py ◄─ parser.py         replay.py ─► save.py         ← ZRS / LQ
-   │                             │
-   └──────────► engine.py ◄──────┘                         ← ZQO
-               │      │
-         rules.py  state.py   mechanics/base.py            ← ZQO
-               │                 ▲          ▲
-               │        mystery.py      puzzle.py          ← ZC / ZRS
-               ▼
-  model.py ◄── loader.py   validator.py   walk.py          ← YHT
-               ▲
-       stories/*/story.json（剧本数据）                      ← ZC / LQ
+  python main.py ──无参数──► gui/ (Tkinter)           web/ui ◄── web/runtime（Pyodide Worker）
+       │ play / validate / replay / graph   │                              │
+     cli.py ◄─ parser.py                     └──► session_factory.create_session ◄──┘
+       │                                                   │
+       │                            legacy_session.py（临时）→ session.py（ZQO）
+       └──────────────────────► engine.py ◄────────────────┘          ← ZQO
+                                 │      │
+                           rules.py  state.py   mechanics/base.py     ← ZQO
+                                 │                 ▲          ▲
+                                 │        mystery.py      puzzle.py   ← ZC / ZRS
+                                 ▼
+          model.py ◄── loader.py   validator.py   walk.py             ← YHT
+                         ▲
+                 stories/*/story.json（剧本数据）                       ← ZC / LQ
+          save.py（编码与校验）──► SaveStore：桌面文件 / web/storage    ← LQ
 ```
 
-依赖只向下：界面和工具调用引擎，引擎调用规则与插件，所有模块共享 `model.py` 中的数据类型。引擎不调用 `input`/`print`、不读写文件，所以能在单元测试中直接驱动。接口细节见 [接口约定](contracts.md)。
+依赖只向下：展示端（命令行、桌面、网页）只通过会话接口或引擎访问游戏，引擎调用规则与插件，所有模块共享 `model.py` 与 `ui_contract.py` 的数据类型。引擎、插件与会话不依赖 Tkinter、DOM、浏览器存储或 Cloudflare，不调用 `input`/`print`、不读写文件，所以能在单元测试和浏览器中直接驱动。接口细节见 [接口约定](contracts.md)。
 
 ## 3 为什么五个人可以同时开工
 
@@ -51,7 +70,7 @@
 1. **v0 骨架已就绪**：仓库里已有可运行的最小引擎、两个剧本序章和 94 项测试，CI 全绿。每个模块都有能用的最小实现，没有“等别人先写完”的空接口。
 2. **接口冻结在 `model.py` 和 `engine.Engine` 的公开方法上**。修改接口走 contract PR（[接口约定](contracts.md) 第 5 节），其余代码各改各的文件，不会冲突。
 3. **测试互不牵连**：各模块测试只用 `tests/fixtures.py` 里的迷你剧本，不读真实剧本。剧本作者改剧情不会让别人的单元测试失败；剧本是否能通关由 `tests/integration/` 统一检查。
-4. **CI 按成员分项显示**：PR 页面上 `tests (yht)`、`tests (zrs)` 等六项分别显示结果，一眼看出是哪个模块出错。
+4. **CI 按成员分项显示**：PR 页面上 `tests (yht)`、`tests (zrs)` 等分项显示结果，一眼看出是哪个模块出错；网页构建与浏览器测试单独显示为 `web` 检查。
 
 GUI／网页采用 `taleloom/ui_contract.py` 的明确接口。界面可使用 `tests/ui_fakes.py` 的测试替身；引擎组独立实现会话适配器；存档组实现存储接口。测试替身仅供开发，不代表引擎适配已经完成。
 
@@ -178,7 +197,7 @@ GUI／网页新增必做：分离存档数据编码／校验与存储；实现 `
 | 交付物 | 内容 | 素材来源 |
 | --- | --- | --- |
 | 说明文档 | 定稿 README、[剧本格式](story-format.md)、[接口约定](contracts.md)（含架构图与处理时序） | 代码与文档字符串 |
-| 规格与测试 | [需求表](requirements.md) 按测试补齐；[测试报告](testing.md)：测试统计、随机探索结果、CI 截图 | `tests/`、CI 记录 |
+| 规格与测试 | [需求表](requirements.md) 按测试补齐；测试报告（届时新建 `docs/testing.md`）：测试统计、随机探索结果、CI 截图 | `tests/`、CI 记录 |
 | 可用性测试 | 请 3–5 名组外同学试玩，记录问题，必要时修 bug | 试玩记录 |
 | AI 使用 | 从各 PR 描述汇总到 [AI 使用记录](ai-usage.md) | PR 描述 |
 | 课堂幻灯片 | 最多 5 页、5 分钟，见下表 | 各模块代码与演示 |

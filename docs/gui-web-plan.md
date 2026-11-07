@@ -1,10 +1,10 @@
 # GUI、网页试玩与自动部署要求
 
-更新日期：2026-11-08。来源：总设计者新增要求。共享接口与固定样例已提供；当前分支进一步提供网页序章、v0 兼容会话及 Cloudflare 构建／部署命令。正式桌面 GUI、成员扩展模块与首次云端发布继续按本计划完成。
+更新日期：2026-11-08。来源：总设计者新增要求。共享接口与固定样例、网页序章、v0 兼容会话及 Cloudflare 构建／部署配置已在 `develop`；正式桌面 GUI 与成员扩展模块按本计划完成，当前进度见 [任务安排第 0 节](team-tasks.md#0-当前进度与每人下一步)。
 
 ## 0 当前部署基础与成员衔接
 
-总设计者要求先达到可部署阶段，同时保持小组任务。网页以独立 `web/runtime/` 和可替换 `web/preview/` 接入现有核心；没有修改成员的引擎、加载、解析、存档或剧本文件。`main.py` 仍保留现有入口。详细配置与替换点见 [部署指南](cloudflare-deploy.md)。下面的正式模块归属继续有效，v0 兼容层不代表已完成成员任务。
+总设计者要求先达到可部署阶段，同时保持小组任务。网页以独立 `web/runtime/` 和可替换 `web/preview/` 接入现有核心，会话统一由 `taleloom/session_factory.py` 创建；没有修改成员的引擎、加载、解析、存档或剧本文件。`main.py` 仍保留现有入口。详细配置与替换点见 [部署指南](cloudflare-deploy.md)。下面的正式模块归属继续有效，v0 兼容层不代表已完成成员任务。
 
 ## 1 交付目标与优先顺序
 
@@ -74,7 +74,7 @@
 | YHT | `ui_contract.py` 中展示数据类型；`loader.py`／`validator.py` 的可选展示字段校验 | 保留已完成加载／校验工作，新增字段兼容已有剧本 |
 | ZQO | `taleloom/session.py`、`taleloom/presentation.py`；快照、会话控制、插件展示接口、纯读取 | 优先共享接口，随机／变体与显示协同设计 |
 | ZRS | `taleloom/gui/` 桌面界面；`web/index.html`、`web/styles/`、`web/ui/` 网页展示；道具交互 | GUI 与网页通用操作优先，终端颜色、补全、复杂句式降为可选 |
-| ZC | `main.py`、`.vscode/launch.json`；`web/runtime/` 的 Pyodide 桥接；推理展示；`tools/build_web.py`、Cloudflare 配置与发布整合 | 统筹契约、启动、网页桥接和部署，先用现有序章验证 |
+| ZC | `main.py`、`.vscode/launch.json`、`taleloom/session_factory.py`（桌面与网页共用的会话入口）；`web/runtime/` 的 Pyodide 桥接；推理展示；`tools/build_web.py`、Cloudflare 配置与发布整合 | 统筹契约、启动、网页桥接和部署，先用现有序章验证 |
 | LQ | `save.py` 数据编码与存储适配；`web/storage/`；存档互通与浏览器回放验证 | 保留随机探索及剧本 B，提供可独立测试的存档接口 |
 
 `tests/<成员>/` 继续存放各自测试；`tests/integration/` 由 ZC 维护。共享 fixtures 的新增在契约 PR 中统一提交。网页组件使用同一份快照样例；浏览器自动化工具可作为开发依赖，不影响桌面运行依赖。

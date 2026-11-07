@@ -11,10 +11,11 @@ ROOT = Path(__file__).resolve().parents[1]
 PUBLIC = ROOT / '.web-public'
 CORE = [
     '__init__.py', 'engine.py', 'model.py', 'state.py', 'rules.py', 'loader.py',
-    'save.py', 'walk.py', 'ui_contract.py', 'mechanics/__init__.py',
+    'save.py', 'walk.py', 'ui_contract.py', 'session_factory.py', 'legacy_session.py',
+    'mechanics/__init__.py',
     'mechanics/base.py', 'mechanics/mystery.py', 'mechanics/puzzle.py',
 ]
-RUNTIME = ['__init__.py', 'legacy_session.py', 'factory.py', 'bridge.py']
+RUNTIME = ['__init__.py', 'bridge.py']
 PYODIDE_FILES = ['pyodide.mjs', 'pyodide.asm.mjs', 'pyodide.asm.wasm',
                  'python_stdlib.zip', 'pyodide-lock.json']
 

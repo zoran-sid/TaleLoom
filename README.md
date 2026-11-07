@@ -14,11 +14,11 @@ INT6181 应用 Python 程式设计 · 小组项目。
 - 自动发布：Cloudflare 监听本仓库推送，检查与构建成功后自动部署；`main` 更新正式网址，`develop`／成员分支提供预览。
 - 异步协作：共享接口和固定样例先行，界面、引擎、插件、存档与素材分模块扩展。
 
-独立模块开发入口：`taleloom/ui_contract.py`、`tests/ui_fakes.py`，可运行 `python -B -m unittest tests.integration.test_ui_contract -v`。
+每人的下一步与接入点见 [任务安排第 0 节](docs/team-tasks.md#0-当前进度与每人下一步)。独立模块开发入口：`taleloom/ui_contract.py`、`tests/ui_fakes.py`，展示端统一用 `taleloom.session_factory.create_session` 取得会话；可运行 `python -B -m unittest tests.integration.test_ui_contract -v`。
 
-当前分支已提供可点击游玩的网页序章、浏览器 Python 运行层和 Cloudflare 构建配置。两个剧本继续使用原有引擎与存档格式。桌面 GUI 和各成员的正式扩展模块继续按分工开发。
+当前状态：命令行可完整游玩两个序章；网页序章可点击游玩（临时界面），Cloudflare 自动构建已配置；桌面 GUI 与各成员的正式模块按分工开发中。
 
-本地网页：安装 Node（版本见 `.node-version`）与 Python 后运行 `npm ci`，再运行 `npm run dev -- --open`。发布设置、合并顺序与成员接入点见 [网页试玩与 Cloudflare 自动发布](docs/cloudflare-deploy.md)。账号首次连接／正式网址仍待管理员完成。完整目标见 [GUI／网页实施要求](docs/gui-web-plan.md)。
+本地网页：安装 Node（版本见 `.node-version`）与 Python 后运行 `npm ci`，再运行 `npm run dev -- --open`。发布设置与成员接入点见 [网页试玩与 Cloudflare 自动发布](docs/cloudflare-deploy.md)，完整目标见 [GUI／网页实施要求](docs/gui-web-plan.md)。
 
 ## 当前版本运行（CLI）
 
@@ -28,7 +28,7 @@ INT6181 应用 Python 程式设计 · 小组项目。
 python main.py
 ```
 
-会列出剧本供选择。也可以直接指定：
+无参数时打开桌面 GUI；GUI 尚未完成或当前 Python 没有 Tkinter 时，自动改用命令行并列出剧本供选择。VS Code 中可直接用“运行和调试”里的 **TaleLoom：启动游戏**。命令行游玩也可以直接指定剧本：
 
 ```bash
 python main.py play fog_harbor
@@ -57,39 +57,42 @@ python -B -m unittest discover -s tests/zrs -t .    # 只跑某位成员的模�
 ## 目录
 
 ```text
-main.py                 入口
-taleloom/               引擎源码（按成员分模块，见下表）
+main.py                 入口（无参数打开桌面 GUI，子命令 play / validate / replay / graph）
+taleloom/               Python 核心（按成员分模块，见下表）
   mechanics/            机制插件：mystery 推理、puzzle 道具
+  session_factory.py    桌面与网页共用的会话入口
 stories/<剧本>/          story.json、剧情大纲、walkthroughs/ 通关脚本
-tests/<成员缩写>/        各模块单元测试；tests/integration/ 集成测试
-docs/                   分工、接口、剧本格式、需求、测试报告、课程要求
+tests/<成员缩写>/        各模块单元测试；tests/integration/ 集成测试；tests/browser/ 浏览器测试
+web/                    网页：runtime/ 浏览器中运行 Python 的桥接，preview/ 临时试玩界面
+tools/                  网页打包与发布检查脚本
+docs/                   分工、接口、剧本格式、需求、部署、课程要求
 ```
 
 ## 成员分工
 
-| 编号 | 成员 | 负责模块 | 记录 |
-| --- | --- | --- | --- |
-| 1 | YHT | 剧本格式、加载与静态校验 | [YHT](docs/handoffs/yht.md) |
-| 2 | ZQO | 运行时核心与插件接口 | [ZQO](docs/handoffs/zqo.md) |
-| 3 | ZRS | 命令解析、命令行界面、道具谜题插件 | [ZRS](docs/handoffs/zrs.md) |
-| 4 | ZC | 推理插件、剧本 A《雾港旧案》、整合与发布 | [ZC](docs/handoffs/zc.md) |
-| 5 | LQ | 存档、通关回放与探索测试、剧本 B《深空回声》 | [LQ](docs/handoffs/lq.md) |
+| 编号 | 成员 | 负责模块 |
+| --- | --- | --- |
+| 1 | YHT | 剧本格式、加载与静态校验；展示数据类型 |
+| 2 | ZQO | 运行时核心与插件接口；正式会话与展示快照 |
+| 3 | ZRS | 命令行与桌面／网页界面；道具谜题插件 |
+| 4 | ZC | 推理插件、剧本 A《雾港旧案》、整合与发布 |
+| 5 | LQ | 存档与存储、回放与探索测试、剧本 B《深空回声》 |
 
-上表为现有模块归属；GUI、网页与部署新增路径见 [实施要求第 5 节](docs/gui-web-plan.md#5-目录归属与工作量)。具体任务、时间安排与代码审查轮换见 [五人任务安排](docs/team-tasks.md)。常规模块阶段聚焦代码；需求和接口变更及时同步，最终报告、PPT、视频在最终合并阶段统一完成。
+**第一次参与先读 [五人任务安排](docs/team-tasks.md) 第 0、1 节**：当前进度、你的下一个 PR、负责的文件。模块阶段只做代码；最终报告、PPT、视频在最终合并阶段统一完成。
 
 ## 项目文档
 
-- [网页试玩与 Cloudflare 自动发布](docs/cloudflare-deploy.md)：当前实现、配置参数、发布检查与模块替换入口
-- [GUI／网页实施要求](docs/gui-web-plan.md)：最新范围、共享核心、异步分工、Cloudflare 自动部署与验收
+- [五人任务安排](docs/team-tasks.md)：当前进度与每人下一步、文件归属、必做与加分项、时间线、审阅轮换、评分对应
+- [GUI／网页实施要求](docs/gui-web-plan.md)：范围、共享核心、Cloudflare 自动部署与验收
+- [网页试玩与 Cloudflare 自动发布](docs/cloudflare-deploy.md)：配置参数、发布检查与模块替换入口
 - [项目说明](docs/project-brief.md)：为什么做引擎、两个剧本、灵感来源与原创性、范围
-- [五人任务安排](docs/team-tasks.md)：分工大纲、必做与加分项、时间线、审阅轮换、最终合并阶段、评分对应
 - [接口约定](docs/contracts.md)：模块依赖、引擎与插件接口、修改接口的流程
 - [剧本格式](docs/story-format.md)：写剧本的完整字段说明
 - [协作流程](docs/collaboration.md)：分支、PR、测试分层、CI、提交信息
-- [需求与测试对应表](docs/requirements.md) · [测试报告](docs/testing.md) · [AI 使用记录](docs/ai-usage.md)
+- [需求与测试对应表](docs/requirements.md) · [AI 使用记录](docs/ai-usage.md)（两者在最终合并阶段统一补齐）
 - [开工提示词](docs/prompts.md) · [AGENTS.md](AGENTS.md)
 - [课程要求全文](docs/course-requirements.md)
 
 ## 外部资源
 
-当前运行代码仅使用 Python 标准库。计划中的网页端使用 Pyodide，需在实现时记录锁定版本、许可证和来源。剧本 A 的玩法机制参考了剧本杀的通用玩法，剧情、人物与文字为原创，参考来源见 [项目说明](docs/project-brief.md)。
+Python 核心与桌面端仅使用标准库。网页端使用 Pyodide 在浏览器中运行 Python，版本与许可证见 `web/runtime/THIRD_PARTY_NOTICES.txt`；网页构建与测试工具（Vite、Cloudflare CLI、Playwright）锁定在 `package-lock.json`，只用于开发和发布。剧本 A 的玩法机制参考了剧本杀的通用玩法，剧情、人物与文字为原创，参考来源见 [项目说明](docs/project-brief.md)。
