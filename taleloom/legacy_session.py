@@ -1,4 +1,6 @@
-"""v0 引擎的网页兼容适配；ZQO 的正式 GameSession 可通过 factory 接替。
+"""v0 引擎的 GameSession 兼容适配，桌面与网页共用。负责人：ZC（临时）。
+
+ZQO 的正式会话（taleloom/session.py）完成后在 session_factory.py 中替换本类。
 
 本模块不修改 Engine 的公开接口，不承担随机、变体或新插件展示实现。
 存档保持 LQ 已有的 v1 文件格式；LQ 提供纯数据编码器后替换这里的兼容代码。
@@ -9,12 +11,12 @@ from __future__ import annotations
 import copy
 import json
 
-from taleloom.engine import Engine
-from taleloom.model import Command, Story
-from taleloom.rules import Context
-from taleloom.save import SAVE_VERSION, fingerprint
-from taleloom.state import GameState
-from taleloom.ui_contract import (
+from .engine import Engine
+from .model import Command, Story
+from .rules import Context
+from .save import SAVE_VERSION, fingerprint
+from .state import GameState
+from .ui_contract import (
     ActionParameter, ActionRequest, ActionSpec, DisplayItem, ResourceView,
     SessionResult, ViewSnapshot,
 )

@@ -24,6 +24,24 @@ npm run dev -- --open
 
 在第 3 步之前，远端 `main` 仍是旧骨架。想先试部署，可创建独立测试 Worker 并选择 `zc/web-deploy-foundation`；Worker 名称要与配置的 `taleloom` 一致。正式发布时将该项目生产分支改为 `main`，不要同时创建同名项目。
 
+### 2.1 首次部署前：一次性同步 Worker 配置
+
+**已知问题（2026-11-07 首次构建）**：测试、校验、回放、网页构建与预检全部通过，但 `npm run deploy` 中止，日志为 `Aborting the upload operation because of conflicts`。原因：Worker 是在控制台创建的，控制台上的配置（未启用静态资源、`workers_dev`／`preview_urls` 关闭、兼容日期 2026-11-07、日志与追踪开启）与仓库 `cloudflare.config.ts` 不同。当前 `cf` CLI 的 `deploy` 与 `versions upload` 在非交互环境中固定使用严格模式（源码中 `strict: true`，没有关闭参数），只要远端与本地配置不同就拒绝上传，所以云端构建永远无法完成第一次部署。
+
+解决办法：由有 Cloudflare 账号权限的成员（ZC）在本机交互式部署一次，让远端配置与仓库一致。之后云端每次构建都能直接部署。
+
+```bash
+npm ci
+npx cf auth login                      # 浏览器中登录 Cloudflare
+npm run build
+npx cf deploy --prebuilt --mode production
+```
+
+交互模式会列出同样的配置差异并询问是否覆盖，确认即可。完成后：
+
+- 在 Cloudflare 控制台对 `taleloom` 的最新提交点 **Retry build**，确认 Build 与 Deploy 都成功，打开 `workers.dev` 地址试玩。
+- **以后不要在控制台修改该 Worker 的设置**（兼容日期、workers.dev、预览链接、日志等），一律改 `cloudflare.config.ts` 并走 PR；否则严格模式会再次拦下部署。
+
 ## 3 Cloudflare 页面逐项填写
 
 在 **Workers & Pages → Create application → Import a repository / Connect Git** 选择 GitHub，授权 `zoran-sid/TaleLoom`。选择 **Workers**。
@@ -73,7 +91,7 @@ npm run check:deploy
 | 模块 | 当前部署基础 | 正式模块如何接入 |
 | --- | --- | --- |
 | Python 核心、加载、校验、解析、存档、剧本 | 复用现有文件；没有修改这些文件 | 各成员继续原任务 |
-| 会话 | `web/runtime/legacy_session.py` 包装现有 v0 Engine | ZQO 实现 `taleloom/session.py` 后，在 `web/runtime/factory.py` 显式切换；先通过接口及回放测试 |
+| 会话 | `taleloom/legacy_session.py` 包装现有 v0 Engine；桌面与网页都经 `taleloom/session_factory.py` 创建会话 | ZQO 实现 `taleloom/session.py` 后，在 `taleloom/session_factory.py` 显式切换；先通过接口及回放测试 |
 | 运行桥接 | `web/runtime/bridge.py`、`worker.js`、`client.js` | ZC 维护 JSON 消息和后台 Python；ZRS 可直接使用 `GameClient` |
 | 界面 | 根目录 `index.html`、`web/preview/` 中可替换的最小试玩界面 | ZRS 继续开发 `taleloom/gui/`、`web/ui/`、`web/styles/`；接入时由 ZC 调整网页入口 |
 | 存储 | `web/preview/storage.js` 单槽 localStorage；兼容既有 v1 JSON | LQ 交付 `web/storage/` 和纯数据编码器后替换；不占用其正式文件 |

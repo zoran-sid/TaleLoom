@@ -14,7 +14,7 @@ from taleloom.parser import parse
 from taleloom.replay import load_walkthrough
 from taleloom.ui_contract import ActionRequest
 from taleloom.mechanics.puzzle import resolve_item
-from web.runtime.factory import create_session
+from taleloom.session_factory import create_session
 
 
 def build_vectors() -> list:

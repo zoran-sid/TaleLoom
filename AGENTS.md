@@ -23,7 +23,7 @@
 - 单元测试放 `tests/<缩写小写>/`，只用 `tests/fixtures.py` 或测试内构造的数据，不读 `stories/`。
 - 引擎与插件不调用 `print`/`input`，不读写文件；输出通过 `Output`/`Context` 返回。
 - 引擎与插件不依赖 Tkinter、DOM 或 Cloudflare。GUI／网页通过共享会话接口、结构化操作与展示快照交互；新增玩法同时提供图形操作。快照读取不推进回合、不抽取随机数、不触发剧情。
-- 当前网页部署基础见 `docs/cloudflare-deploy.md`。`web/runtime/legacy_session.py` 与 `web/preview/` 由 ZC 临时维护；成员继续正式模块，合入后在 factory／网页入口切换。核心模块测试不需要 Node。
+- 当前网页部署基础见 `docs/cloudflare-deploy.md`。`taleloom/legacy_session.py` 与 `web/preview/` 由 ZC 临时维护；桌面与网页都通过 `taleloom/session_factory.create_session` 取得会话。成员继续正式模块，合入后在 `session_factory.py`／网页入口切换（接入点见 `docs/team-tasks.md` 第 0 节）。核心模块测试不需要 Node。
 - 共享接口已提供 `ui_contract.py`、`tests/ui_fakes.py` 与样例测试；正式会话适配器仍由 ZQO 实现；现有序章可通过网页 v0 兼容适配游玩。后续接口变更在 contract PR 同步实现、固定样例与兼容测试，再按 `docs/gui-web-plan.md` 第 5 节划分文件异步开发。待实现能力与真实完成状态分开记录。
 - 修改 `taleloom/ui_contract.py`、`taleloom/model.py`、`Engine` 公开方法、`Mechanic` 基类或已有剧本字段的含义，按 `docs/contracts.md` 第 5 节走 contract PR，并在同一个 PR 内修好所有受影响的代码和测试。
 - 无效输入要给出有意义的提示，不能崩溃（课程“可用性”评分项）。

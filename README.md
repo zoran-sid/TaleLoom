@@ -14,7 +14,7 @@ INT6181 应用 Python 程式设计 · 小组项目。
 - 自动发布：Cloudflare 监听本仓库推送，检查与构建成功后自动部署；`main` 更新正式网址，`develop`／成员分支提供预览。
 - 异步协作：共享接口和固定样例先行，界面、引擎、插件、存档与素材分模块扩展。
 
-独立模块开发入口：`taleloom/ui_contract.py`、`tests/ui_fakes.py`，可运行 `python -B -m unittest tests.integration.test_ui_contract -v`。
+每人的下一步与接入点见 [任务安排第 0 节](docs/team-tasks.md#0-当前进度与每人下一步)。独立模块开发入口：`taleloom/ui_contract.py`、`tests/ui_fakes.py`，展示端统一用 `taleloom.session_factory.create_session` 取得会话；可运行 `python -B -m unittest tests.integration.test_ui_contract -v`。
 
 当前分支已提供可点击游玩的网页序章、浏览器 Python 运行层和 Cloudflare 构建配置。两个剧本继续使用原有引擎与存档格式。桌面 GUI 和各成员的正式扩展模块继续按分工开发。
 
@@ -28,7 +28,7 @@ INT6181 应用 Python 程式设计 · 小组项目。
 python main.py
 ```
 
-会列出剧本供选择。也可以直接指定：
+无参数时打开桌面 GUI；GUI 尚未完成或当前 Python 没有 Tkinter 时，自动改用命令行并列出剧本供选择。VS Code 中可直接用“运行和调试”里的 **TaleLoom：启动游戏**。命令行游玩也可以直接指定剧本：
 
 ```bash
 python main.py play fog_harbor

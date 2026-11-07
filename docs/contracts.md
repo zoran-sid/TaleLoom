@@ -123,6 +123,22 @@ class SaveStore(Protocol):
 - `SaveStore` 只存取数据，预期失败抛 `StorageError`，不泄漏可变引用。文件端保留原子写入；浏览器端通过 JS 桥接异步完成等价操作，不要求 Python 同步等待浏览器消息。首版不承诺跨设备同步。
 - `assets` 为展示角色到剧本相对路径的映射，例如 background／portrait；由 YHT 在素材字段实现时补齐校验，缺失时文字仍可通关。
 
+### 展示端如何取得会话、桌面如何启动
+
+所有展示端只通过一个入口创建会话，不直接实例化具体类：
+
+```python
+from taleloom.loader import load_story
+from taleloom.session_factory import create_session
+
+session = create_session(load_story("stories/fog_harbor"))   # GameSession
+result = session.start()
+```
+
+- `taleloom/session_factory.py`（ZC）当前返回 v0 兼容会话 `taleloom/legacy_session.py`。ZQO 的 `taleloom/session.py` 通过本节约定与真实剧本回放后，在这里改一行，桌面、网页和 `tools/web_vectors.py` 同时切换。
+- 桌面 GUI（ZRS）以包 `taleloom.gui` 交付，提供 `run(stories_dir: Path, saves_dir: Path) -> int`（返回进程退出码）。`python main.py` 无参数时调用它；包不存在或当前 Python 没有 Tkinter 时，`main.py` 提示后回退命令行，见 `tests/zc/test_main_entry.py`。
+- GUI 内部只依赖 `GameSession` 与 `SaveStore`，开发阶段用 `tests/ui_fakes.py` 的替身，不 import `engine.py`。
+
 ### 可独立运行的示例
 
 在仓库根目录执行以下 Python 内容，无需窗口、网络或真实剧本：

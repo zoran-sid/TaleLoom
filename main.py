@@ -1,15 +1,19 @@
-"""TaleLoom 启动文件（课程要求的 main.py）。
+"""TaleLoom 启动文件（课程要求的 main.py）。负责人：ZC。
 
-    python main.py                        选择剧本并开始游戏
-    python main.py play fog_harbor        直接游玩某个剧本
+    python main.py                        打开桌面 GUI（尚未完成时自动改用命令行）
+    python main.py play [fog_harbor]      命令行游玩
     python main.py validate               校验 stories/ 下全部剧本
     python main.py graph fog_harbor       输出剧本的 Mermaid 场景图
     python main.py replay fog_harbor      回放该剧本的全部通关脚本
+
+桌面 GUI 的接入约定（ZRS 实现）：包 taleloom.gui 提供
+``run(stories_dir: Path, saves_dir: Path) -> int``，返回进程退出码。
 """
 
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import sys
 from pathlib import Path
 
@@ -61,6 +65,19 @@ def cmd_play(name: str | None) -> int:
     return 0
 
 
+def cmd_gui() -> int:
+    """无参数启动：优先打开桌面 GUI，缺少 GUI 模块或 Tkinter 时改用命令行。"""
+    if importlib.util.find_spec("taleloom.gui") is None:
+        print("（桌面界面尚未完成，使用命令行模式。）")
+        return cmd_play(None)
+    if importlib.util.find_spec("tkinter") is None:
+        print("（当前 Python 没有安装 Tkinter（Tcl/Tk），使用命令行模式。）")
+        return cmd_play(None)
+    from taleloom.gui import run
+
+    return run(stories_dir=STORIES, saves_dir=SAVES)
+
+
 def cmd_validate(names: list[str]) -> int:
     dirs = [resolve(n) for n in names] or story_dirs()
     failed = 0
@@ -108,7 +125,7 @@ def cmd_replay(name: str, verbose: bool) -> int:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="main.py", description="TaleLoom 织境 文字冒险引擎")
     sub = ap.add_subparsers(dest="command")
-    p = sub.add_parser("play", help="游玩剧本")
+    p = sub.add_parser("play", help="命令行游玩剧本")
     p.add_argument("story", nargs="?")
     v = sub.add_parser("validate", help="校验剧本")
     v.add_argument("stories", nargs="*")
@@ -125,7 +142,9 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_graph(args.story)
         if args.command == "replay":
             return cmd_replay(args.story, args.verbose)
-        return cmd_play(getattr(args, "story", None))
+        if args.command == "play":
+            return cmd_play(args.story)
+        return cmd_gui()
     except StoryFormatError as exc:
         print(f"剧本格式错误：{exc}")
         return 2

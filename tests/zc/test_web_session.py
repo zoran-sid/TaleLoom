@@ -9,7 +9,7 @@ from taleloom.save import load_game, save_game
 from taleloom.ui_contract import ActionRequest
 from tests.fixtures import mini_story
 from tests.integration.test_ui_contract import SessionContractMixin
-from web.runtime.legacy_session import LegacySession
+from taleloom.legacy_session import LegacySession
 
 
 class WebSessionTest(SessionContractMixin, unittest.TestCase):

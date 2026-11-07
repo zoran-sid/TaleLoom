@@ -5,7 +5,7 @@ from pathlib import Path
 
 from taleloom.loader import load_story
 from taleloom.ui_contract import ActionRequest, PROTOCOL_VERSION
-from .factory import create_session
+from taleloom.session_factory import create_session
 
 _session = None
 _session_id = None
