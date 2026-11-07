@@ -16,7 +16,7 @@
 | M2 桌面闭环 | 入口已接好：`python main.py` 无参数时调用 `taleloom.gui.run(...)`，GUI 包不存在时回退命令行；GUI 待 ZRS |
 | M3 浏览器核心 | 已完成（序章）：两个序章在 Pyodide 与 CPython 中状态一致，11 项浏览器测试（PR #4） |
 | M4 网页与存档 | 临时试玩界面与单槽存档可用（`web/preview/`）；正式界面与存储待 ZRS、LQ |
-| M5 自动发布 | Cloudflare 构建与检查通过，部署被配置冲突拦下；完成[部署指南](cloudflare-deploy.md) 2.1 节的一次性同步后可用 |
+| M5 自动发布 | 已上线：<https://taleloom.zoranzhou28.workers.dev>（生产分支 `develop`，PR 合入后自动部署；正式发布后改为 `main`） |
 
 | 成员 | 已完成 | 下一个 PR | 接入点 |
 | --- | --- | --- | --- |

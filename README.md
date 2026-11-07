@@ -16,7 +16,7 @@ INT6181 应用 Python 程式设计 · 小组项目。
 
 每人的下一步与接入点见 [任务安排第 0 节](docs/team-tasks.md#0-当前进度与每人下一步)。独立模块开发入口：`taleloom/ui_contract.py`、`tests/ui_fakes.py`，展示端统一用 `taleloom.session_factory.create_session` 取得会话；可运行 `python -B -m unittest tests.integration.test_ui_contract -v`。
 
-当前状态：命令行可完整游玩两个序章；网页序章可点击游玩（临时界面），Cloudflare 自动构建已配置；桌面 GUI 与各成员的正式模块按分工开发中。
+当前状态：命令行可完整游玩两个序章；网页序章可在线点击游玩（临时界面）：<https://taleloom.zoranzhou28.workers.dev>，`develop` 合入后由 Cloudflare 自动部署；桌面 GUI 与各成员的正式模块按分工开发中。
 
 本地网页：安装 Node（版本见 `.node-version`）与 Python 后运行 `npm ci`，再运行 `npm run dev -- --open`。发布设置与成员接入点见 [网页试玩与 Cloudflare 自动发布](docs/cloudflare-deploy.md)，完整目标见 [GUI／网页实施要求](docs/gui-web-plan.md)。
 
