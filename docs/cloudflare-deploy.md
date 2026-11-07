@@ -18,11 +18,14 @@ npm run dev -- --open
 ## 2 发布分支
 
 - Cloudflare 项目 `taleloom` 已连接本仓库（Workers Builds）。
-- **生产分支**：第一次发布前设为 `develop`，网址随集成版本更新；从 `develop` 向 `main` 的发布 PR 合并后改为 `main`。只有一个同名项目，不要另建。
+- **正式网址**：<https://taleloom.zoranzhou28.workers.dev>
+- **生产分支**：当前为 `develop`（2026-11-08 起），PR 合入 `develop` 后自动部署；从 `develop` 向 `main` 的发布 PR 合并后改为 `main`。只有一个同名项目，不要另建。
 - **非生产分支**（成员分支）：构建并上传版本预览，不切换正式网址。
 - 改生产分支只在 Cloudflare 控制台 **Settings → Build → Branch control** 中操作；Worker 的其他设置一律改 `cloudflare.config.ts`（见 2.1）。
 
-### 2.1 首次部署前：一次性同步 Worker 配置
+### 2.1 Worker 配置同步（2026-11-08 已完成）
+
+**状态**：2026-11-08 已由 ZC 在本机完成一次同步部署，远端配置与 `cloudflare.config.ts` 一致，网址 <https://taleloom.zoranzhou28.workers.dev>。以下记录原因和做法，供以后重建 Worker 时参考。
 
 **已知问题（2026-11-07 首次构建）**：测试、校验、回放、网页构建与预检全部通过，但 `npm run deploy` 中止，日志为 `Aborting the upload operation because of conflicts`。原因：Worker 是在控制台创建的，控制台上的配置（未启用静态资源、`workers_dev`／`preview_urls` 关闭、兼容日期 2026-11-07、日志与追踪开启）与仓库 `cloudflare.config.ts` 不同。当前 `cf` CLI 的 `deploy` 与 `versions upload` 在非交互环境中固定使用严格模式（源码中 `strict: true`，没有关闭参数），只要远端与本地配置不同就拒绝上传，所以云端构建永远无法完成第一次部署。
 
