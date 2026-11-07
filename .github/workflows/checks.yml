@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        module: [yht, zqo, zrs, zc, lj, integration]
+        module: [yht, zqo, zrs, zc, lq, integration]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

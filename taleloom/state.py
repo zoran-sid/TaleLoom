@@ -1,7 +1,7 @@
 """游戏状态。负责人：ZQO。
 
 GameState 只保存可序列化的数据（字符串、整数、列表、字典），
-存档模块（LJ）直接调用 to_dict / from_dict。
+存档模块（LQ）直接调用 to_dict / from_dict。
 """
 
 from __future__ import annotations

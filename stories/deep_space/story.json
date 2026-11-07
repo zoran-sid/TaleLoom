@@ -5,9 +5,9 @@
   "start": "cryo",
   "mechanics": ["puzzle"],
   "meta": {
-    "owner": "LJ",
+    "owner": "LQ",
     "genre": "资源管理与道具解谜",
-    "status": "v0 序章：氧气倒计时、道具组合与两个结局，供 LJ 扩写"
+    "status": "v0 序章：氧气倒计时、道具组合与两个结局，供 LQ 扩写"
   },
   "vars": {"oxygen": 8},
   "every_turn": [{"add_var": ["oxygen", -1]}],
