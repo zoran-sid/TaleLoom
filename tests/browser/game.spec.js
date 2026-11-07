@@ -100,3 +100,18 @@ test('浏览器存储失败提供导出入口', async ({ page }) => {
   await expect(page.locator('#status')).toContainText('请导出存档');
   await expect(page.locator('#export')).toBeEnabled();
 });
+
+test('成功导入有明确提示，未保存返回会要求确认', async ({ page }) => {
+  const dialogs = [];
+  page.on('dialog', (dialog) => { dialogs.push(dialog.message()); return dialog.accept(); });
+  await start(page, 'fog_harbor');
+  const payload = vectors.find((v) => v.story_id === 'fog_harbor').save;
+  await page.locator('#import-file').setInputFiles({ name: 'valid.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(payload)) });
+  await idle(page);
+  await expect(page.locator('#status')).toContainText('存档已导入');
+  dialogs.length = 0;
+  await page.locator('#home').click();
+  expect(dialogs).toHaveLength(1);
+  expect(dialogs[0]).toContain('未保存');
+  await expect(page.locator('#library')).toBeVisible();
+});

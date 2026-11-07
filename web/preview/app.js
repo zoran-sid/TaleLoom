@@ -94,12 +94,13 @@ async function start(storyId, resume = false) {
   $('game').hidden = false;
   render(result);
   dirty = false;
-  if (!result.ok) status(result.messages.join('\n'));
+  if (result.error_code !== null) status(result.messages.join('\n'));
   else status();
   retry = undefined;
   $('scene-title').focus();
 }
 function render(result) {
+  if (result.view?.protocol_version !== 1) throw new Error('网页协议版本不匹配，请刷新页面。');
   view = result.view;
   $('story-title').textContent = view.story_title;
   $('scene-title').textContent = view.scene_title;
@@ -175,7 +176,7 @@ function act(actionId, values = {}) {
   return run(async () => {
     const result = await request('action', { action: { action_id: actionId, expected_revision: view.revision, values } });
     render(result);
-    if (result.ok) dirty = true;
+    if (result.error_code === null) dirty = true;
     $('scene-title').focus();
   });
 }
@@ -209,8 +210,8 @@ $('load').onclick = () => run(async () => {
   if (!confirm('读取存档并替换当前未保存的进度吗？')) return;
   const result = await request('restore', { payload });
   render(result);
-  if (result.ok) dirty = false;
-  status(result.ok ? '已恢复保存的进度。' : result.messages.join('\n'));
+  if (result.error_code === null) dirty = false;
+  status(result.error_code === null ? '已恢复保存的进度。' : result.messages.join('\n'));
 });
 $('export').onclick = () => run(async () => {
   const payload = await request('export');
@@ -233,8 +234,8 @@ $('import-file').onchange = () => run(async () => {
   if (!confirm('导入存档并替换当前未保存的进度吗？')) return;
   const result = await request('restore', { payload });
   render(result);
-  if (result.ok) dirty = true;
-  status(result.ok ? '存档已导入。点击“保存进度”可保存在本机。' : result.messages.join('\n'));
+  if (result.error_code === null) dirty = true;
+  status(result.error_code === null ? '存档已导入。点击“保存进度”可保存在本机。' : result.messages.join('\n'));
 });
 window.addEventListener('pagehide', () => client?.close());
 window.addEventListener('beforeunload', (event) => {

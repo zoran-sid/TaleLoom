@@ -20,7 +20,7 @@ export class GameClient {
       const id = ++this.nextId;
       const timer = setTimeout(() => this.close(new Error('加载超时，请检查网络后重试。')), 90_000);
       this.pending.set(id, { resolve, reject, timer });
-      this.worker.postMessage({ id, request });
+      this.worker.postMessage({ id, request: { ...request, protocol_version: 1 } });
     });
   }
   close(error = new Error('会话已关闭')) {

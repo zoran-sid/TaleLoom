@@ -80,7 +80,7 @@ class Mechanic:
 
 ## 6 桌面／网页共享接口 v1
 
-定义文件：`taleloom/ui_contract.py`。本轮提供可导入的数据类型、Protocol、固定测试替身和样例测试；真实 Engine 会话适配、GUI、网页桥接及持久化由各模块后续实现。第 1–4 节现有接口不变。修改本节接口或 JSON 结构按第 5 节走 contract PR。
+定义文件：`taleloom/ui_contract.py`。已提供可导入的数据类型、Protocol、固定测试替身和样例测试。网页部署基础采用独立 v0 兼容会话、桥接与单槽持久化；正式会话、GUI 和存储模块继续由对应成员实现，接入点见 [部署指南](cloudflare-deploy.md)。第 1–4 节现有接口不变。修改本节接口或 JSON 结构按第 5 节走 contract PR。
 
 ### 数据约定
 

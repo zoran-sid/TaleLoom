@@ -43,7 +43,7 @@
 
 | 编号 | 需求 | 负责 | 验证 | 状态 |
 | --- | --- | --- | --- | --- |
-| NFR-1 | Python 核心与桌面使用标准库，GUI 需 Tcl/Tk；网页依赖独立管理 | 全体 | CLI 已通过 CI；GUI／网页隔离待验证 | ✅ CLI；🔲 新端 |
+| NFR-1 | Python 核心与桌面使用标准库，GUI 需 Tcl/Tk；网页依赖独立管理 | 全体 | CLI／网页已通过测试；桌面 GUI 待验证 | ✅ CLI／网页；🔲 桌面 |
 | NFR-2 | 任何玩家输入都不导致程序崩溃 | ZRS、LQ | `test_cli.py`；随机探索（FR-L5） | ✅ 部分 |
 | NFR-3 | 每条命令的处理在 100 ms 内完成（演示电脑） | ZQO | 计划在 LQ 的随机探索中计时 | 🔲 |
 | NFR-4 | 存档写入中断不损坏旧存档（先写临时文件再替换） | LQ | `test_save.py::test_no_temp_file_left_behind` | ✅ |
