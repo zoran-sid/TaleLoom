@@ -2,6 +2,8 @@
 
 格式由 YHT 的代码定义。这是 v0 骨架实际支持的格式；模块阶段新增的字段先写在代码文档字符串中，本文件在最终合并阶段统一补全。完整例子见 `stories/fog_harbor/story.json` 与 `stories/deep_space/story.json`。
 
+新增 GUI／网页展示与可选素材方向见 [实施要求](gui-web-plan.md)。当前正文仅描述已支持的剧本字段；素材和插件展示字段在相应接口实现 PR 中补充，保持旧剧本兼容。
+
 写完剧本先运行：
 
 ```bash
