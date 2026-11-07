@@ -168,6 +168,24 @@ class PluginDataParameterTest(unittest.TestCase):
         self.assertIsInstance(issues, list)
         self.assertTrue(any("mystery" in str(i) for i in issues))
 
+    def test_malformed_plugin_effect_shape_is_reported(self):
+        raw = mini_raw(
+            mechanics=["puzzle"],
+            uses=[{"item": "key", "effects": [{"set_flag": "x", "say": "y"}]}],
+        )
+        issues = issues_for(raw)
+        paths = {i.path for i in issues}
+        self.assertIn("uses[0].effects[0]", paths)
+        self.assertTrue(any("只能有一个键" in i.message for i in issues))
+
+    def test_malformed_use_effect_does_not_crash(self):
+        raw = mini_raw(
+            mechanics=["puzzle"],
+            uses=[{"item": "key", "effects": ["bad"]}],
+        )
+        issues = issues_for(raw)
+        self.assertIn("uses[0].effects[0]", {i.path for i in issues})
+
 
 class ReferenceTest(unittest.TestCase):
     def test_visited_scene_must_exist(self):

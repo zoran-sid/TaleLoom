@@ -30,7 +30,15 @@ def validate(story: Story) -> list[Issue]:
     issues: list[Issue] = []
     registry = default_registry()
     mechanics = []
+    seen_mechanics: set[str] = set()
     for name in story.mechanics:
+        if name in seen_mechanics:
+            issues.append(Issue(
+                "error", "mechanics",
+                f"机制插件重复启用：{name}。建议：从 mechanics 中删掉重复的插件名。",
+            ))
+            continue
+        seen_mechanics.add(name)
         try:
             mech = create_mechanic(name)
         except ValueError as exc:
@@ -39,7 +47,15 @@ def validate(story: Story) -> list[Issue]:
                 f"{exc}。建议：检查 mechanics 中的插件名，可用插件：{', '.join(available())}。",
             ))
             continue
-        mech.register(registry)
+        try:
+            mech.register(registry)
+        except Exception as exc:   # 插件注册冲突时也要继续校验，而不是崩溃
+            issues.append(Issue(
+                "error", "mechanics",
+                f"机制插件 {name} 无法启用：{exc}。建议：检查插件名是否重复，"
+                "或联系插件负责人确认注册的条件/效果。",
+            ))
+            continue
         mechanics.append(mech)
 
     if story.start not in story.scenes:
@@ -156,7 +172,7 @@ def _escape(text: str) -> str:
 # ---- 参数类型 ----
 
 def _check_parameters(story: Story) -> list[Issue]:
-    issues = []
+    issues = _check_plugin_effects(story)
     for path, key, arg in _all_conditions(story):
         problem = _condition_problem(key, arg)
         if problem:
@@ -165,6 +181,47 @@ def _check_parameters(story: Story) -> list[Issue]:
         problem = _effect_problem(key, arg)
         if problem:
             issues.append(Issue("error", path, problem))
+    return issues
+
+
+def _check_plugin_effects(story: Story) -> list[Issue]:
+    """检查插件数据段里效果列表的外壳，避免坏数据让后续遍历崩溃。"""
+    issues = []
+    uses = story.data.get("uses")
+    if not isinstance(uses, list):
+        return issues
+    for i, rule in enumerate(uses):
+        if not isinstance(rule, dict):
+            continue
+        if "when" in rule and not isinstance(rule["when"], dict):
+            issues.append(Issue(
+                "error", f"uses[{i}].when",
+                f"效果使用规则的 when 应为条件对象，实际为 {_type_name(rule['when'])}。"
+                "建议：把 when 写成 {\"flag\": \"名称\"} 这样的条件对象。",
+            ))
+        effects = rule.get("effects")
+        if effects is None:
+            continue
+        if not isinstance(effects, list):
+            issues.append(Issue(
+                "error", f"uses[{i}].effects",
+                f"效果使用规则的 effects 应为数组，实际为 {_type_name(effects)}。"
+                "建议：把 effects 写成 [{\"set_flag\": \"名称\"}] 这样的数组。",
+            ))
+            continue
+        for j, effect in enumerate(effects):
+            if not isinstance(effect, dict):
+                issues.append(Issue(
+                    "error", f"uses[{i}].effects[{j}]",
+                    f"效果应为对象，实际为 {_type_name(effect)}。"
+                    "建议：每个效果写成只有一个键的对象，例如 {\"say\": \"文字\"}。",
+                ))
+            elif len(effect) != 1:
+                issues.append(Issue(
+                    "error", f"uses[{i}].effects[{j}]",
+                    "每个效果只能有一个键。"
+                    "建议：把一个效果拆成多个对象，每个对象只保留一个键。",
+                ))
     return issues
 
 
@@ -360,6 +417,8 @@ def _global_exit_targets(story: Story) -> set[str]:
         if key == "goto" and _is_global(path) and isinstance(arg, str)
     }
     for _, effect in _puzzle_use_effects(story):
+        if not isinstance(effect, dict):
+            continue
         target = effect.get("goto")
         if isinstance(target, str):
             targets.add(target)
@@ -611,6 +670,20 @@ def _split_suggestion(issue: Issue) -> tuple[str, str]:
 
 def _default_suggestion(issue: Issue) -> str:
     message = issue.message
+    if "条件 var" in message:
+        return "把参数写成 [变量名, 比较符, 数值]，比较符用 ==、!=、<、<=、>、>= 之一。"
+    if "效果 set_var" in message or "效果 add_var" in message:
+        return "把参数写成 [变量名, 整数]，例如 [\"hp\", 3]。"
+    if "条件 all" in message or "条件 any" in message:
+        return "把参数写成条件对象数组，例如 [{\"flag\": \"ready\"}]。"
+    if "条件 not" in message:
+        return "把参数写成单个条件对象，例如 {\"flag\": \"ready\"}。"
+    if "参数应为字符串" in message:
+        return "把参数改成字符串，例如 \"变量名\" 或 \"场景id\"。"
+    if "参数应为条件数组" in message:
+        return "把参数改成条件对象数组，例如 [{\"flag\": \"ready\"}]。"
+    if "参数应为条件对象" in message:
+        return "把参数改成条件对象，例如 {\"flag\": \"ready\"}。"
     if "起始场景不存在" in message:
         return "把 start 改成 scenes 中已存在的场景 id。"
     if "未知条件" in message or "未知效果" in message:
