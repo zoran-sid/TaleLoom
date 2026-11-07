@@ -65,7 +65,7 @@ class Mechanic:
 
 以下改动会影响他人，必须单独开 PR，标题用 `feat(contract): ...` 或 `refactor(contract): ...`，加 `contract` 标签：
 
-- `model.py` 中任何类型的字段增删改；
+- `model.py` 或 `ui_contract.py` 中共享类型、Protocol 及 JSON 字段的增删改；
 - `Engine` 公开方法、`Mechanic` 基类、`Registry` 的签名；
 - 剧本格式中已有字段的含义变化（新增可选字段不算）。
 
@@ -77,3 +77,72 @@ class Mechanic:
 4. 合并后在群里发一句“已合入 + PR 链接”。
 
 只新增（不改变已有行为）的接口，例如插件新注册的条件，不需要走这个流程。
+
+## 6 桌面／网页共享接口 v1
+
+定义文件：`taleloom/ui_contract.py`。本轮提供可导入的数据类型、Protocol、固定测试替身和样例测试；真实 Engine 会话适配、GUI、网页桥接及持久化由各模块后续实现。第 1–4 节现有接口不变。修改本节接口或 JSON 结构按第 5 节走 contract PR。
+
+### 数据约定
+
+| 类型 | 字段／作用 |
+| --- | --- |
+| `DisplayItem` | `id, label, description`：物品、线索和候选的可见数据 |
+| `ActionParameter` | `key, label, kind, options, required`：select 候选或 text 文字参数 |
+| `ActionSpec` | `id, label, parameters, enabled, disabled_reason`：稳定动作 ID，不使用选项序号 |
+| `ResourceView` | `id, label, value, maximum`：公开数值 |
+| `ViewSnapshot` | 场景、正文、revision、turn、choices、actions、inventory、clues、resources、assets、结局及 protocol_version |
+| `ActionRequest` | `action_id, expected_revision, values`：参数名映射到所选 ID 或文字 |
+| `SessionResult` | `view, messages, error_code`：完整快照、操作反馈与错误码 |
+
+快照、请求和结果的 `to_dict()` 返回独立的 JSON 可序列化对象。Python 的 `result.ok` 是便利属性，JSON 接收端以 `error_code` 是否为 null 判断成功。`protocol_version=1` 与存档版本独立。类型注解和 Protocol 不负责外部输入校验；浏览器桥接必须检查消息字段、类型和版本后再构造请求，不能执行来自输入的 Python 代码。
+
+### 调用与行为
+
+```python
+class GameSession(Protocol):
+    def start(self) -> SessionResult: ...
+    def snapshot(self) -> ViewSnapshot: ...
+    def dispatch(self, request: ActionRequest) -> SessionResult: ...
+    def export_save(self) -> dict: ...
+    def restore(self, payload: dict) -> SessionResult: ...
+
+class SaveStore(Protocol):
+    def list_slots(self) -> list[str]: ...
+    def read(self, slot: str) -> dict: ...
+    def write(self, slot: str, payload: dict) -> None: ...
+```
+
+- 会话绑定一个已加载剧本。启动层负责选择／加载，重新开始或切换剧本时创建新实例。真实适配器构造参数由 ZQO 确定，界面仅依赖 `GameSession`。
+- 先调用 `start()`；重复调用幂等，不重复触发开场。未启动调用属于开发错误。
+- `snapshot()` 是纯读取，返回独立数据；查看、缩放和渲染不推进回合、不抽随机数。修改返回值不能修改游戏状态。
+- `revision` 是会话界面版本，`turn` 是游戏回合。成功改变状态或恢复存档时 revision 单调递增；读取或失败不递增。恢复旧存档也必须让旧动作失效。
+- `dispatch` 先检查版本与动作，再检查参数和规则。过期返回 `stale_revision`，无效动作返回 `invalid_action`，参数错误返回 `invalid_parameters`；失败保留原状态。
+- 动作 ID 示例为 `choice:take`、`puzzle:use`。适配器映射到现有 `Command`；UI 不拼接中文命令。参数候选只包含玩家已知内容，不提供正确配方或未发现线索。
+- `messages` 是本次反馈，不用于重建场景。每次结果包含完整快照；浏览器消息同时带会话标识与请求 ID，切换故事后丢弃旧会话响应，避免版本从零开始造成混淆。
+- 真实 `export_save/restore` 沿用 `save.py` 的存档版本、剧本 ID 与指纹规则，将编码／验证从文件读写中提取复用。恢复失败返回 `invalid_save`；成功不重复执行进入场景事件。
+- `SaveStore` 只存取数据，预期失败抛 `StorageError`，不泄漏可变引用。文件端保留原子写入；浏览器端通过 JS 桥接异步完成等价操作，不要求 Python 同步等待浏览器消息。首版不承诺跨设备同步。
+- `assets` 为展示角色到剧本相对路径的映射，例如 background／portrait；由 YHT 在素材字段实现时补齐校验，缺失时文字仍可通关。
+
+### 可独立运行的示例
+
+在仓库根目录执行以下 Python 内容，无需窗口、网络或真实剧本：
+
+```python
+from taleloom.ui_contract import ActionRequest
+from tests.ui_fakes import FakeGameSession, MemorySaveStore
+
+session = FakeGameSession()
+first = session.start()
+taken = session.dispatch(ActionRequest("choice:take", first.view.revision))
+store = MemorySaveStore()
+store.write("slot-1", session.export_save())
+result = session.restore(store.read("slot-1"))
+assert result.view.inventory[0].id == "key"
+```
+
+- ZRS 将测试替身注入页面控制器，覆盖动作、参数、物品、资源、错误和结局。
+- ZQO 可复用 `tests/integration/test_ui_contract.py` 的 `SessionContractMixin`，用包含 take/open 动作的迷你剧本构造真实会话，再增加插件、随机、存档测试。
+- LQ 用 `MemorySaveStore` 隔离文件与浏览器，独立测试真实存储和存档互通。
+- YHT 维护数据与 `to_dict()` 结构；ZC 把同一 JSON 数据映射到 Web Worker 消息并验证真实浏览器回放。
+
+运行 `python -B -m unittest tests.integration.test_ui_contract -v` 验证样例。测试替身使用带 fixture 标记的测试存档，内存存储随实例消失，均不属于正式游戏实现。
