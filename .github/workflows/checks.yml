@@ -1,0 +1,61 @@
+name: checks
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # 每位成员的模块测试单独显示为一项检查，PR 页面能直接看出是谁的模块出了问题
+  module:
+    name: tests (${{ matrix.module }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [yht, zqo, zrs, zc, lj, integration]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run ${{ matrix.module }} tests
+        run: python -B -m unittest discover -s tests/${{ matrix.module }} -t . -v
+
+  stories:
+    name: stories (validate + walkthroughs)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate all stories
+        run: python -B main.py validate
+      - name: Replay all walkthroughs
+        run: |
+          for d in stories/*/; do
+            name=$(basename "$d")
+            echo "::group::$name"
+            python -B main.py replay "$name"
+            echo "::endgroup::"
+          done
+
+  compat:
+    name: full suite (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.10", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -B -m unittest discover -s tests -t .
+      - name: Whitespace check
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --depth=1 origin "${{ github.base_ref }}"
+          git diff --check FETCH_HEAD HEAD

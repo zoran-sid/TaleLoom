@@ -1,0 +1,81 @@
+{
+  "format_version": 1,
+  "id": "deep_space",
+  "title": "深空回声",
+  "start": "cryo",
+  "mechanics": ["puzzle"],
+  "meta": {
+    "owner": "LJ",
+    "genre": "资源管理与道具解谜",
+    "status": "v0 序章：氧气倒计时、道具组合与两个结局，供 LJ 扩写"
+  },
+  "vars": {"oxygen": 8},
+  "every_turn": [{"add_var": ["oxygen", -1]}],
+  "triggers": [
+    {"id": "low_oxygen", "when": {"var": ["oxygen", "<=", 3]}, "effects": [{"say": "【警告】氧气剩余不多，呼吸开始变得急促。"}]},
+    {"id": "no_oxygen", "when": {"var": ["oxygen", "<=", 0]}, "effects": [{"goto": "end_suffocate"}]}
+  ],
+  "items": [
+    {"id": "tape", "name": "绝缘胶带", "aliases": ["胶带"]},
+    {"id": "broken_wrench", "name": "断裂的扳手", "aliases": ["扳手", "断扳手"]},
+    {"id": "fixed_wrench", "name": "修好的扳手", "description": "用胶带缠紧的扳手，勉强能用。", "aliases": ["扳手", "修好的扳手"]}
+  ],
+  "combinations": [
+    {"items": ["broken_wrench", "tape"], "result": "fixed_wrench", "message": "你用胶带一圈圈缠紧扳手的断口。"}
+  ],
+  "uses": [
+    {"item": "fixed_wrench", "scene": "airlock", "message": "你拧紧了控制面板的固定螺栓，指示灯由红转绿。", "effects": [{"set_flag": "panel_fixed"}]}
+  ],
+  "scenes": [
+    {
+      "id": "cryo",
+      "title": "休眠舱",
+      "text": "警报声把你从休眠中拽醒。舱壁上的屏幕闪着一行字：生命维持系统故障，剩余氧气有限。\n“回声号”上似乎只剩你一个人。（输入“看”可重读当前场景，“背包”查看物品，“帮助”查看命令。）",
+      "choices": [
+        {"id": "locker", "text": "搜索床边的储物柜", "once": true, "effects": [{"give_item": "tape"}]},
+        {"id": "out", "text": "前往走廊", "goto": "corridor"}
+      ]
+    },
+    {
+      "id": "corridor",
+      "title": "主走廊",
+      "text": "应急灯一明一暗。走廊一端通向工具间，另一端是气闸门和逃生舱。",
+      "choices": [
+        {"id": "tools", "text": "去工具间", "goto": "toolroom"},
+        {"id": "airlock", "text": "去气闸门", "goto": "airlock"},
+        {"id": "cryo", "text": "回休眠舱", "goto": "cryo"}
+      ]
+    },
+    {
+      "id": "toolroom",
+      "title": "工具间",
+      "text": "工具散落一地，墙角固定着一个备用氧气罐。",
+      "choices": [
+        {"id": "wrench", "text": "捡起地上的扳手", "once": true, "effects": [{"give_item": "broken_wrench"}]},
+        {"id": "tank", "text": "接上备用氧气罐", "once": true, "effects": [{"add_var": ["oxygen", 4]}, {"say": "冰凉的氧气涌进面罩，你多了一点时间。"}]},
+        {"id": "back", "text": "回到走廊", "goto": "corridor"}
+      ]
+    },
+    {
+      "id": "airlock",
+      "title": "气闸门",
+      "text": "逃生舱就在门后，但控制面板松脱了，螺栓需要工具才能拧紧。（试试“使用 物品”。）",
+      "choices": [
+        {"id": "escape", "text": "进入逃生舱", "goto": "end_escape", "when": {"flag": "panel_fixed"}},
+        {"id": "back", "text": "回到走廊", "goto": "corridor"}
+      ]
+    },
+    {
+      "id": "end_escape",
+      "title": "脱离",
+      "text": "逃生舱弹离“回声号”。舷窗外，那艘船的灯一盏盏熄灭，而无线电里传来了一段不属于任何人的回声……",
+      "ending": {"id": "escape", "title": "回声"}
+    },
+    {
+      "id": "end_suffocate",
+      "title": "寂静",
+      "text": "最后一格氧气耗尽。警报声越来越远，直到什么也听不见。",
+      "ending": {"id": "suffocate", "title": "寂静"}
+    }
+  ]
+}

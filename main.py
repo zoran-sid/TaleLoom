@@ -1,0 +1,123 @@
+"""TaleLoom 启动文件（课程要求的 main.py）。
+
+    python main.py                        选择剧本并开始游戏
+    python main.py play fog_harbor        直接游玩某个剧本
+    python main.py validate               校验 stories/ 下全部剧本
+    python main.py replay fog_harbor      回放该剧本的全部通关脚本
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+from taleloom import cli, replay
+from taleloom.loader import StoryFormatError, load_story
+from taleloom.validator import errors, validate
+
+ROOT = Path(__file__).resolve().parent
+STORIES = ROOT / "stories"
+SAVES = ROOT / "saves"
+
+
+def story_dirs() -> list[Path]:
+    return sorted(p.parent for p in STORIES.glob("*/story.json"))
+
+
+def resolve(name: str) -> Path:
+    path = Path(name)
+    if path.exists():
+        return path if path.is_dir() else path.parent
+    candidate = STORIES / name
+    if (candidate / "story.json").is_file():
+        return candidate
+    names = ", ".join(p.name for p in story_dirs())
+    raise SystemExit(f"找不到剧本“{name}”。可用剧本：{names}")
+
+
+def cmd_play(name: str | None) -> int:
+    if name is None:
+        dirs = story_dirs()
+        print("选择剧本：")
+        for i, d in enumerate(dirs, 1):
+            print(f"  [{i}] {load_story(d).title}（{d.name}）")
+        choice = input("> ").strip()
+        if not choice.isdigit() or not 1 <= int(choice) <= len(dirs):
+            print("请输入列表中的编号。")
+            return 1
+        story_dir = dirs[int(choice) - 1]
+    else:
+        story_dir = resolve(name)
+    story = load_story(story_dir)
+    problems = errors(validate(story))
+    if problems:
+        print(f"剧本《{story.title}》未通过校验，无法开始：")
+        for issue in problems:
+            print(f"  {issue}")
+        return 2
+    cli.play(story, SAVES / f"{story.id}.json")
+    return 0
+
+
+def cmd_validate(names: list[str]) -> int:
+    dirs = [resolve(n) for n in names] or story_dirs()
+    failed = 0
+    for d in dirs:
+        try:
+            story = load_story(d)
+        except StoryFormatError as exc:
+            print(f"✗ {d.name}: {exc}")
+            failed += 1
+            continue
+        issues = validate(story)
+        bad = errors(issues)
+        mark = "✗" if bad else "✓"
+        print(f"{mark} {d.name}《{story.title}》 场景 {len(story.scenes)}，结局 {len(story.endings())}，"
+              f"错误 {len(bad)}，警告 {len(issues) - len(bad)}")
+        for issue in issues:
+            print(f"    {issue}")
+        failed += bool(bad)
+    return 1 if failed else 0
+
+
+def cmd_replay(name: str, verbose: bool) -> int:
+    story_dir = resolve(name)
+    story = load_story(story_dir)
+    results = [replay.check(story, replay.load_walkthrough(p)) for p in replay.walkthroughs_for(story_dir)]
+    if not results:
+        print("没有通关脚本（stories/<剧本>/walkthroughs/*.txt）。")
+        return 1
+    for r in results:
+        print(f"{'✓' if r.ok else '✗'} {r.walkthrough}: {r.message}")
+        if verbose or not r.ok:
+            print("    " + "\n    ".join(r.transcript))
+    all_endings, covered = replay.ending_coverage(story, results)
+    print(f"结局覆盖：{len(covered)}/{len(all_endings)}；未覆盖：{', '.join(sorted(all_endings - covered)) or '无'}")
+    return 0 if all(r.ok for r in results) else 1
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(prog="main.py", description="TaleLoom 织境 文字冒险引擎")
+    sub = ap.add_subparsers(dest="command")
+    p = sub.add_parser("play", help="游玩剧本")
+    p.add_argument("story", nargs="?")
+    v = sub.add_parser("validate", help="校验剧本")
+    v.add_argument("stories", nargs="*")
+    r = sub.add_parser("replay", help="回放通关脚本")
+    r.add_argument("story")
+    r.add_argument("-v", "--verbose", action="store_true")
+    args = ap.parse_args(argv)
+    try:
+        if args.command == "validate":
+            return cmd_validate(args.stories)
+        if args.command == "replay":
+            return cmd_replay(args.story, args.verbose)
+        return cmd_play(getattr(args, "story", None))
+    except StoryFormatError as exc:
+        print(f"剧本格式错误：{exc}")
+        return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

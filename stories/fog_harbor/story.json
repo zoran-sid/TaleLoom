@@ -1,0 +1,98 @@
+{
+  "format_version": 1,
+  "id": "fog_harbor",
+  "title": "雾港旧案",
+  "start": "lobby",
+  "mechanics": ["mystery"],
+  "meta": {
+    "owner": "ZC",
+    "genre": "推理搜证",
+    "status": "v0 序章：一条完整推理链与三个结局，供 ZC 扩写"
+  },
+  "clues": {
+    "torn_ledger": {"name": "被撕去的账页", "text": "账本最后一页被撕掉，残留的页角写着“顾，欠银三百”。"},
+    "salt_mud": {"name": "窗台上的盐泥", "text": "账房窗台有带海盐结晶的湿泥，只有码头一带才有这种泥。"},
+    "alibi": {"name": "后厨的证词", "text": "阿芸说案发时她和周文一直在后厨清点货物，钟敲十一下才散。"},
+    "wet_coat": {"name": "湿透的外套", "text": "顾先生的外套下摆湿透，沾着同样的海盐泥，口袋里有一角揉皱的纸。"}
+  },
+  "accusation": {
+    "when": {"visited": "office"},
+    "suspects": {
+      "gu": {"name": "顾先生", "aliases": ["顾", "商人", "gu"]},
+      "zhou": {"name": "周文", "aliases": ["周", "账房先生", "zhou"]},
+      "ayun": {"name": "阿芸", "aliases": ["芸", "女招待", "ayun"]}
+    },
+    "outcomes": [
+      {"suspect": "gu", "when": {"has_clue": "torn_ledger", "all": [{"has_clue": "wet_coat"}]}, "goto": "end_truth"},
+      {"suspect": "gu", "goto": "end_insufficient"}
+    ],
+    "default": "end_wrong"
+  },
+  "scenes": [
+    {
+      "id": "lobby",
+      "title": "海鸥旅馆·大堂",
+      "text": "一九三一年，雾港。午夜的雾把煤气灯压成一团昏黄。\n陈掌柜被发现倒在账房里，警署的人要到天亮才能上岛。旅馆里只剩三个人：账房先生周文、女招待阿芸，和昨天才住进来的外地商人顾先生。\n你是这里唯一的客人，也是唯一愿意查下去的人。",
+      "choices": [
+        {"id": "office", "text": "去账房查看现场", "goto": "office"},
+        {"id": "kitchen", "text": "去后厨找阿芸和周文", "goto": "kitchen"},
+        {"id": "room", "text": "上二楼看看顾先生的客房", "goto": "guest_room"},
+        {"id": "gather", "text": "召集众人到大堂", "goto": "gathering", "when": {"visited": "office"}}
+      ]
+    },
+    {
+      "id": "office",
+      "title": "账房",
+      "text": "账房的门虚掩着。陈掌柜伏在桌上，算盘散了一地，窗户半开，雾气正往里灌。",
+      "choices": [
+        {"id": "ledger", "text": "翻看桌上的账本", "once": true, "effects": [{"add_clue": "torn_ledger"}]},
+        {"id": "window", "text": "检查半开的窗户", "once": true, "effects": [{"add_clue": "salt_mud"}]},
+        {"id": "back", "text": "回到大堂", "goto": "lobby"}
+      ]
+    },
+    {
+      "id": "kitchen",
+      "title": "后厨",
+      "text": "灶火还没熄。阿芸攥着围裙，周文在一旁擦眼镜，两人都不太敢看你。",
+      "choices": [
+        {"id": "ask", "text": "问他们案发时在做什么", "once": true, "effects": [{"add_clue": "alibi"}]},
+        {"id": "back", "text": "回到大堂", "goto": "lobby"}
+      ]
+    },
+    {
+      "id": "guest_room",
+      "title": "二楼客房",
+      "text": "顾先生不在房里。床铺整齐，椅背上搭着一件深色外套，地板上有几道还没干的水痕。",
+      "choices": [
+        {"id": "coat", "text": "检查椅背上的外套", "once": true, "when": {"has_clue": "salt_mud"}, "effects": [{"add_clue": "wet_coat"}]},
+        {"id": "back", "text": "回到大堂", "goto": "lobby"}
+      ]
+    },
+    {
+      "id": "gathering",
+      "title": "大堂·对质",
+      "text": "三个人被叫到大堂，炉火噼啪作响。\n输入“线索”回顾笔记，输入“指认 名字”说出你的结论（可选：顾先生、周文、阿芸）。",
+      "choices": [
+        {"id": "more", "text": "再去搜查一会儿", "goto": "lobby"}
+      ]
+    },
+    {
+      "id": "end_truth",
+      "title": "真相",
+      "text": "你把账页残角和湿外套并排放在桌上。顾先生沉默良久，从口袋里掏出那张被撕下的账页：他从码头翻窗进来，只想毁掉欠条。\n天亮时，警署的船靠了岸。",
+      "ending": {"id": "truth", "title": "雾散"}
+    },
+    {
+      "id": "end_insufficient",
+      "title": "证据不足",
+      "text": "顾先生冷笑着反问你有什么证据。你答不上来。\n天亮后他搭第一班船离开了雾港，再也没有回来。",
+      "ending": {"id": "insufficient", "title": "雾未散"}
+    },
+    {
+      "id": "end_wrong",
+      "title": "错案",
+      "text": "被你指认的人脸色煞白，却拿得出不在场的证人。真正的凶手在一片混乱中悄悄离开了旅馆。",
+      "ending": {"id": "wrong", "title": "错认"}
+    }
+  ]
+}
