@@ -105,8 +105,12 @@ def parse_story(raw: Any) -> Story:
         triggers.append(trigger)
 
     mechanics = _list(raw, "mechanics", "$", required=False)
+    seen_mechanics: set[str] = set()
     for i, name in enumerate(mechanics):
         _expect(name, str, f"$.mechanics[{i}]")
+        if name in seen_mechanics:
+            raise StoryFormatError(f"$.mechanics[{i}]: 机制插件重复：{name}")
+        seen_mechanics.add(name)
     vars_ = _vars(raw.get("vars", {}))
     meta = raw.get("meta", {})
     _expect(meta, dict, "$.meta")

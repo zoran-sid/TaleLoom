@@ -131,6 +131,17 @@ class ParseTest(unittest.TestCase):
         with self.assertRaisesRegex(StoryFormatError, "触发器 id 重复：same"):
             parse_story(raw)
 
+    def test_duplicate_mechanic_name(self):
+        raw = mini_raw(mechanics=["mystery", "mystery"])
+        with self.assertRaisesRegex(StoryFormatError, r"mechanics\[1\]: 机制插件重复：mystery"):
+            parse_story(raw)
+
+    def test_invalid_utf8_reports_encoding(self):
+        with temp_dir() as tmp:
+            Path(tmp, "story.json").write_bytes(b"{\xff\xfe}")
+            with self.assertRaisesRegex(StoryFormatError, "UTF-8"):
+                load_story(tmp)
+
     def test_trigger_once_must_be_boolean(self):
         raw = mini_raw(triggers=[{"id": "t", "when": {"flag": "x"}, "effects": [], "once": 0}])
         with self.assertRaisesRegex(StoryFormatError, r"triggers\[0\]\.once"):
