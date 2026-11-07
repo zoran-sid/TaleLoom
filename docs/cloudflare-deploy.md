@@ -39,13 +39,14 @@ npm run dev -- --open
 | Non-production branch deploy command | `npm run deploy:preview` |
 | Build variable `PYTHON_VERSION` | `3.12` |
 | Build variable `SKIP_DEPENDENCY_INSTALL` | `1`（安装已包含在构建命令中） |
-| Build variable `PLAYWRIGHT_BROWSERS_PATH` | `0`（浏览器随本次依赖安装，避免跨版本缓存） |
 
-Node 版本由 `.node-version` 读取，也可在 Build variables 填 `NODE_VERSION=24.22.1`。这条路线无需填写 Pages 的 output directory。`cf build` 自动生成 `.cloudflare/output/v0/`，部署命令直接发布经过测试的这份产物。
+Node 版本由 `.node-version` 读取，也可在 Build variables 填 `NODE_VERSION=24.22.1`。这条路线无需填写 Pages 的 output directory。`cf build` 自动生成 `.cloudflare/output/v0/`，部署命令直接发布经过构建和预检的这份产物。Cloudflare 已设置的 `PLAYWRIGHT_BROWSERS_PATH=0` 可以保留；当前云端构建不使用它。
 
 开启非生产分支构建，至少纳入 `develop`；成员分支按需纳入。还没有合入网页配置的旧成员分支先保持原有 GitHub 模块测试，更新到新版 `develop` 后再开启网页预览。构建环境可以访问仓库；不要把 Cloudflare token 放进前端环境变量或源码。使用 Git 集成创建／管理的构建授权。
 
-构建依次运行：锁定依赖安装 → Chromium 及 Linux 系统依赖安装 → 全部 Python 测试 → 剧本校验 → 全部回放 → 静态网页打包 → 真实浏览器验收 → 部署预检。任一步失败都不执行部署，构建日志保留失败原因。
+Cloudflare 构建依次运行：锁定依赖安装 → 全部 Python 测试 → 剧本校验 → 全部回放 → 静态网页打包 → 部署预检。上述任一步失败都不执行部署，构建日志保留失败原因。
+
+真实 Chromium 验收由 GitHub Actions 的 `web (build + browser + deploy dry-run)` 检查运行，完整覆盖浏览器通关、存档和错误处理。Cloudflare 构建环境不允许安装器通过 `su` 获取管理员权限，因此浏览器及其 Linux 系统依赖在 GitHub 的 Ubuntu runner 中安装。合入 `develop`／`main` 前须确认包括 `web` 在内的全部 GitHub 检查通过；正式开通时将这些检查加入分支保护的必需状态检查。Cloudflare 原生 Git 构建与 GitHub 检查并行，不会等待 GitHub；临时直接部署功能分支时，应在其 GitHub 检查通过后验收试玩网址。
 
 当前非生产命令用 `cf workers versions create` 上传版本，生成版本预览 URL，不切换正式流量；`previewUrls` 已开启。这里使用 **Version preview URLs**，不是另一个需要专用 preview build 的 `cf previews deploy` 命令。生产命令 `cf deploy` 才更新正式版本。Cloudflare CLI 和 Vite 插件目前为 beta，仓库锁定已验证版本，升级须重新验收。
 
@@ -57,7 +58,7 @@ Node 版本由 `.node-version` 读取，也可在 Build variables 填 `NODE_VERS
 - 后续通过发布 PR 更新 `main`，核对部署提交号与固定网址的新版本。
 - 若构建失败，查看日志并修复；保留当前成功版本，继续使用相同发布流程。
 
-发布前可本地执行同一验收（不需要 Cloudflare 登录）：
+发布前可本地执行完整验收（不需要 Cloudflare 登录）：
 
 ```bash
 npm ci
@@ -65,7 +66,7 @@ npx playwright install chromium
 npm run check:deploy
 ```
 
-Linux 本地或 CI 使用 `npx playwright install --with-deps chromium` 安装系统依赖。Cloudflare 构建命令已包含该步骤；若账号构建环境限制系统依赖安装，保留浏览器检查并按失败日志补齐构建环境，不能跳过检查来发布。
+有管理员权限的 Linux 本地环境或 GitHub CI 使用 `npx playwright install --with-deps chromium` 安装系统依赖。Cloudflare 使用上表的 `npm run build:cloudflare`，不安装或启动浏览器；本地与 GitHub 的 `npm run check:deploy` 继续执行全部浏览器测试。
 
 ## 5 与成员任务的边界
 

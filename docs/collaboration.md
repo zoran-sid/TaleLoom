@@ -92,5 +92,5 @@ story(fog-harbor): add the second act and two endings
 - 各成员先使用 `tests/ui_fakes.py` 独立开发和测试，再接入真实适配器；新增目录按实施要求第 5 节归属，避免多人修改同一个入口。
 - 总设计者要求的范围／接口／分工调整及时同步文档；最终报告、PPT、视频仍在最终阶段制作。
 - 发布链路确定为 GitHub 推送 → Cloudflare Workers Builds 检查／构建 → 自动部署。main 为正式网址，develop／成员分支为预览；首次账号连接和项目配置完成后日常只需提交代码。
-- Cloudflare 构建自身执行测试与网页检查，全部成功才部署；不假设独立的 GitHub Actions 已完成。失败保留上次成功版本，预览不覆盖正式版本。
+- Cloudflare 自身执行 Python 测试、剧本校验与回放、网页构建和部署预检，这些步骤全部成功才部署。真实浏览器验收由 GitHub 的 `web` 检查执行；合入 develop／main 前须全部检查通过，正式开通时将其设为必需状态检查。两条流水线并行，Cloudflare 不等待 GitHub；临时功能分支试玩须另行确认 GitHub 结果。Cloudflare 构建失败保留上次成功版本，预览不覆盖正式版本。
 - 仍通过 PR 合入 develop，再由发布 PR 合入 main。自动部署不等于自动合并或绕过现有审阅。当前提供要求、接口与测试替身，真实适配器、网站与流水线待实施并记录部署证据。

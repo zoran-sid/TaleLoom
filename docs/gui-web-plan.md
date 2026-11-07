@@ -97,7 +97,7 @@
 1. 在 Cloudflare 创建 Workers 项目，授权访问 `zoran-sid/TaleLoom`，启用 Workers Builds Git 集成。
 2. 设置生产分支 `main`，启用 `develop` 和成员开发分支的非生产构建／版本预览，确认预览链接可访问。
 3. 配置仓库根目录、固定工具版本和构建输出目录。新增项目采用 Cloudflare CLI `cf`；当前参数、命令和生成目录见 [部署指南](cloudflare-deploy.md)。
-4. 构建阶段依次执行 Python 测试、剧本校验与回放、网页构建和浏览器冒烟测试；全部成功后才执行对应环境的部署／预览发布。Cloudflare 必须实际执行这些检查，不能假设另一个 GitHub Actions 工作流已经结束。
+4. Cloudflare 构建阶段依次执行 Python 测试、剧本校验与回放、网页构建和部署预检；全部成功后才执行对应环境的部署／预览发布。真实浏览器测试在 GitHub Actions 的 Ubuntu runner 执行，避免 Cloudflare 的系统依赖安装权限限制。合入 `develop`／`main` 前须确认全部 GitHub 检查通过，并在正式开通时配置为分支保护的必需检查。Cloudflare 原生构建不会等待 GitHub；直接部署功能分支时，两处检查结果分别确认。
 5. 生产部署凭据仅由 Cloudflare 构建环境管理；网页产物只包含游戏运行文件、剧本和素材。保留 `main`／`develop` 现有 PR 审阅与保护流程。
 6. 通过一次真实成员分支更新、一次 `develop` 集成及一次 `main` 发布验证整条链路；记录部署 URL、对应提交与失败构建保留旧版的结果。
 
