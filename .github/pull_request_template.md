@@ -8,7 +8,11 @@
 - [ ] ZQO 运行时核心/插件接口
 - [ ] ZRS 解析/界面/道具插件
 - [ ] ZC 推理插件/剧本A/整合
-- [ ] LJ 存档/回放/剧本B
+- [ ] LQ 存档/回放/剧本B
+
+## AI 使用
+
+<!-- 一句话：用了什么工具做了哪部分，人工检查或修改了什么；没用写“无” -->
 
 ## 验证
 
@@ -25,7 +29,5 @@ python main.py validate
 - [ ] 新功能有对应测试（正常、边界、异常输入各至少一例）
 - [ ] 改了 `taleloom/model.py` 或引擎公开接口？若是，已加 `contract` 标签并更新 `docs/contracts.md`
 - [ ] 改了剧本？`python main.py replay <剧本>` 通过，新结局有通关脚本
-- [ ] `docs/requirements.md` 中对应需求的状态已更新
-- [ ] 交接记录 `docs/handoffs/<缩写>.md` 已更新
-- [ ] 用了 AI？已在 `docs/ai-usage.md` 记一行
+- [ ] 只含代码相关改动（文档、PPT、报告留到最终合并阶段）
 - [ ] 已请审阅人：<!-- 见 docs/team-tasks.md 第 6 节的审阅轮换 -->

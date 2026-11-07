@@ -57,17 +57,17 @@ docs/                   分工、接口、剧本格式、需求、测试报告�
 | 编号 | 成员 | 负责模块 | 记录 |
 | --- | --- | --- | --- |
 | 1 | YHT | 剧本格式、加载与静态校验 | [YHT](docs/handoffs/yht.md) |
-| 2 | ZQO | 运行时核心与插件接口；总体架构 | [ZQO](docs/handoffs/zqo.md) |
+| 2 | ZQO | 运行时核心与插件接口 | [ZQO](docs/handoffs/zqo.md) |
 | 3 | ZRS | 命令解析、命令行界面、道具谜题插件 | [ZRS](docs/handoffs/zrs.md) |
 | 4 | ZC | 推理插件、剧本 A《雾港旧案》、整合与发布 | [ZC](docs/handoffs/zc.md) |
-| 5 | LJ | 存档、通关回放与测试报告、剧本 B《深空回声》 | [LJ](docs/handoffs/lj.md) |
+| 5 | LQ | 存档、通关回放与探索测试、剧本 B《深空回声》 | [LQ](docs/handoffs/lq.md) |
 
-具体任务、时间安排、代码审查轮换与演示分配见 [五人任务安排](docs/team-tasks.md)。
+具体任务、时间安排与代码审查轮换见 [五人任务安排](docs/team-tasks.md)。模块阶段各成员只做代码；文档、PPT、视频与报告在最终合并阶段统一完成。
 
 ## 项目文档
 
 - [项目说明](docs/project-brief.md)：为什么做引擎、两个剧本、灵感来源与原创性、范围
-- [五人任务安排](docs/team-tasks.md)：分工大纲、必做与加分项、时间线、审阅轮换、演示分配、评分对应
+- [五人任务安排](docs/team-tasks.md)：分工大纲、必做与加分项、时间线、审阅轮换、最终合并阶段、评分对应
 - [接口约定](docs/contracts.md)：模块依赖、引擎与插件接口、修改接口的流程
 - [剧本格式](docs/story-format.md)：写剧本的完整字段说明
 - [协作流程](docs/collaboration.md)：分支、PR、测试分层、CI、提交信息

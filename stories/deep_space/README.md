@@ -1,6 +1,6 @@
 # 《深空回声》剧情大纲
 
-负责人：LJ。插件：`puzzle`。本文件给组员看，含剧透。
+负责人：LQ。插件：`puzzle`。本文件给组员看，含剧透。
 
 ## v0 序章（当前）
 
@@ -14,7 +14,7 @@
 | `escape` | 修好面板并进入逃生舱 | `walkthroughs/escape.txt` |
 | `suffocate` | 氧气耗尽 | `walkthroughs/no_tank.txt`、`walkthroughs/wander.txt` |
 
-## 扩写计划（LJ 填写）
+## 扩写计划（LQ 填写）
 
 目标：8–12 个场景、两种资源（氧气与电量）、至少 3 个结局；用上 `use A on B`、文本插值（显示剩余氧气）和随机事件。
 

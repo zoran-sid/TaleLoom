@@ -1,8 +1,8 @@
 # 需求与测试对应表
 
-课程“优良”等级要求“符合规格与测试要求”。每条需求有编号、负责人和验证它的测试；新增需求时先写这一行，再写测试，再写实现。状态：✅ 已实现并通过测试 / 🔲 计划中。
+课程“优良”等级要求“符合规格与测试要求”。每条需求有编号、负责人和验证它的测试。模块阶段成员只写测试，本表在最终合并阶段按测试统一补齐。状态：✅ 已实现并通过测试 / 🔲 计划中。
 
-编号前缀：`Y` YHT、`Q` ZQO、`R` ZRS、`C` ZC、`L` LJ、`N` 非功能需求。
+编号前缀：`Y` YHT、`Q` ZQO、`R` ZRS、`C` ZC、`L` LQ、`N` 非功能需求。
 
 ## 功能需求
 
@@ -32,20 +32,20 @@
 | FR-C2 | 指认：时机条件、别名、按证据决定结局、默认结局 | ZC | `test_mystery.py` | ✅ |
 | FR-C3 | 深入搜证、审问、分幕、指认理由 | ZC | — | 🔲 |
 | FR-C4 | 剧本 A 全部结局可通关 | ZC | `tests/integration/test_stories.py`、`stories/fog_harbor/walkthroughs/` | ✅（序章 3/3） |
-| FR-L1 | 存档读档；损坏、缺字段、其他剧本的存档给出明确错误 | LJ | `tests/lj/test_save.py` | ✅ |
-| FR-L2 | 剧本修改后读旧档给出提示 | LJ | `test_save.py` | ✅ |
-| FR-L3 | 通关脚本回放与结局覆盖率 | LJ | `tests/lj/test_replay.py` | ✅ |
-| FR-L4 | 多存档槽、自动存档、存档列表 | LJ | — | 🔲 |
-| FR-L5 | 随机探索测试 | LJ | — | 🔲 |
-| FR-L6 | 剧本 B 全部结局可通关 | LJ | `tests/integration/test_stories.py`、`stories/deep_space/walkthroughs/` | ✅（序章 2/2） |
+| FR-L1 | 存档读档；损坏、缺字段、其他剧本的存档给出明确错误 | LQ | `tests/lq/test_save.py` | ✅ |
+| FR-L2 | 剧本修改后读旧档给出提示 | LQ | `test_save.py` | ✅ |
+| FR-L3 | 通关脚本回放与结局覆盖率 | LQ | `tests/lq/test_replay.py` | ✅ |
+| FR-L4 | 多存档槽、自动存档、存档列表 | LQ | — | 🔲 |
+| FR-L5 | 随机探索测试 | LQ | — | 🔲 |
+| FR-L6 | 剧本 B 全部结局可通关 | LQ | `tests/integration/test_stories.py`、`stories/deep_space/walkthroughs/` | ✅（序章 2/2） |
 
 ## 非功能需求
 
 | 编号 | 需求 | 负责 | 验证 | 状态 |
 | --- | --- | --- | --- | --- |
 | NFR-1 | 只依赖 Python 3.10+ 标准库 | 全体 | CI `full suite (Python 3.10)` | ✅ |
-| NFR-2 | 任何玩家输入都不导致程序崩溃 | ZRS、LJ | `test_cli.py`；随机探索（FR-L5） | ✅ 部分 |
-| NFR-3 | 每条命令的处理在 100 ms 内完成（演示电脑） | ZQO | 计划在 LJ 的随机探索中计时 | 🔲 |
-| NFR-4 | 存档写入中断不损坏旧存档（先写临时文件再替换） | LJ | `test_save.py::test_no_temp_file_left_behind` | ✅ |
+| NFR-2 | 任何玩家输入都不导致程序崩溃 | ZRS、LQ | `test_cli.py`；随机探索（FR-L5） | ✅ 部分 |
+| NFR-3 | 每条命令的处理在 100 ms 内完成（演示电脑） | ZQO | 计划在 LQ 的随机探索中计时 | 🔲 |
+| NFR-4 | 存档写入中断不损坏旧存档（先写临时文件再替换） | LQ | `test_save.py::test_no_temp_file_left_behind` | ✅ |
 | NFR-5 | 新增剧本无需修改 Python 代码 | YHT、ZQO | 两个剧本共用引擎；`test_stories.py::test_two_stories_on_one_engine` | ✅ |
 | NFR-6 | 首次使用有操作提示，所有命令可通过“帮助”查到 | ZRS | 组外试玩记录 | 🔲 |

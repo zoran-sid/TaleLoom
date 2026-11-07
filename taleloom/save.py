@@ -1,4 +1,4 @@
-"""存档与读档。负责人：LJ。
+"""存档与读档。负责人：LQ。
 
 存档是 JSON：{"save_version", "story_id", "fingerprint", "state"}。
 fingerprint 由剧本结构计算，剧本被修改后读旧档会给出提示而不是崩溃。

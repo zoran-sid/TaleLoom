@@ -1,4 +1,4 @@
-"""LJ：通关脚本回放。"""
+"""LQ：通关脚本回放。"""
 
 import tempfile
 import unittest

@@ -1,6 +1,6 @@
 # 剧本格式 v1（草案）
 
-维护：YHT。这是 v0 骨架实际支持的格式；YHT 在第 1–2 周补全字段说明与作者快速上手。完整例子见 `stories/fog_harbor/story.json` 与 `stories/deep_space/story.json`。
+格式由 YHT 的代码定义。这是 v0 骨架实际支持的格式；模块阶段新增的字段先写在代码文档字符串中，本文件在最终合并阶段统一补全。完整例子见 `stories/fog_harbor/story.json` 与 `stories/deep_space/story.json`。
 
 写完剧本先运行：
 

@@ -4,7 +4,7 @@
 
 ## 1 开始工作
 
-1. 阅读 `README.md`、`docs/team-tasks.md`（分工）、`docs/contracts.md`（接口）、`docs/collaboration.md`（Git 与测试流程）和自己的 `docs/handoffs/<缩写小写>.md`。课程原文在 `docs/course-requirements.md`。
+1. 阅读 `README.md`、`docs/team-tasks.md`（分工）、`docs/contracts.md`（接口）、`docs/collaboration.md`（Git 与测试流程）。课程原文在 `docs/course-requirements.md`。
 2. 运行 `git status --short --branch` 和 `git log -5 --oneline`，保留已有修改；从最新 `develop` 创建 `<缩写小写>/<主题>` 分支。
 3. 确认当前成员的缩写，只在其负责的文件内工作（`docs/team-tasks.md` 第 1 节）。
 
@@ -12,12 +12,13 @@
 
 - 项目：TaleLoom 织境，数据驱动的命令行文字冒险引擎；同一个引擎运行两个原创剧本《雾港旧案》（推理搜证）与《深空回声》（资源与道具解谜）。
 - 运行环境：Python 3.10+，**只用标准库**（课程要求标准 Python 环境）。入口 `main.py`。
-- 成员：YHT、ZQO、ZRS、ZC、LJ。文档只用缩写，不写全名和学号。
+- 成员：YHT、ZQO、ZRS、ZC、LQ。文档只用缩写，不写全名和学号。
 - 剧本内容全部原创。剧本杀资料只借鉴玩法机制，不改编情节、人物或文字。
 
 ## 3 写代码的规则
 
-- 先写需求（`docs/requirements.md`），再写会失败的测试，再写实现。
+- 模块阶段只做代码：实现、测试、剧本 JSON 与通关脚本、文档字符串。PDF、PPT、视频、报告、说明文档、需求表、测试报告、交接记录在最终合并阶段统一完成（`docs/team-tasks.md` 第 7 节），模块阶段不要生成。
+- 先写会失败的测试，再写实现；测试名称写清楚验证的行为。
 - 单元测试放 `tests/<缩写小写>/`，只用 `tests/fixtures.py` 或测试内构造的数据，不读 `stories/`。
 - 引擎与插件不调用 `print`/`input`，不读写文件；输出通过 `Output`/`Context` 返回。
 - 修改 `taleloom/model.py`、`Engine` 公开方法、`Mechanic` 基类或已有剧本字段的含义，按 `docs/contracts.md` 第 5 节走 contract PR，并在同一个 PR 内修好所有受影响的代码和测试。
@@ -37,7 +38,6 @@ git diff --check
 
 ## 5 记录
 
-- 完成实质任务后更新 `docs/handoffs/<缩写小写>.md`：成果路径、需求编号、验证命令与结果、对他人的影响。
-- 每次有实质性的 AI 协助，在 `docs/ai-usage.md` 加一行，写明人工核验和修改了什么。
+- 模块阶段的记录只写在 PR 描述里：改了什么、验证命令与结果、对他人的影响、是否用了 AI 以及人工改了什么（一句话）。最终合并阶段据此统一整理文档。
 - 只记录真实完成的工作和真实运行过的测试；不代写其他成员的认可、审阅意见或贡献。
 - 审阅他人 PR 时，意见写在 PR 评论中，由他人决定是否修改。
