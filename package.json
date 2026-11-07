@@ -1,0 +1,25 @@
+{
+  "name": "taleloom-web",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "prepare:web": "python3 -B tools/build_web.py",
+    "dev": "npm run prepare:web && vite --host 127.0.0.1",
+    "build": "npm run prepare:web && cf build",
+    "test:web": "playwright test",
+    "check:deploy": "python3 -B tools/check_web.py && npm run build && npm run test:web && cf deploy --prebuilt --mode production --dry-run",
+    "build:cloudflare": "npm ci && playwright install --with-deps chromium && npm run check:deploy",
+    "deploy": "cf deploy --prebuilt --mode production",
+    "deploy:preview": "cf workers versions create --prebuilt --mode production"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "2.0.0-beta.v.12",
+    "@playwright/test": "1.65.0",
+    "cf": "1.0.0-beta.28",
+    "pyodide": "314.0.7",
+    "vite": "8.3.6"
+  }
+}

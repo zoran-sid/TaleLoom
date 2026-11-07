@@ -1,0 +1,104 @@
+# 网页试玩与 Cloudflare 自动发布
+
+本分支提供可构建、可试玩、可做部署预检的序章版本。Cloudflare 账号连接、首次云端发布和实际网址由管理员在下面的步骤中完成。`main.py` 保留现有行为，桌面 Tkinter GUI 继续按小组计划开发。
+
+## 1 本地打开
+
+Python 3.10+；Node.js 使用根目录 `.node-version` 指定的 24.22.1（最低 22.18）。网页依赖与 Python 核心分开。
+
+在 VS Code 打开仓库，在终端运行：
+
+```bash
+npm ci
+npm run dev -- --open
+```
+
+浏览器打开后可选择剧本，点击选项、使用／组合道具、指认、保存／读取进度及导入／导出 JSON。存档在当前浏览器中，每个故事一个槽；请点击“保存进度”。换设备时先导出。开发服务器结束后网页停止服务；Cloudflare 部署后不依赖任何成员的电脑。
+
+## 2 合并与开通顺序
+
+1. 先审阅并合并共享接口 PR #3 到 `develop`。
+2. 再审阅并合并网页部署基础 PR 到 `develop`，确认包括 `web` 在内的全部检查通过。
+3. 按现有协作流程从 `develop` 向 `main` 发发布 PR。小组确认后合并。
+4. 到 Cloudflare 连接 GitHub，使用下面参数创建正式项目。
+
+在第 3 步之前，远端 `main` 仍是旧骨架。想先试部署，可创建独立测试 Worker 并选择 `zc/web-deploy-foundation`；Worker 名称要与配置的 `taleloom` 一致。正式发布时将该项目生产分支改为 `main`，不要同时创建同名项目。
+
+## 3 Cloudflare 页面逐项填写
+
+在 **Workers & Pages → Create application → Import a repository / Connect Git** 选择 GitHub，授权 `zoran-sid/TaleLoom`。选择 **Workers**。
+
+| 字段 | 值 |
+| --- | --- |
+| Repository | `zoran-sid/TaleLoom` |
+| Worker / Project name | `taleloom` |
+| Production branch | `main`（需要先包含本实现） |
+| Root directory | 仓库根目录，留空或 `/` |
+| Build command | `npm run build:cloudflare` |
+| Deploy command | `npm run deploy` |
+| Non-production branch deploy command | `npm run deploy:preview` |
+| Build variable `PYTHON_VERSION` | `3.12` |
+| Build variable `SKIP_DEPENDENCY_INSTALL` | `1`（安装已包含在构建命令中） |
+| Build variable `PLAYWRIGHT_BROWSERS_PATH` | `0`（浏览器随本次依赖安装，避免跨版本缓存） |
+
+Node 版本由 `.node-version` 读取，也可在 Build variables 填 `NODE_VERSION=24.22.1`。这条路线无需填写 Pages 的 output directory。`cf build` 自动生成 `.cloudflare/output/v0/`，部署命令直接发布经过测试的这份产物。
+
+开启非生产分支构建，至少纳入 `develop`；成员分支按需纳入。还没有合入网页配置的旧成员分支先保持原有 GitHub 模块测试，更新到新版 `develop` 后再开启网页预览。构建环境可以访问仓库；不要把 Cloudflare token 放进前端环境变量或源码。使用 Git 集成创建／管理的构建授权。
+
+构建依次运行：锁定依赖安装 → Chromium 及 Linux 系统依赖安装 → 全部 Python 测试 → 剧本校验 → 全部回放 → 静态网页打包 → 真实浏览器验收 → 部署预检。任一步失败都不执行部署，构建日志保留失败原因。
+
+当前非生产命令用 `cf workers versions create` 上传版本，生成版本预览 URL，不切换正式流量；`previewUrls` 已开启。这里使用 **Version preview URLs**，不是另一个需要专用 preview build 的 `cf previews deploy` 命令。生产命令 `cf deploy` 才更新正式版本。Cloudflare CLI 和 Vite 插件目前为 beta，仓库锁定已验证版本，升级须重新验收。
+
+## 4 首次发布验收
+
+- 等待第一次 Build 与 Deploy 都成功，打开控制台给出的 `workers.dev` 地址。
+- 分别进入两个故事，完成一次行动、存档、刷新继续；用手机宽度检查选项和笔记。
+- 推送非生产分支后打开构建日志中的版本预览 URL，确认正式地址保持原版本。
+- 后续通过发布 PR 更新 `main`，核对部署提交号与固定网址的新版本。
+- 若构建失败，查看日志并修复；保留当前成功版本，继续使用相同发布流程。
+
+发布前可本地执行同一验收（不需要 Cloudflare 登录）：
+
+```bash
+npm ci
+npx playwright install chromium
+npm run check:deploy
+```
+
+Linux 本地或 CI 使用 `npx playwright install --with-deps chromium` 安装系统依赖。Cloudflare 构建命令已包含该步骤；若账号构建环境限制系统依赖安装，保留浏览器检查并按失败日志补齐构建环境，不能跳过检查来发布。
+
+## 5 与成员任务的边界
+
+| 模块 | 当前部署基础 | 正式模块如何接入 |
+| --- | --- | --- |
+| Python 核心、加载、校验、解析、存档、剧本 | 复用现有文件；没有修改这些文件 | 各成员继续原任务 |
+| 会话 | `web/runtime/legacy_session.py` 包装现有 v0 Engine | ZQO 实现 `taleloom/session.py` 后，在 `web/runtime/factory.py` 显式切换；先通过接口及回放测试 |
+| 运行桥接 | `web/runtime/bridge.py`、`worker.js`、`client.js` | ZC 维护 JSON 消息和后台 Python；ZRS 可直接使用 `GameClient` |
+| 界面 | 根目录 `index.html`、`web/preview/` 中可替换的最小试玩界面 | ZRS 继续开发 `taleloom/gui/`、`web/ui/`、`web/styles/`；接入时由 ZC 调整网页入口 |
+| 存储 | `web/preview/storage.js` 单槽 localStorage；兼容既有 v1 JSON | LQ 交付 `web/storage/` 和纯数据编码器后替换；不占用其正式文件 |
+| 构建／发布 | `tools/build_web.py`、配置文件、新增 `web.yml` | ZC 维护；原 `checks.yml` 保持原样 |
+
+当前适配支持现有场景选择、线索、指认、使用与组合道具；深空序章的氧气显式列为公开资源。新插件、新资源显示、随机与文本变体由正式模块按契约接入并补测试；不会自动把全部内部变量或配方显示给玩家。原剧本中的少量 CLI 操作提示在展示层转换为按钮说明，剧本 JSON 保持原样。
+
+游戏包使用显式白名单，包含所需 Python 模块和 `story.json`，排除桌面界面、测试、攻略、存档、环境文件和部署凭据。新增正式模块时，ZC 同步 `tools/build_web.py` 的 `CORE` 列表。当前未打包可选图片／音效，素材阶段再按允许的类型与路径接入。
+
+独立验证入口：
+
+```bash
+python3 -B -m unittest tests.zc.test_web_session tests.zc.test_web_build
+python3 -B -m unittest tests.integration.test_web_playthroughs
+npm run build
+npm run test:web
+```
+
+`tools/web_vectors.py` 从团队维护的通关脚本生成图形操作，逐步比对原生引擎与会话状态；浏览器再次执行这些操作并比较存档，包括指纹。新增不受支持的动作会使发布检查失败，提醒先完成对应图形操作。
+
+## 6 工具与来源
+
+- [Workers Builds 配置](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/)：原生 Git 集成和构建命令。
+- [构建分支](https://developers.cloudflare.com/workers/ci-cd/builds/build-branches/)：生产与非生产构建。
+- [构建镜像](https://developers.cloudflare.com/workers/ci-cd/builds/build-image/)：Node／Python 版本变量、依赖安装设置和 Ubuntu 环境。
+- [Cloudflare CLI 构建与部署](https://developers.cloudflare.com/cf/projects/)：`--prebuilt --mode production`、无上传预检及版本预览。
+- [Pyodide Web Worker](https://pyodide.org/en/stable/usage/webworker.html)：模块型 Worker 运行 Python；运行时文件随网站自托管。
+
+运行时版本和许可证见 `web/runtime/THIRD_PARTY_NOTICES.txt`，依赖及完整性校验固定在 `package-lock.json`。网页不从第三方 CDN 下载运行时，不需要在线 Python 服务器。

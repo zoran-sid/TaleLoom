@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f2ee">
+  <meta name="description" content="TaleLoom 织境：两段原创文字冒险。在雾港追寻真相，在深空寻找归途。">
+  <title>TaleLoom 织境 · 文字冒险</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%232e3934'/%3E%3Ctext x='16' y='46' fill='%23f4f1ea' font-size='40' font-family='serif'%3ET%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+  <header class="masthead">
+    <a class="wordmark" href="/" aria-label="TaleLoom 织境首页">TaleLoom <span>织境</span></a>
+    <span class="edition">原创文字冒险 · 序章</span>
+  </header>
+  <main id="app">
+    <div id="status-panel" class="status-panel" hidden>
+      <p id="status" role="status" aria-live="polite"></p>
+      <button id="retry" hidden>重试加载</button>
+    </div>
+    <section id="library" aria-labelledby="library-title">
+      <div class="intro">
+        <p class="kicker">从一个选择，走进故事</p>
+        <h1 id="library-title">翻开下一页。</h1>
+        <p class="intro-copy">雾里的旅馆，失去联络的飞船。<br>读一段故事，留下你的选择。</p>
+      </div>
+      <div class="shelf-heading"><h2>选择你的故事</h2><span>两部原创序章</span></div>
+      <div id="stories" class="stories"></div>
+      <p class="library-note">点击选项即可游玩。进度可保存在本机，也可导出带走。</p>
+    </section>
+    <section id="game" hidden aria-labelledby="scene-title">
+      <nav class="game-nav" aria-label="游戏操作">
+        <button id="home" class="text-button">← 返回书架</button>
+        <span id="story-title"></span>
+        <div class="save-controls">
+          <button id="save">保存进度</button>
+          <button id="load">读取存档</button>
+          <button id="export">导出</button>
+          <button id="import">导入</button>
+          <input id="import-file" type="file" accept="application/json,.json" hidden>
+        </div>
+      </nav>
+      <div class="reading-layout">
+        <article class="page">
+          <div class="chapter-line"><span id="chapter">故事进行中</span><span id="turn"></span></div>
+          <h1 id="scene-title" tabindex="-1"></h1>
+          <div id="scene-text" class="prose"></div>
+          <div id="messages" class="messages" aria-live="polite"></div>
+          <section id="choice-section" aria-labelledby="choices-title">
+            <h2 id="choices-title" class="section-label">你的下一步</h2>
+            <div id="choices" class="choices"></div>
+          </section>
+          <div id="actions" class="actions"></div>
+          <div id="ending" class="ending" hidden>
+            <p>这一页，已写下结局。</p>
+            <button id="restart" class="primary">重新开始</button>
+            <button id="finish">返回书架</button>
+          </div>
+        </article>
+        <aside class="notebook" aria-label="随身笔记">
+          <h2>随身笔记</h2>
+          <div id="resources"></div>
+          <section><h3>背包</h3><div id="inventory"></div></section>
+          <section><h3>已发现的线索</h3><div id="clues"></div></section>
+          <p class="notebook-note">阅读笔记不会消耗回合。</p>
+        </aside>
+      </div>
+    </section>
+  </main>
+  <footer><span>TaleLoom · 织境</span><span>故事由你推进</span><a href="/THIRD_PARTY_NOTICES.txt">开源说明</a></footer>
+  <noscript>请启用 JavaScript，以加载故事与游戏界面。</noscript>
+  <script type="module" src="/web/preview/app.js"></script>
+</body>
+</html>

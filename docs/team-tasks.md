@@ -19,6 +19,8 @@
 
 新增路径归属见 [实施要求第 5 节](gui-web-plan.md#5-目录归属与工作量)：YHT 负责共享数据类型；ZQO 负责会话与展示数据；ZRS 负责桌面／网页展示；ZC 负责启动、浏览器 Python 桥接与构建部署；LQ 负责存档适配。共用接口在 `taleloom/ui_contract.py`，固定样例在 `tests/ui_fakes.py`；其余新路径在对应实现 PR 创建。
 
+部署基础已在独立 `web/runtime/` 与 `web/preview/` 提供。各成员继续上述正式模块任务；替换兼容层的接入点见 [部署指南第 5 节](cloudflare-deploy.md#5-与成员任务的边界)。最小试玩界面与单槽存储不计作 ZRS／LQ 的任务完成。
+
 ## 2 架构与依赖方向
 
 下图为已有 CLI 架构。目标新增 Tkinter 与浏览器界面，通过共享会话接口接入同一 Python 核心；见 [实施要求](gui-web-plan.md)。

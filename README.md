@@ -7,7 +7,7 @@
 
 INT6181 应用 Python 程式设计 · 小组项目。
 
-## 最新交付要求（待实现）
+## 交付目标与当前状态
 
 - 桌面：在 VS Code 中运行 `main.py`，弹出简洁 GUI，选择剧本后全程点击游玩。
 - 网页：访问网址直接游玩，通过 Pyodide 共用 Python 核心与剧本；桌面与网页共用存档格式。
@@ -16,7 +16,9 @@ INT6181 应用 Python 程式设计 · 小组项目。
 
 独立模块开发入口：`taleloom/ui_contract.py`、`tests/ui_fakes.py`，可运行 `python -B -m unittest tests.integration.test_ui_contract -v`。
 
-完整架构、成员职责、部署链路和验收条件见 [GUI／网页实施要求](docs/gui-web-plan.md)。当前仓库仍是可运行的 CLI 骨架；已提供共享接口与测试替身，GUI、真实会话适配和网站仍待实现。
+当前分支已提供可点击游玩的网页序章、浏览器 Python 运行层和 Cloudflare 构建配置。两个剧本继续使用原有引擎与存档格式。桌面 GUI 和各成员的正式扩展模块继续按分工开发。
+
+本地网页：安装 Node（版本见 `.node-version`）与 Python 后运行 `npm ci`，再运行 `npm run dev -- --open`。发布设置、合并顺序与成员接入点见 [网页试玩与 Cloudflare 自动发布](docs/cloudflare-deploy.md)。账号首次连接／正式网址仍待管理员完成。完整目标见 [GUI／网页实施要求](docs/gui-web-plan.md)。
 
 ## 当前版本运行（CLI）
 
@@ -77,6 +79,7 @@ docs/                   分工、接口、剧本格式、需求、测试报告�
 
 ## 项目文档
 
+- [网页试玩与 Cloudflare 自动发布](docs/cloudflare-deploy.md)：当前实现、配置参数、发布检查与模块替换入口
 - [GUI／网页实施要求](docs/gui-web-plan.md)：最新范围、共享核心、异步分工、Cloudflare 自动部署与验收
 - [项目说明](docs/project-brief.md)：为什么做引擎、两个剧本、灵感来源与原创性、范围
 - [五人任务安排](docs/team-tasks.md)：分工大纲、必做与加分项、时间线、审阅轮换、最终合并阶段、评分对应
