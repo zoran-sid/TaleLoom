@@ -58,6 +58,12 @@ class ValidatorTest(unittest.TestCase):
         raw["scenes"][0]["choices"][1]["id"] = "take"
         self.assertTrue(any("选项 id 重复" in m for m in messages(parse_story(raw))))
 
+    def test_duplicate_mechanic_is_reported_not_crash(self):
+        story = mini_story()
+        story.mechanics.extend(["mystery", "mystery"])
+        msgs = messages(story)
+        self.assertTrue(any("机制插件重复启用：mystery" in m for m in msgs), msgs)
+
 
 if __name__ == "__main__":
     unittest.main()

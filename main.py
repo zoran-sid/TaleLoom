@@ -3,6 +3,7 @@
     python main.py                        选择剧本并开始游戏
     python main.py play fog_harbor        直接游玩某个剧本
     python main.py validate               校验 stories/ 下全部剧本
+    python main.py graph fog_harbor       输出剧本的 Mermaid 场景图
     python main.py replay fog_harbor      回放该剧本的全部通关脚本
 """
 
@@ -14,7 +15,7 @@ from pathlib import Path
 
 from taleloom import cli, replay
 from taleloom.loader import StoryFormatError, load_story
-from taleloom.validator import errors, validate
+from taleloom.validator import errors, format_report, render_mermaid, validate
 
 ROOT = Path(__file__).resolve().parent
 STORIES = ROOT / "stories"
@@ -67,18 +68,25 @@ def cmd_validate(names: list[str]) -> int:
         try:
             story = load_story(d)
         except StoryFormatError as exc:
-            print(f"✗ {d.name}: {exc}")
+            print(f"[失败] {d.name}: {exc}")
             failed += 1
             continue
         issues = validate(story)
         bad = errors(issues)
-        mark = "✗" if bad else "✓"
+        mark = "[失败]" if bad else "[通过]"
         print(f"{mark} {d.name}《{story.title}》 场景 {len(story.scenes)}，结局 {len(story.endings())}，"
               f"错误 {len(bad)}，警告 {len(issues) - len(bad)}")
-        for issue in issues:
-            print(f"    {issue}")
+        report = format_report(issues, story)
+        if report:
+            print(report)
         failed += bool(bad)
     return 1 if failed else 0
+
+
+def cmd_graph(name: str) -> int:
+    story = load_story(resolve(name))
+    print(render_mermaid(story))
+    return 0
 
 
 def cmd_replay(name: str, verbose: bool) -> int:
@@ -89,7 +97,7 @@ def cmd_replay(name: str, verbose: bool) -> int:
         print("没有通关脚本（stories/<剧本>/walkthroughs/*.txt）。")
         return 1
     for r in results:
-        print(f"{'✓' if r.ok else '✗'} {r.walkthrough}: {r.message}")
+        print(f"{'[通过]' if r.ok else '[失败]'} {r.walkthrough}: {r.message}")
         if verbose or not r.ok:
             print("    " + "\n    ".join(r.transcript))
     all_endings, covered = replay.ending_coverage(story, results)
@@ -104,6 +112,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("story", nargs="?")
     v = sub.add_parser("validate", help="校验剧本")
     v.add_argument("stories", nargs="*")
+    g = sub.add_parser("graph", help="输出剧本的 Mermaid 场景图")
+    g.add_argument("story")
     r = sub.add_parser("replay", help="回放通关脚本")
     r.add_argument("story")
     r.add_argument("-v", "--verbose", action="store_true")
@@ -111,6 +121,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "validate":
             return cmd_validate(args.stories)
+        if args.command == "graph":
+            return cmd_graph(args.story)
         if args.command == "replay":
             return cmd_replay(args.story, args.verbose)
         return cmd_play(getattr(args, "story", None))
