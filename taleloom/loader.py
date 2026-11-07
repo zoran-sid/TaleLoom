@@ -1,7 +1,7 @@
 """剧本加载：JSON 文件 → model.Story。
 
-负责人：YHT。只做格式解析与类型检查；剧情逻辑上的问题（跳转目标不存在、
-场景不可达等）由 validator 负责。
+负责人：YHT。这里只做格式解析与字段类型检查；剧情逻辑上的问题
+（跳转目标不存在、场景不可达等）由 validator 负责。
 """
 
 from __future__ import annotations
@@ -17,12 +17,19 @@ CORE_KEYS = {
     "vars", "every_turn", "triggers", "meta",
 }
 
+_MISSING = object()
+_TYPE_NAMES = {dict: "对象", list: "数组", str: "字符串", bool: "布尔值", int: "整数", float: "数值"}
+
 
 class StoryFormatError(ValueError):
-    """剧本文件无法解析。message 带有出错位置，例如 scenes[2].choices[0]。"""
+    """剧本文件无法解析。message 带有出错位置，例如 $.scenes[2].choices[0]。"""
 
 
 def find_story_file(path: str | Path) -> Path:
+    """把剧本目录（或 story.json 路径）解析成实际文件路径。
+
+    找不到文件时抛 StoryFormatError，而不是让调用方看到 FileNotFoundError。
+    """
     p = Path(path)
     if p.is_dir():
         p = p / "story.json"
@@ -32,24 +39,50 @@ def find_story_file(path: str | Path) -> Path:
 
 
 def load_story(path: str | Path) -> Story:
+    """读取 UTF-8 的 story.json 并解析成 Story。
+
+    JSON 语法错误会报告行列号，并附上出错行的原文，方便剧本作者定位。
+    """
     file = find_story_file(path)
     try:
-        raw = json.loads(file.read_text(encoding="utf-8"))
+        text = file.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise StoryFormatError(
+            f"{file}: 不是有效的 UTF-8 文件（第 {exc.start} 字节）\n"
+            "建议：用 UTF-8 编码重新保存剧本文件。"
+        ) from exc
+    try:
+        raw = json.loads(text)
     except json.JSONDecodeError as exc:
-        raise StoryFormatError(f"{file}: JSON 语法错误，第 {exc.lineno} 行第 {exc.colno} 列：{exc.msg}") from exc
+        lines = text.splitlines()
+        line = lines[exc.lineno - 1].strip() if 0 < exc.lineno <= len(lines) else ""
+        detail = f"{file}: JSON 语法错误，第 {exc.lineno} 行第 {exc.colno} 列：{exc.msg}"
+        if line:
+            detail += f"\n  第 {exc.lineno} 行：{line}"
+        detail += "\n建议：检查该行附近的逗号、引号与括号是否配对。"
+        raise StoryFormatError(detail) from exc
     return parse_story(raw)
 
 
 def parse_story(raw: Any) -> Story:
+    """把已经解码的 JSON 对象解析成 Story，所有字段都做类型检查。
+
+    出错时抛 StoryFormatError，位置使用 $.scenes[0].choices[1] 这样的路径。
+    """
     _expect(raw, dict, "$")
     version = raw.get("format_version", FORMAT_VERSION)
+    _expect(version, int, "$.format_version")
     if version != FORMAT_VERSION:
         raise StoryFormatError(f"$.format_version: 引擎支持 {FORMAT_VERSION}，剧本为 {version}")
+
     for key in ("id", "title", "start"):
-        _expect(raw.get(key), str, f"$.{key}")
+        _str(raw, key, "$", non_empty=key in ("id", "start"))
 
     scenes: dict[str, Scene] = {}
-    for i, s in enumerate(_list(raw, "scenes", "$")):
+    scene_items = _list(raw, "scenes", "$")
+    if not scene_items:
+        raise StoryFormatError("$.scenes: 至少需要一个场景")
+    for i, s in enumerate(scene_items):
         scene = _scene(s, f"$.scenes[{i}]")
         if scene.id in scenes:
             raise StoryFormatError(f"$.scenes[{i}].id: 场景 id 重复：{scene.id}")
@@ -57,32 +90,30 @@ def parse_story(raw: Any) -> Story:
 
     items: dict[str, Item] = {}
     for i, it in enumerate(_list(raw, "items", "$", required=False)):
-        path = f"$.items[{i}]"
-        _expect(it, dict, path)
-        item = Item(
-            id=_str(it, "id", path),
-            name=_str(it, "name", path),
-            description=it.get("description", ""),
-            aliases=list(it.get("aliases", [])),
-        )
+        item = _item(it, f"$.items[{i}]")
+        if item.id in items:
+            raise StoryFormatError(f"$.items[{i}].id: 物品 id 重复：{item.id}")
         items[item.id] = item
 
     triggers = []
+    trigger_ids: set[str] = set()
     for i, t in enumerate(_list(raw, "triggers", "$", required=False)):
-        path = f"$.triggers[{i}]"
-        _expect(t, dict, path)
-        _expect(t.get("when"), dict, f"{path}.when")
-        triggers.append(Trigger(
-            when=t["when"],
-            effects=_effects(t.get("effects", []), f"{path}.effects"),
-            once=bool(t.get("once", True)),
-            id=t.get("id", f"trigger{i}"),
-        ))
+        trigger = _trigger(t, f"$.triggers[{i}]", i)
+        if trigger.id in trigger_ids:
+            raise StoryFormatError(f"$.triggers[{i}].id: 触发器 id 重复：{trigger.id}")
+        trigger_ids.add(trigger.id)
+        triggers.append(trigger)
 
-    mechanics = raw.get("mechanics", [])
-    _expect(mechanics, list, "$.mechanics")
-    vars_ = raw.get("vars", {})
-    _expect(vars_, dict, "$.vars")
+    mechanics = _list(raw, "mechanics", "$", required=False)
+    seen_mechanics: set[str] = set()
+    for i, name in enumerate(mechanics):
+        _expect(name, str, f"$.mechanics[{i}]")
+        if name in seen_mechanics:
+            raise StoryFormatError(f"$.mechanics[{i}]: 机制插件重复：{name}")
+        seen_mechanics.add(name)
+    vars_ = _vars(raw.get("vars", {}))
+    meta = raw.get("meta", {})
+    _expect(meta, dict, "$.meta")
 
     return Story(
         id=raw["id"],
@@ -90,12 +121,12 @@ def parse_story(raw: Any) -> Story:
         start=raw["start"],
         scenes=scenes,
         items=items,
-        mechanics=[str(m) for m in mechanics],
-        initial_vars={str(k): v for k, v in vars_.items()},
+        mechanics=list(mechanics),
+        initial_vars=vars_,
         every_turn=_effects(raw.get("every_turn", []), "$.every_turn"),
         triggers=triggers,
         data={k: v for k, v in raw.items() if k not in CORE_KEYS},
-        meta=dict(raw.get("meta", {})),
+        meta=dict(meta),
         format_version=version,
     )
 
@@ -103,32 +134,69 @@ def parse_story(raw: Any) -> Story:
 def _scene(s: Any, path: str) -> Scene:
     _expect(s, dict, path)
     choices = []
-    for j, c in enumerate(s.get("choices", [])):
-        cpath = f"{path}.choices[{j}]"
-        _expect(c, dict, cpath)
-        when = c.get("when")
-        if when is not None:
-            _expect(when, dict, f"{cpath}.when")
-        choices.append(Choice(
-            id=c.get("id", f"c{j + 1}"),
-            text=_str(c, "text", cpath),
-            goto=c.get("goto"),
-            when=when,
-            effects=_effects(c.get("effects", []), f"{cpath}.effects"),
-            aliases=list(c.get("aliases", [])),
-            once=bool(c.get("once", False)),
-            message=c.get("message", ""),
-        ))
-    ending = s.get("ending")
-    if ending is not None:
-        _expect(ending, dict, f"{path}.ending")
+    raw_choices = s.get("choices", [])
+    _expect(raw_choices, list, f"{path}.choices")
+    for j, c in enumerate(raw_choices):
+        choices.append(_choice(c, f"{path}.choices[{j}]", j))
+
+    raw_ending = s.get("ending")
+    ending = None
+    if raw_ending is not None:
+        _expect(raw_ending, dict, f"{path}.ending")
+        ending = {"id": _str(raw_ending, "id", f"{path}.ending", non_empty=True)}
+        if "title" in raw_ending:
+            ending["title"] = _str(raw_ending, "title", f"{path}.ending")
+
     return Scene(
-        id=_str(s, "id", path),
-        title=s.get("title", ""),
+        id=_str(s, "id", path, non_empty=True),
+        title=_str(s, "title", path, default=""),
         text=_str(s, "text", path),
         choices=choices,
         on_enter=_effects(s.get("on_enter", []), f"{path}.on_enter"),
         ending=ending,
+    )
+
+
+def _choice(c: Any, path: str, index: int) -> Choice:
+    _expect(c, dict, path)
+    goto = c.get("goto")
+    if goto is not None:
+        _expect(goto, str, f"{path}.goto")
+        if not goto.strip():
+            raise StoryFormatError(f"{path}.goto: 跳转目标不能为空")
+    when = c.get("when")
+    if when is not None:
+        _expect(when, dict, f"{path}.when")
+    return Choice(
+        id=_str(c, "id", path, default=f"c{index + 1}", non_empty=True),
+        text=_str(c, "text", path),
+        goto=goto,
+        when=when,
+        effects=_effects(c.get("effects", []), f"{path}.effects"),
+        aliases=_aliases(c, path),
+        once=_bool(c, "once", path, default=False),
+        message=_str(c, "message", path, default=""),
+    )
+
+
+def _item(it: Any, path: str) -> Item:
+    _expect(it, dict, path)
+    return Item(
+        id=_str(it, "id", path, non_empty=True),
+        name=_str(it, "name", path),
+        description=_str(it, "description", path, default=""),
+        aliases=_aliases(it, path),
+    )
+
+
+def _trigger(t: Any, path: str, index: int) -> Trigger:
+    _expect(t, dict, path)
+    _expect(t.get("when"), dict, f"{path}.when")
+    return Trigger(
+        when=t["when"],
+        effects=_effects(t.get("effects", []), f"{path}.effects"),
+        once=_bool(t, "once", path, default=True),
+        id=_str(t, "id", path, default=f"trigger{index}", non_empty=True),
     )
 
 
@@ -138,7 +206,29 @@ def _effects(value: Any, path: str) -> list[dict]:
         _expect(e, dict, f"{path}[{i}]")
         if len(e) != 1:
             raise StoryFormatError(f"{path}[{i}]: 每个效果只能有一个键，实际为 {sorted(e)}")
+        key = next(iter(e))
+        if not isinstance(key, str) or not key.strip():
+            raise StoryFormatError(f"{path}[{i}]: 效果名必须是非空字符串")
     return value
+
+
+def _aliases(obj: dict, path: str) -> list[str]:
+    value = obj.get("aliases", [])
+    _expect(value, list, f"{path}.aliases")
+    for i, alias in enumerate(value):
+        _expect(alias, str, f"{path}.aliases[{i}]")
+    return list(value)
+
+
+def _vars(value: Any) -> dict[str, int]:
+    _expect(value, dict, "$.vars")
+    result = {}
+    for key, number in value.items():
+        if not isinstance(key, str) or not key.strip():
+            raise StoryFormatError("$.vars: 变量名必须是非空字符串")
+        _expect(number, int, f"$.vars.{key}")
+        result[key] = number
+    return result
 
 
 def _list(obj: dict, key: str, path: str, required: bool = True) -> list:
@@ -150,14 +240,35 @@ def _list(obj: dict, key: str, path: str, required: bool = True) -> list:
     return obj[key]
 
 
-def _str(obj: dict, key: str, path: str) -> str:
-    value = obj.get(key)
+def _str(
+    obj: dict,
+    key: str,
+    path: str,
+    default: Any = _MISSING,
+    non_empty: bool = False,
+) -> str:
+    if key in obj:
+        value = obj[key]
+    elif default is not _MISSING:
+        value = default
+    else:
+        _expect(None, str, f"{path}.{key}")
+        raise AssertionError("unreachable")
     _expect(value, str, f"{path}.{key}")
+    if non_empty and not value.strip():
+        raise StoryFormatError(f"{path}.{key}: 不能为空")
+    return value
+
+
+def _bool(obj: dict, key: str, path: str, default: bool) -> bool:
+    value = obj.get(key, default)
+    _expect(value, bool, f"{path}.{key}")
     return value
 
 
 def _expect(value: Any, typ: type, path: str) -> None:
+    if typ is int and isinstance(value, bool):
+        raise StoryFormatError(f"{path}: 应为整数，实际为 布尔值")
     if not isinstance(value, typ):
-        names = {dict: "对象", list: "数组", str: "字符串"}
-        got = "缺失" if value is None else type(value).__name__
-        raise StoryFormatError(f"{path}: 应为{names.get(typ, typ.__name__)}，实际为 {got}")
+        got = "缺失" if value is None else _TYPE_NAMES.get(type(value), type(value).__name__)
+        raise StoryFormatError(f"{path}: 应为{_TYPE_NAMES.get(typ, typ.__name__)}，实际为 {got}")
