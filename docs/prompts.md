@@ -1,6 +1,6 @@
 # 开工提示词
 
-先看 [任务安排第 0 节](team-tasks.md#0-当前进度与每人下一步)：每人的“下一个 PR”和“接入点”都写在那里。网页部署基础与兼容实现（`taleloom/legacy_session.py`、`web/preview/`）已可运行；继续各自正式模块，在接入点替换临时实现，替换在你自己的 PR 内完成。
+先看 [任务安排第 0 节](team-tasks.md#0-当前进度与每人下一步)：每人的“下一个 PR”和“接入点”都写在那里。网页部署基础与兼容实现（`taleloom/legacy_session.py`、临时存储 `web/preview/storage.js`）已可运行；继续各自正式模块，在接入点替换临时实现，替换在你自己的 PR 内完成。
 
 本轮目标是共享 Python 核心的桌面 GUI、网页试玩和 Cloudflare 自动部署。各成员把对应部分交给 AI；先区分已经提供的接口／测试替身与尚待实现的正式适配器。
 
@@ -52,7 +52,7 @@ python -B -m unittest tests.integration.test_ui_contract -v。
 优先做简洁 Tkinter + ttk 桌面 GUI：包 taleloom/gui/ 提供 run(stories_dir, saves_dir) -> int，
 python main.py 无参数会自动调用它（约定见 docs/contracts.md 第 6 节）。
 真实会话一律用 taleloom.session_factory.create_session(story) 取得，不直接 import engine。
-桌面完成后再实现 web/ui、web/styles，替换 web/preview/。
+web/ui、web/styles 已由 ZRS 完成（PR #9），后续界面改动在这两个目录内进行。
 先注入 FakeGameSession 独立开发；统一使用快照、ActionRequest 和 SessionResult。
 覆盖剧本进入、场景正文、行动、背包／线索、资源、参数选择、存读档和结局。
 所有玩家核心操作可点击；渲染不消耗回合，操作串行，加载／错误可恢复。
