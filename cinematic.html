@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#000000">
+  <meta name="description" content="TaleLoom 影像模式样片：《雾港旧案》开场。画面与声音由代码实时生成，剧情由同一个 Python 引擎驱动。">
+  <title>雾港旧案 · 影像模式样片</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%23050506'/%3E%3Ctext x='16' y='46' fill='%23e7ad5f' font-size='40' font-family='serif'%3ET%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+  <main class="theater">
+    <div class="stagebox">
+      <div class="frame" id="frame">
+        <canvas id="stage" aria-hidden="true"></canvas>
+        <div class="grain" id="grain" aria-hidden="true"></div>
+        <div class="vignette" aria-hidden="true"></div>
+        <p class="caption" id="caption" hidden></p>
+        <div class="card" id="card" hidden></div>
+        <aside class="clue" id="clue" aria-live="polite" hidden></aside>
+        <div class="subtitle" id="subtitle" aria-live="polite" hidden></div>
+        <div class="intro" id="intro">
+          <p class="intro-kicker">TaleLoom 织境 · 影像模式样片</p>
+          <h1>雾港旧案</h1>
+          <p class="intro-sub">一九三一年 · 雾港</p>
+          <button class="begin" id="begin" type="button">开始（建议开启声音）</button>
+        </div>
+      </div>
+      <div class="choices" id="choices" hidden></div>
+    </div>
+    <nav class="controls" aria-label="播放控制">
+      <button id="skip" type="button">跳过字幕 <kbd>空格</kbd></button>
+      <button id="mute" type="button" aria-pressed="false">声音：开</button>
+      <button id="restart" type="button">重新开始</button>
+      <a href="/">返回文字版</a>
+    </nav>
+    <p class="note-line">样片：画面与声音由代码实时生成；剧情、选项与判定来自同一个 Python 引擎。数字键 1–9 可直接选择。</p>
+  </main>
+  <script type="module" src="/web/cinematic/app.js"></script>
+</body>
+</html>
