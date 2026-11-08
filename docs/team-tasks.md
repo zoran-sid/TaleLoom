@@ -13,18 +13,18 @@
 | 里程碑 | 状态 |
 | --- | --- |
 | M1 共享契约 | 已完成：`taleloom/ui_contract.py`、`tests/ui_fakes.py`（PR #3） |
-| M2 桌面闭环 | 入口已接好：`python main.py` 无参数时调用 `taleloom.gui.run(...)`，GUI 包不存在时回退命令行；GUI 待 ZRS |
-| M3 浏览器核心 | 已完成（序章）：两个序章在 Pyodide 与 CPython 中状态一致，11 项浏览器测试（PR #4） |
-| M4 网页与存档 | 临时试玩界面与单槽存档可用（`web/preview/`）；正式界面与存储待 ZRS、LQ |
+| M2 桌面闭环 | 已完成：Tkinter 桌面 GUI（ZRS，PR #9），`python main.py` 无参数打开窗口，缺少 Tk 时回退命令行；CI 中窗口测试仍被跳过（#15） |
+| M3 浏览器核心 | 已完成：两个剧本的全部通关脚本在 Pyodide 与 CPython 中逐步一致（PR #4、#10） |
+| M4 网页与存档 | 正式网页界面已完成（`web/ui/`、`web/styles/`，ZRS，PR #9）；存储仍为临时单槽 `web/preview/storage.js`，待 LQ 的 `web/storage/` |
 | M5 自动发布 | 已上线：<https://taleloom.zoranzhou28.workers.dev>（生产分支 `develop`，PR 合入后自动部署；正式发布后改为 `main`） |
 
 | 成员 | 已完成 | 下一个 PR | 接入点 |
 | --- | --- | --- | --- |
-| YHT | 加载、参数与结构校验、场景图（PR #2） | 剧本可选展示字段：公开资源（变量、名称、上限）与素材路径；加载、校验与测试 | 删除 `taleloom/legacy_session.py` 中按剧本 ID 硬编码的 `PUBLIC_RESOURCES`，改读剧本字段 |
-| ZQO | — | `taleloom/session.py`：实现 `GameSession`（快照、结构化动作、revision、纯读取）；先通过 `tests/integration/test_ui_contract.py` 的同类约定，再通过真实剧本回放 | `taleloom/session_factory.py` 改一行，桌面和网页同时切换 |
-| ZRS | — | `taleloom/gui/`：提供 `run(stories_dir, saves_dir) -> int`；先用 `tests.ui_fakes.FakeGameSession` 开发，再用 `taleloom.session_factory.create_session` 接真实剧本 | `main.py` 无参数自动打开；网页正式界面 `web/ui/` 之后替换 `web/preview/` |
-| ZC | 共享契约、网页运行时与部署基础（PR #3、#4）、启动入口 | 推理插件：深入搜证、审问及其结构化动作；剧本 A 扩写 | — |
-| LQ | — | `save.py` 拆出纯数据编码与校验，加桌面文件 `SaveStore`；之后 `web/storage/` | `taleloom/legacy_session.py` 的 `export_save`／`_decode` 改用 LQ 的编码器；`web/preview/storage.js` 由 `web/storage/` 替换 |
+| YHT | 加载、参数与结构校验、场景图（PR #2）；公开资源与素材字段（PR #7） | 4.1 必做与加分项已合入；按轮换审阅 ZQO 的 PR | — |
+| ZQO | — | 先接受仓库邀请；`taleloom/session.py` 实现 `GameSession`，以及文本插值与可复现随机（[#16](https://github.com/zoran-sid/TaleLoom/issues/16)） | `taleloom/session_factory.py` 改一行，桌面和网页同时切换 |
+| ZRS | 桌面 GUI、网页正式界面、道具“用在某处”（PR #9） | 真实剧本测试迁到集成测试（[#14](https://github.com/zoran-sid/TaleLoom/issues/14)）、窗口测试在 CI 运行（[#15](https://github.com/zoran-sid/TaleLoom/issues/15)）、与 LQ 商定桌面存档归属（[#13](https://github.com/zoran-sid/TaleLoom/issues/13)） | — |
+| ZC | 共享契约、网页运行时与部署（PR #3–#6）、启动入口；推理插件、剧本 A 扩写、打包脚本（PR #10） | CI 虚拟显示器（[#15](https://github.com/zoran-sid/TaleLoom/issues/15)）；Cloudflare 非生产分支预览；整合各成员 PR | — |
+| LQ | 工作计划与存档问题核对（PR #8） | 优先：剧本 B 声明氧气资源（[#11](https://github.com/zoran-sid/TaleLoom/issues/11)）；存档编码与校验（[#12](https://github.com/zoran-sid/TaleLoom/issues/12)）、桌面存档归属（[#13](https://github.com/zoran-sid/TaleLoom/issues/13)）；之后 `web/storage/`、随机探索、剧本 B 扩写 | `taleloom/legacy_session.py` 的 `export_save`／`_decode` 改用 LQ 的编码器；`web/preview/storage.js` 由 `web/storage/` 替换 |
 
 ## 1 分工总览
 
@@ -33,7 +33,7 @@
 | 1 | YHT | 剧本格式、加载与静态校验；展示数据类型 | `model.py` `loader.py` `validator.py` `walk.py`；`ui_contract.py` 中的展示类型 | `tests/yht/` |
 | 2 | ZQO | 运行时核心与插件接口；正式会话与展示快照 | `state.py` `rules.py` `engine.py` `mechanics/base.py`；`session.py` `presentation.py`（新建） | `tests/zqo/` |
 | 3 | ZRS | 命令行与桌面／网页界面；道具谜题插件 | `parser.py` `cli.py` `mechanics/puzzle.py`；`gui/`（新建）；`web/ui/` `web/styles/`（新建） | `tests/zrs/` |
-| 4 | ZC | 推理插件、剧本 A《雾港旧案》、整合与发布 | `mechanics/mystery.py` `session_factory.py` `legacy_session.py`（临时）；`main.py`、`.vscode/launch.json`、`stories/fog_harbor/`；`web/runtime/`、`web/preview/`（临时）、`tools/`、CI 与 Cloudflare 配置 | `tests/zc/`、`tests/integration/`、`tests/browser/` |
+| 4 | ZC | 推理插件、剧本 A《雾港旧案》、整合与发布 | `mechanics/mystery.py` `session_factory.py` `legacy_session.py`（临时）；`main.py`、`.vscode/launch.json`、`stories/fog_harbor/`；`web/runtime/`、`web/preview/storage.js`（临时）、`tools/`、CI 与 Cloudflare 配置 | `tests/zc/`、`tests/integration/`、`tests/browser/` |
 | 5 | LQ | 存档与存储、回放与探索测试、剧本 B《深空回声》 | `save.py` `replay.py`；`web/storage/`（新建）；`stories/deep_space/` | `tests/lq/` |
 
 - 共享接口 `taleloom/ui_contract.py` 与测试替身 `tests/ui_fakes.py` 的改动走 contract PR（[接口约定](contracts.md) 第 5 节）。

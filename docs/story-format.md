@@ -89,16 +89,42 @@ stories/<剧本id>/
 ### `mystery`（ZC）
 
 ```json
-"clues": {"torn_ledger": {"name": "被撕去的账页", "text": "..."}},
+"clues": {
+  "torn_ledger": {"name": "被撕去的账页", "text": "...",
+                  "examine": {"when": {}, "hint": "条件不满足时的提示", "text": "深入调查的发现",
+                              "effects": [{"add_clue": "ledger_gap"}]}}
+},
+"acts": [{"id": "fog", "title": "第一幕 · 雾夜"}, {"id": "ebb", "title": "第二幕 · 退潮", "text": "过场文字"}],
 "accusation": {
-  "when": {"visited": "office"},
-  "suspects": {"gu": {"name": "顾先生", "aliases": ["顾"]}},
-  "outcomes": [{"suspect": "gu", "when": {"has_clue": "torn_ledger"}, "goto": "end_truth"}],
+  "when": {"flag": "gathered"},
+  "suspects": {
+    "zhou": {"name": "周文", "aliases": ["周"], "scenes": ["kitchen", "gathering"],
+             "topics": [{"id": "night", "name": "案发时在做什么", "text": "回答", "effects": []},
+                        {"id": "weight", "clue": "vat_weight", "text": "出示线索后的回答"}]}
+  },
+  "reasons": [
+    {"id": "motive", "label": "动机", "options": [{"id": "debt", "name": "欠债", "when": {}}]},
+    {"id": "evidence", "label": "关键证据", "from": "clues"}
+  ],
+  "outcomes": [{"suspect": "zhou", "when": {}, "reasons": {"motive": "debt", "evidence": ["a", "b"]},
+                "min_correct": 2, "goto": "end_truth"}],
   "default": "end_wrong"
 }
 ```
 
-新增条件 `{"has_clue": id}`、效果 `{"add_clue": id}`；玩家命令“线索”“指认 X”。`outcomes` 从上到下取第一个匹配项，都不匹配时去 `default`。
+除 `clues` 的 `name`/`text` 与 `accusation` 的 `suspects`/`outcomes`/`default` 外都可以省略，旧剧本不用改。
+
+| 能力 | 写法 | 玩家命令 | 界面动作 |
+| --- | --- | --- | --- |
+| 线索 | 效果 `{"add_clue": id}`；条件 `{"has_clue": id}`、`{"clues_found": N}`（已获得线索数 ≥ N） | 线索 | 快照的 `clues` |
+| 深入搜证 | 线索的 `examine`：`when` 不满足时显示 `hint`，满足时显示 `text` 并执行 `effects`；每条线索只能深入一次 | 调查 被撕去的账页 | `mystery:examine`（`clue`） |
+| 审问 | 嫌疑人的 `topics`；`clue` 表示出示这条线索才能问，`when` 是额外条件；`scenes` 限定在哪些场景能审问此人（省略为任何场景）。第一次问执行 `effects` 并消耗回合，再问只重读回答 | 问 周文 案发时在做什么；问 周文 水缸里的镇纸 | `mystery:ask`（`topic`，值为 `嫌疑人id/话题id`） |
+| 分幕 | `acts` 按顺序列出；效果 `{"start_act": id}` 进入后面的幕并显示标题和过场文字（不会倒退）；条件 `{"act": id}` 表示已进入该幕或之后 | — | 过场文字出现在反馈中 |
+| 指认 | `reasons` 声明需要说明的理由；选项可写 `when`，`"from": "clues"` 表示从已获得的线索中选 | 指认 周文 欠债 镇纸 水缸里的镇纸（只输入“指认 周文”会列出需要的理由和候选） | `mystery:accuse`（`suspect` 与各理由 id） |
+
+`outcomes` 从上到下取第一个匹配项：嫌疑人相同、`when` 成立，且答对的理由数不少于 `min_correct`（省略时要求 `reasons` 中列出的全部答对；一项可接受多个正确答案时写成数组）；都不匹配时去 `default`。没有 `reasons` 的旧剧本只按嫌疑人与 `when` 判断。审问和深入搜证里的 `goto` 效果会计入可达性检查。
+
+只给命令行玩家看的操作提示写成单独一行“（输入……）”，图形界面会自动隐藏，改用按钮。
 
 ### `puzzle`（ZRS）
 

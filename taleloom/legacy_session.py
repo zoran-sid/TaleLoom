@@ -10,11 +10,12 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 
 from .engine import Engine
+from .mechanics.mystery import build_actions as mystery_actions
 from .mechanics.puzzle import build_actions as puzzle_actions
 from .model import Command, Story
-from .rules import Context
 from .save import SAVE_VERSION, fingerprint
 from .state import GameState
 from .ui_contract import (
@@ -25,9 +26,9 @@ from .ui_contract import (
 TEXT_HINTS = {
     '（输入“看”可重读当前场景，“背包”查看物品，“帮助”查看命令。）': '',
     '（试试“使用 物品”。）': '你可以在下方尝试使用背包里的道具。',
-    '输入“线索”回顾笔记，输入“指认 名字”说出你的结论（可选：顾先生、周文、阿芸）。':
-        '回顾已找到的线索，再在下方选择你要指认的人。',
 }
+# 只给命令行玩家看的提示写成“（输入……）”，图形界面用按钮代替，不显示。
+CLI_HINT = re.compile(r'（输入[^（）]*）')
 
 
 class LegacySession:
@@ -141,9 +142,13 @@ class LegacySession:
             raise ValueError('turn')
         if not isinstance(state.ext, dict) or not all(isinstance(v, dict) for v in state.ext.values()):
             raise ValueError('ext')
-        clues = state.ext.get('mystery', {}).get('clues', [])
-        if not isinstance(clues, list) or not all(isinstance(c, str) for c in clues):
-            raise ValueError('clues')
+        mystery = state.ext.get('mystery', {})
+        for key in ('clues', 'examined', 'asked'):
+            values = mystery.get(key, [])
+            if not isinstance(values, list) or not all(isinstance(v, str) for v in values):
+                raise ValueError(key)
+        if not isinstance(mystery.get('act', ''), str):
+            raise ValueError('act')
         ending = self.story.scenes[state.scene].ending
         expected = ending.get('id', state.scene) if ending else None
         if state.ending != expected:
@@ -161,16 +166,12 @@ class LegacySession:
         actions = []
         if 'puzzle' in self.story.mechanics:
             actions.extend(puzzle_actions(self.story, state, inventory))
-        if not state.ending:
-            acc = self.story.data.get('accusation')
-            if 'mystery' in self.story.mechanics and acc and self.engine.registry.check(
-                Context(self.story, state), acc.get('when')
-            ):
-                suspects = [DisplayItem(k, v.get('name', k)) for k, v in acc.get('suspects', {}).items()]
-                actions.append(ActionSpec('mystery:accuse', '作出指认', [ActionParameter('suspect', '指认对象', options=suspects)]))
+        if 'mystery' in self.story.mechanics:
+            actions.extend(mystery_actions(self.story, state, self.engine.registry))
         text = scene.text
         for old, new in TEXT_HINTS.items():
             text = text.replace(old, new)
+        text = _strip_cli_hints(text)
         self._view = ViewSnapshot(
             story_id=self.story.id, story_title=self.story.title, scene_id=scene.id,
             scene_title=scene.title, text=text, revision=self._revision, turn=state.turn,
@@ -183,3 +184,19 @@ class LegacySession:
             ended=state.ending is not None, ending_id=state.ending,
             ending_title=(scene.ending or {}).get('title'),
         )
+
+
+def _strip_cli_hints(text: str) -> str:
+    """去掉“（输入……）”形式的命令行提示；只含提示的行整行删除，其余换行保留。
+
+    >>> _strip_cli_hints('书房。\\n（输入“问 管家”审问。）')
+    '书房。'
+    >>> _strip_cli_hints('门开了。（输入“看”重读。）\\n\\n下一段')
+    '门开了。\\n\\n下一段'
+    """
+    kept = []
+    for line in text.split('\n'):
+        cleaned = CLI_HINT.sub('', line).rstrip()
+        if cleaned or not line.strip():
+            kept.append(cleaned)
+    return '\n'.join(kept)

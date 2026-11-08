@@ -1,6 +1,6 @@
 # 网页试玩与 Cloudflare 自动发布
 
-`develop` 已包含可构建、可试玩、可做部署预检的网页序章（临时界面）。Cloudflare 项目由 ZC 管理；成员日常只需按协作流程提交 PR，不需要 Cloudflare 账号。桌面 Tkinter GUI 按小组计划开发。
+`develop` 已包含网页正式界面（ZRS）与两个剧本的完整试玩，可构建并做部署预检。Cloudflare 项目由 ZC 管理；成员日常只需按协作流程提交 PR，不需要 Cloudflare 账号。
 
 ## 1 本地打开
 
@@ -94,8 +94,8 @@ npm run check:deploy
 | Python 核心、加载、校验、解析、存档、剧本 | 复用现有文件；没有修改这些文件 | 各成员继续原任务 |
 | 会话 | `taleloom/legacy_session.py` 包装现有 v0 Engine；桌面与网页都经 `taleloom/session_factory.py` 创建会话 | ZQO 实现 `taleloom/session.py` 后，在 `taleloom/session_factory.py` 显式切换；先通过接口及回放测试 |
 | 运行桥接 | `web/runtime/bridge.py`、`worker.js`、`client.js` | ZC 维护 JSON 消息和后台 Python；ZRS 可直接使用 `GameClient` |
-| 界面 | 根目录 `index.html`、`web/preview/` 中可替换的最小试玩界面 | ZRS 继续开发 `taleloom/gui/`、`web/ui/`、`web/styles/`；接入时由 ZC 调整网页入口 |
-| 存储 | `web/preview/storage.js` 单槽 localStorage；兼容既有 v1 JSON | LQ 交付 `web/storage/` 和纯数据编码器后替换；不占用其正式文件 |
+| 界面 | 根目录 `index.html` 加载 `web/ui/`、`web/styles/`（ZRS，PR #9） | ZRS 维护；桌面界面在 `taleloom/gui/` |
+| 存储 | `web/preview/storage.js` 单槽 localStorage（临时，`web/ui/app.js` 引用）；兼容既有 v1 JSON | LQ 交付 `web/storage/` 和纯数据编码器后替换；不占用其正式文件 |
 | 构建／发布 | `tools/build_web.py`、配置文件、新增 `web.yml` | ZC 维护；原 `checks.yml` 保持原样 |
 
 当前适配支持现有场景选择、线索、指认、使用与组合道具；深空序章的氧气显式列为公开资源。新插件、新资源显示、随机与文本变体由正式模块按契约接入并补测试；不会自动把全部内部变量或配方显示给玩家。原剧本中的少量 CLI 操作提示在展示层转换为按钮说明，剧本 JSON 保持原样。
