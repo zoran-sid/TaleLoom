@@ -1,13 +1,15 @@
-"""ZRS：桌面界面状态机——用测试替身驱动，不打开窗口。"""
+"""ZRS：桌面界面状态机与文件存储——用测试替身驱动，不打开窗口。
+
+FileSaveStore 的正式归属见 issue #13；实现已与界面分开，LQ 交付后可直接替换。
+"""
 
 import json
 import tempfile
 import unittest
 from pathlib import Path
 
-from taleloom.gui.controller import (
-    FileSaveStore, GameController, QUICK_SLOT, load_catalog, valid_slot,
-)
+from taleloom.gui.controller import GameController, QUICK_SLOT, load_catalog
+from taleloom.gui.storage import FileSaveStore, valid_slot
 from taleloom.ui_contract import ActionRequest, StorageError
 from tests.ui_fakes import FakeGameSession, MemorySaveStore
 
