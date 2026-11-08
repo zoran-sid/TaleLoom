@@ -53,6 +53,19 @@ class Item:
 
 
 @dataclass
+class Resource:
+    """剧本主动公开给玩家查看的数值资源。
+
+    变量名指向 ``Story.initial_vars`` 或效果创建的变量；``maximum`` 为空时
+    只显示当前值，不显示上限。
+    """
+
+    var: str
+    name: str
+    maximum: int | None = None
+
+
+@dataclass
 class Trigger:
     """每回合结束后检查一次的规则，例如氧气耗尽时跳到结局。"""
 
@@ -77,6 +90,11 @@ class Story:
     data: dict[str, Any] = field(default_factory=dict)
     meta: dict[str, Any] = field(default_factory=dict)
     format_version: int = FORMAT_VERSION
+    # 剧本可选的展示字段；不参与剧情判定。放在末尾，保持旧的位置参数兼容。
+    resources: list[Resource] = field(default_factory=list)
+    assets: dict[str, str] = field(default_factory=dict)
+    # load_story 填充的剧本目录，用于检查素材文件是否存在；parse_story 为 None
+    source_dir: str | None = field(default=None, compare=False, repr=False)
 
     def endings(self) -> dict[str, Scene]:
         return {sid: s for sid, s in self.scenes.items() if s.ending}

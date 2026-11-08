@@ -7,14 +7,22 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
-from .model import FORMAT_VERSION, Choice, Item, Scene, Story, Trigger
+from .model import FORMAT_VERSION, Choice, Item, Resource, Scene, Story, Trigger
 
 CORE_KEYS = {
     "format_version", "id", "title", "start", "scenes", "items", "mechanics",
-    "vars", "every_turn", "triggers", "meta",
+    "vars", "every_turn", "triggers", "resources", "assets", "meta",
+}
+
+# 公开资源同时接受展示层的命名（id/label/maximum），方便与 ViewSnapshot 对照。
+_RESOURCE_FIELDS = {
+    "var": "var", "id": "var",
+    "name": "name", "label": "name",
+    "max": "max", "maximum": "max",
 }
 
 _MISSING = object()
@@ -42,6 +50,7 @@ def load_story(path: str | Path) -> Story:
     """读取 UTF-8 的 story.json 并解析成 Story。
 
     JSON 语法错误会报告行列号，并附上出错行的原文，方便剧本作者定位。
+    解析成功后会记录剧本目录，供 validator 检查可选素材是否存在。
     """
     file = find_story_file(path)
     try:
@@ -61,7 +70,9 @@ def load_story(path: str | Path) -> Story:
             detail += f"\n  第 {exc.lineno} 行：{line}"
         detail += "\n建议：检查该行附近的逗号、引号与括号是否配对。"
         raise StoryFormatError(detail) from exc
-    return parse_story(raw)
+    story = parse_story(raw)
+    story.source_dir = str(file.parent)
+    return story
 
 
 def parse_story(raw: Any) -> Story:
@@ -112,6 +123,17 @@ def parse_story(raw: Any) -> Story:
             raise StoryFormatError(f"$.mechanics[{i}]: 机制插件重复：{name}")
         seen_mechanics.add(name)
     vars_ = _vars(raw.get("vars", {}))
+    resources = []
+    resource_vars: set[str] = set()
+    for i, value in enumerate(_list(raw, "resources", "$", required=False)):
+        resource = _resource(value, f"$.resources[{i}]")
+        if resource.var in resource_vars:
+            raise StoryFormatError(
+                f"$.resources[{i}].var: 公开资源变量重复：{resource.var}"
+            )
+        resource_vars.add(resource.var)
+        resources.append(resource)
+    assets = _assets(raw.get("assets", {}), "$.assets")
     meta = raw.get("meta", {})
     _expect(meta, dict, "$.meta")
 
@@ -125,10 +147,79 @@ def parse_story(raw: Any) -> Story:
         initial_vars=vars_,
         every_turn=_effects(raw.get("every_turn", []), "$.every_turn"),
         triggers=triggers,
+        resources=resources,
+        assets=assets,
         data={k: v for k, v in raw.items() if k not in CORE_KEYS},
         meta=dict(meta),
         format_version=version,
     )
+
+
+def _resource(value: Any, path: str) -> Resource:
+    """解析一项公开资源。
+
+    规范写法为 ``{"var": "oxygen", "name": "氧气", "max": 8}``；为方便
+    展示层复用 ``ResourceView`` 的命名，也接受 ``id``／``label``／``maximum``。
+    """
+    _expect(value, dict, path)
+    fields: dict[str, Any] = {}
+    for key, item in value.items():
+        canonical = _RESOURCE_FIELDS.get(key)
+        if canonical is None:
+            raise StoryFormatError(
+                f"{path}.{key}: 未知的公开资源字段；可用 var/name/max"
+                "（也接受 id/label/maximum）"
+            )
+        if canonical in fields:
+            raise StoryFormatError(f"{path}.{canonical}: 同一字段重复指定")
+        fields[canonical] = item
+
+    if "var" not in fields:
+        raise StoryFormatError(f"{path}.var: 缺少变量名")
+    if "name" not in fields:
+        raise StoryFormatError(f"{path}.name: 缺少显示名称")
+    var = _str(fields, "var", path, non_empty=True)
+    name = _str(fields, "name", path, non_empty=True)
+    maximum = None
+    if "max" in fields:
+        _expect(fields["max"], int, f"{path}.max")
+        maximum = fields["max"]
+        if maximum <= 0:
+            raise StoryFormatError(f"{path}.max: 上限必须大于 0")
+    return Resource(var=var, name=name, maximum=maximum)
+
+
+def _assets(value: Any, path: str) -> dict[str, str]:
+    """解析素材角色到剧本相对路径的映射，并拒绝越出剧本目录的路径。"""
+    _expect(value, dict, path)
+    result: dict[str, str] = {}
+    for key, asset in value.items():
+        if not isinstance(key, str) or not key.strip():
+            raise StoryFormatError(f"{path}: 素材角色必须是非空字符串")
+        _expect(asset, str, f"{path}.{key}")
+        if not asset.strip():
+            raise StoryFormatError(f"{path}.{key}: 素材路径不能为空")
+        problem = _asset_path_problem(asset)
+        if problem:
+            raise StoryFormatError(f"{path}.{key}: {problem}")
+        result[key] = asset
+    return result
+
+
+def _asset_path_problem(value: str) -> str:
+    """返回素材路径的问题说明；合法时返回空字符串。"""
+    if value.startswith(("/", "\\")) or re.match(r"^[A-Za-z]:", value):
+        return "素材路径必须是剧本目录内的相对路径，不能是绝对路径"
+    if "\\" in value:
+        return "素材路径请使用 / 分隔，不要使用反斜杠"
+    if "://" in value:
+        return "素材路径不能是网址"
+    parts = value.split("/")
+    if any(part in ("", ".", "..") for part in parts):
+        return "素材路径不能包含空段、. 或 .."
+    if "\x00" in value:
+        return "素材路径不能包含空字符"
+    return ""
 
 
 def _scene(s: Any, path: str) -> Scene:
