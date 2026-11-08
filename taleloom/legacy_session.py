@@ -22,8 +22,6 @@ from .ui_contract import (
     SessionResult, ViewSnapshot,
 )
 
-# v0 唯一明确公开的资源；其他内部变量不会自动进入展示层。
-PUBLIC_RESOURCES = {'deep_space': {'oxygen': '氧气'}}
 TEXT_HINTS = {
     '（输入“看”可重读当前场景，“背包”查看物品，“帮助”查看命令。）': '',
     '（试试“使用 物品”。）': '你可以在下方尝试使用背包里的道具。',
@@ -179,7 +177,9 @@ class LegacySession:
             choices=[ActionSpec(f'choice:{c.id}', c.text) for c in self.engine.available_choices()],
             actions=actions, inventory=inventory,
             clues=[DisplayItem(c, clues.get(c, {}).get('name', c), clues.get(c, {}).get('text', '')) for c in found],
-            resources=[ResourceView(k, label, state.vars[k]) for k, label in PUBLIC_RESOURCES.get(self.story.id, {}).items() if k in state.vars],
+            resources=[ResourceView(r.var, r.name, state.vars.get(r.var, 0), r.maximum)
+                       for r in self.story.resources],
+            assets=dict(self.story.assets),
             ended=state.ending is not None, ending_id=state.ending,
             ending_title=(scene.ending or {}).get('title'),
         )
