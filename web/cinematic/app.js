@@ -30,6 +30,9 @@ let view = null;
 let busy = false;
 let actTitle = '第一幕 · 雾夜';
 let poke = null;
+let paused = false;          // 打开笔记时暂停字幕与转场计时
+let seen = new Set();        // 已经播过描述的场景，回来时不再重播
+let notes = { clues: [], sceneTitle: '', sceneText: '' };
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -48,26 +51,41 @@ function nudge() {
 
 document.addEventListener('keydown', (event) => {
   if (event.target.closest('select')) return;
-  if (event.key === ' ' && !event.target.closest('button')) {
+  if (event.key === 'Escape' && !$('notebook').hidden) {
+    closeNotebook();
+  } else if (event.key === 'n' || event.key === 'N') {
+    toggleNotebook();
+  } else if (!$('notebook').hidden) {
+    return;
+  } else if (event.key === ' ' && !event.target.closest('button')) {
     event.preventDefault();
     nudge();
   } else if (/^[1-9]$/.test(event.key) && !$('choices').hidden) {
     $('choices').querySelectorAll('button.choice')[Number(event.key) - 1]?.click();
   }
 });
-$('frame').addEventListener('click', (event) => { if (!event.target.closest('button')) nudge(); });
+$('frame').addEventListener('click', (event) => { if (!event.target.closest('button') && $('notebook').hidden) nudge(); });
 $('skip').addEventListener('click', nudge);
 
+/** 等待 ms 毫秒或玩家点击；打开笔记期间不计时。 */
 function hold(ms) {
   return new Promise((resolve) => {
-    const done = () => {
-      clearTimeout(timer);
+    let left = T(ms);
+    const timer = setInterval(() => {
+      if (!paused) left -= 50;
+      if (left <= 0) done();
+    }, FAST ? 10 : 50);
+    function done() {
+      clearInterval(timer);
       if (poke === done) poke = null;
       resolve();
-    };
-    const timer = setTimeout(done, T(ms));
+    }
     poke = done;
   });
+}
+
+async function whilePaused() {
+  while (paused) await new Promise((resolve) => setTimeout(resolve, 80));
 }
 
 /** 逐字显示一行字幕，然后停留一会儿；点击可跳过。 */
@@ -81,6 +99,7 @@ async function type(text, speaker = '') {
   let skipped = FAST;
   poke = () => { skipped = true; };
   for (const ch of text) {
+    await whilePaused();
     if (skipped) break;
     line.textContent += ch;
     await new Promise((resolve) => setTimeout(resolve, /[，。！？…；：、”]/.test(ch) ? 150 : 42));
@@ -211,11 +230,21 @@ async function play(messages) {
   clearSubtitle();
 }
 
+/** 首次进入：标题卡加完整描述；再次回来：只闪一下场景名，不重播描述。 */
 async function enterScene(next) {
   clearSubtitle();
-  await stage.fade(1, T(700));
-  sound.thud();
+  const revisit = seen.has(next.scene_id);
+  seen.add(next.scene_id);
+  await stage.fade(1, T(revisit ? 450 : 700));
+  if (!revisit) sound.thud();
   setArt(next.scene_id);
+  if (revisit) {
+    showCard('', next.scene_title, '');
+    await stage.fade(0, T(700));
+    await hold(700);
+    hideCard();
+    return;
+  }
   showCard(actTitle, next.scene_title, '一九三一年 · 雾港');
   await hold(1800);
   hideCard();
@@ -242,6 +271,7 @@ async function ending(next) {
 /** 先在原场景演完反馈，再转场；结束时进入结局画面。 */
 async function present(result, previous) {
   const next = result.view;
+  updateNotes(next);
   if (result.error_code) {
     view = next;
     await type(result.messages.join(' ') || '这一步没能完成。');
@@ -334,6 +364,66 @@ function openForm(action) {
   box.append(form);
 }
 
+// ---------- 随身笔记：随时查看线索与当前场景，不推进剧情 ----------
+
+function updateNotes(next) {
+  const before = notes.clues.length;
+  notes = { clues: next.clues, sceneTitle: next.scene_title, sceneText: next.text };
+  $('notes-count').textContent = String(notes.clues.length);
+  if (notes.clues.length > before) {
+    for (const id of ['notes-toggle', 'notes-btn']) {
+      $(id).classList.remove('fresh');
+      void $(id).offsetWidth;
+      $(id).classList.add('fresh');
+    }
+  }
+  if (!$('notebook').hidden) renderNotebook();
+}
+
+function renderNotebook() {
+  const body = $('notebook-body');
+  body.replaceChildren();
+  const scene = el('section', 'nb-section');
+  scene.append(el('h3', 'nb-heading', `当前场景 · ${notes.sceneTitle || '—'}`));
+  for (const line of notes.sceneText.split('\n').filter((x) => x.trim())) scene.append(el('p', 'nb-scene', line));
+  const found = el('section', 'nb-section');
+  found.append(el('h3', 'nb-heading', `已发现的线索（${notes.clues.length}）`));
+  if (!notes.clues.length) found.append(el('p', 'nb-empty', '还没有发现线索。'));
+  const list = el('ol', 'nb-clues');
+  for (const clue of notes.clues) {
+    const item = el('li', 'nb-clue');
+    item.append(el('strong', '', clue.label), el('span', '', clue.description));
+    list.append(item);
+  }
+  found.append(list);
+  body.append(found, scene);
+}
+
+function openNotebook() {
+  renderNotebook();
+  paused = true;
+  $('notebook').hidden = false;
+  $('notes-toggle').setAttribute('aria-expanded', 'true');
+  $('notebook-close').focus({ preventScroll: true });
+}
+
+function closeNotebook() {
+  if ($('notebook').hidden) return;
+  $('notebook').hidden = true;
+  paused = false;
+  $('notes-toggle').setAttribute('aria-expanded', 'false');
+}
+
+function toggleNotebook() {
+  if (!view) return;
+  if ($('notebook').hidden) openNotebook();
+  else closeNotebook();
+}
+
+$('notes-toggle').addEventListener('click', toggleNotebook);
+$('notes-btn').addEventListener('click', toggleNotebook);
+$('notebook-close').addEventListener('click', closeNotebook);
+
 // ---------- 与引擎通信 ----------
 
 function call(request) {
@@ -376,6 +466,8 @@ async function restart() {
   hideChoices();
   hideCard();
   actTitle = '第一幕 · 雾夜';
+  seen = new Set();
+  closeNotebook();
   try {
     booting = null;
     const result = await boot();

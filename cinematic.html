@@ -19,6 +19,7 @@
         <div class="card" id="card" hidden></div>
         <aside class="clue" id="clue" aria-live="polite" hidden></aside>
         <div class="subtitle" id="subtitle" aria-live="polite" hidden></div>
+        <button class="notes-toggle" id="notes-toggle" type="button" aria-controls="notebook" aria-expanded="false">笔记 <span id="notes-count">0</span></button>
         <div class="intro" id="intro">
           <p class="intro-kicker">TaleLoom 织境 · 影像模式样片</p>
           <h1>雾港旧案</h1>
@@ -27,9 +28,18 @@
         </div>
       </div>
       <div class="choices" id="choices" hidden></div>
+      <aside class="notebook" id="notebook" aria-label="随身笔记" hidden>
+        <header class="nb-header">
+          <h2>随身笔记</h2>
+          <button class="nb-close" id="notebook-close" type="button">合上 <kbd>Esc</kbd></button>
+        </header>
+        <div class="nb-body" id="notebook-body"></div>
+        <p class="nb-foot">翻看笔记不会推进剧情，字幕会在合上后继续。</p>
+      </aside>
     </div>
     <nav class="controls" aria-label="播放控制">
       <button id="skip" type="button">跳过字幕 <kbd>空格</kbd></button>
+      <button id="notes-btn" type="button">线索笔记 <kbd>N</kbd></button>
       <button id="mute" type="button" aria-pressed="false">声音：开</button>
       <button id="restart" type="button">重新开始</button>
       <a href="/">返回文字版</a>
