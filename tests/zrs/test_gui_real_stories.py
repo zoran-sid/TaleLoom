@@ -49,16 +49,42 @@ class RealStoryPlaythroughTest(unittest.TestCase):
 
     def test_fog_harbor_truth_is_clickable(self):
         controller = self.make()
+        # 剧本 A 扩写后的完整推理链（ZC 随 PR #10 更新路线）。
         self._play(controller, "fog_harbor", "truth", [
             ("choice:office", {}),
             ("choice:ledger", {}),
             ("choice:window", {}),
+            ("choice:body", {}),
+            ("choice:desk", {}),
+            ("mystery:examine", {"clue": "head_wound"}),
+            ("mystery:examine", {"clue": "torn_ledger"}),
             ("choice:back", {}),
             ("choice:room", {}),
+            ("choice:guest", {}),
             ("choice:coat", {}),
             ("choice:back", {}),
+            ("choice:back", {}),
+            ("mystery:ask", {"topic": "gu/coat"}),
+            ("choice:kitchen", {}),
+            ("mystery:ask", {"topic": "zhou/night"}),
+            ("choice:vat", {}),
+            ("mystery:ask", {"topic": "zhou/weight"}),
+            ("choice:back", {}),
+            ("choice:room", {}),
+            ("choice:zhou", {}),
+            ("choice:floor", {}),
+            ("mystery:examine", {"clue": "secret_ledger"}),
+            ("choice:back", {}),
+            ("choice:attic", {}),
+            ("choice:box", {}),
+            ("choice:back", {}),
+            ("choice:back", {}),
+            ("choice:kitchen", {}),
+            ("mystery:ask", {"topic": "ayun/letter"}),
+            ("choice:back", {}),
             ("choice:gather", {}),
-            ("mystery:accuse", {"suspect": "gu"}),
+            ("mystery:accuse", {"suspect": "zhou", "motive": "embezzle",
+                                "means": "paperweight", "evidence": "vat_weight"}),
         ])
 
     def _play(self, controller, story_id, ending, actions):
