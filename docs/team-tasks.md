@@ -24,7 +24,7 @@
 | ZQO | — | `taleloom/session.py`：实现 `GameSession`（快照、结构化动作、revision、纯读取）；先通过 `tests/integration/test_ui_contract.py` 的同类约定，再通过真实剧本回放 | `taleloom/session_factory.py` 改一行，桌面和网页同时切换 |
 | ZRS | — | `taleloom/gui/`：提供 `run(stories_dir, saves_dir) -> int`；先用 `tests.ui_fakes.FakeGameSession` 开发，再用 `taleloom.session_factory.create_session` 接真实剧本 | `main.py` 无参数自动打开；网页正式界面 `web/ui/` 之后替换 `web/preview/` |
 | ZC | 共享契约、网页运行时与部署基础（PR #3、#4）、启动入口 | 推理插件：深入搜证、审问及其结构化动作；剧本 A 扩写 | — |
-| LQ | — | `save.py` 拆出纯数据编码与校验，加桌面文件 `SaveStore`；之后 `web/storage/` | `taleloom/legacy_session.py` 的 `export_save`／`_decode` 改用 LQ 的编码器；`web/preview/storage.js` 由 `web/storage/` 替换 |
+| LQ | 已完成任务与基线梳理（[工作计划与协作接入](lq-work-plan.md)）；正式模块待开发 | `save.py` 拆出纯数据编码与校验，加桌面文件 `SaveStore`；之后 `web/storage/`；配套 PR #7 的公开资源声明 | `taleloom/legacy_session.py` 的 `export_save`／`_decode` 改用 LQ 的编码器；`web/preview/storage.js` 由 `web/storage/` 替换 |
 
 ## 1 分工总览
 
