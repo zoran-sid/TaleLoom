@@ -34,6 +34,50 @@ test('影像版：每个选择都进入下一段，线索进笔记，一路走�
   expect(errors).toEqual([]);
 });
 
+test('影像版：冒险选择中途失败，可以退回上一个选择，机会会减少', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto('/cinematic.html?fast=1');
+  await page.locator('#begin').click();
+  const choices = page.locator('#choices');
+  const pick = (name) => choices.getByRole('button', { name }).click();
+  await pick(/推开账房的门/);
+  await pick(/查看半开的窗户/);
+  await pick(/绕到后院/);
+  await expect(page.locator('#notes-count')).toHaveText('4');
+  await pick(/趁着夜色，沿石阶下到码头/);
+  await expect(page.locator('#card')).toContainText('失足');
+  await pick(/回到上一个选择（还剩 3 次机会）/);
+  await expect(choices.getByRole('button', { name: /跟着皮鞋印/ })).toBeVisible();
+  await expect(page.locator('#chances')).toHaveText('机会 ●●○');
+  await expect(page.locator('#notes-count')).toHaveText('4');
+  // 再失败两次，机会用完后只能从头再来
+  for (const left of [2, 1]) {
+    await pick(/趁着夜色，沿石阶下到码头/);
+    await pick(new RegExp(`回到上一个选择（还剩 ${left} 次机会）`));
+  }
+  await pick(/趁着夜色，沿石阶下到码头/);
+  await expect(page.locator('#card')).toContainText('机会已经用完');
+  await expect(choices.getByRole('button', { name: /回到上一个选择/ })).toHaveCount(0);
+  await pick(/从头再来/);
+  await expect(choices.getByRole('button', { name: /推开账房的门/ })).toBeVisible();
+  await expect(page.locator('#chances')).toHaveText('机会 ●●●');
+  expect(errors).toEqual([]);
+});
+
+test('影像版：没有证据就逼问，嫌疑人起戒心并记在笔记里', async ({ page }) => {
+  await page.goto('/cinematic.html?fast=1');
+  await page.locator('#begin').click();
+  const choices = page.locator('#choices');
+  await choices.getByRole('button', { name: /直接指着顾先生/ }).click();
+  await expect(choices.getByRole('button', { name: /去账房看现场/ })).toBeVisible();
+  await page.getByRole('button', { name: /线索笔记/ }).click();
+  const meter = page.locator('.nb-meter', { hasText: '顾先生的戒心' });
+  await expect(meter).toHaveClass(/raised/);
+  await expect(meter).toContainText('●');
+  await expect(page.locator('.nb-meter', { hasText: '周文的戒心' })).toContainText('○');
+});
+
 test('探索版（?story=fog_harbor）：大堂 → 账房获得线索 → 回大堂审问顾先生', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));

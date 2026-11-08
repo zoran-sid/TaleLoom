@@ -3,66 +3,234 @@
   "id": "fog_harbor_film",
   "title": "雾港旧案 · 影像版",
   "start": "lobby",
-  "mechanics": ["mystery"],
+  "mechanics": [
+    "mystery"
+  ],
   "meta": {
     "owner": "ZC",
     "genre": "推理搜证 · 互动影像",
-    "status": "影像模式专用的线性分支版：每个选择都进入下一段剧情，不回头；19 个剧情节点、5 个结局",
+    "status": "影像模式专用的线性分支版：每个选择都进入下一段剧情，不回头；冒险选择可能中途失败（结局 id 以 fail_ 开头，可退回上一个选择）；没有证据就逼问会让嫌疑人起戒心",
     "listed": false
   },
   "acts": [
-    {"id": "fog", "title": "第一幕 · 雾夜"},
-    {"id": "ebb", "title": "第二幕 · 退潮", "text": "潮水开始退了。离天亮还有几个钟头，你把笔记摊在大堂的桌上，一条一条地对。\n你只来得及再追一两条线。"}
+    {
+      "id": "fog",
+      "title": "第一幕 · 雾夜"
+    },
+    {
+      "id": "ebb",
+      "title": "第二幕 · 退潮",
+      "text": "潮水开始退了。离天亮还有几个钟头，你把笔记摊在大堂的桌上，一条一条地对。\n你只来得及再追一两条线。"
+    }
   ],
   "clues": {
-    "head_wound": {"name": "后脑的伤", "text": "陈掌柜后脑有一处钝器伤，伤口边缘方方正正；手边的茶一口没动。"},
-    "missing_weight": {"name": "消失的镇纸", "text": "书桌上压账本的铜镇纸不见了，只留下一圈没积灰的方形印子。"},
-    "gu_story": {"name": "顾先生的说辞", "text": "顾先生说他整晚都在房里看书，可他的裤脚是湿的。"},
-    "torn_ledger": {"name": "被撕去的账页", "text": "账本最后一页被撕掉，残留的页角写着“顾，欠银三百”。"},
-    "ledger_gap": {"name": "对不上的数目", "text": "残页背面另有一笔流水，与总账相差近四百块大洋，笔迹工整，像是周文的字。"},
-    "salt_mud": {"name": "窗台上的盐泥", "text": "账房窗台有带海盐结晶的湿泥，只有码头一带才有这种泥。"},
-    "wet_coat": {"name": "湿透的外套", "text": "顾先生的外套下摆湿透，沾着海盐泥；袖口和前襟却干干净净，没有一点血迹。"},
-    "footprints": {"name": "墙根的脚印", "text": "一行皮鞋印从码头石阶上来，停在账房窗下；另一行小小的布鞋印从后门出去，走向码头。"},
-    "gu_confession": {"name": "顾先生的供述", "text": "十一点二十分左右，他从码头翻窗进入账房，陈掌柜已经伏在桌上不动了。他撕走账页，原路离开。"},
-    "alibi": {"name": "后厨的证词", "text": "周文说案发时他和阿芸一直在后厨清点货物，钟敲十一下才散。"},
-    "love_letter": {"name": "阿水的信", "text": "木盒里有一封船家阿水写的信：“今夜十一点，老地方码头见。”"},
-    "poison_receipt": {"name": "药铺的收条", "text": "阁楼桌上压着一张药铺收条：砒霜一包，买主阿芸，日期是三天前。"},
-    "secret_ledger": {"name": "地板下的暗账", "text": "一本记满亏空的小账本，字迹是周文的，前后挪走了近四百块大洋。"},
-    "chen_note": {"name": "掌柜的便条", "text": "暗账里夹着陈掌柜的字：“周文，明早随我去警署说清楚。”"},
-    "vat_weight": {"name": "水缸里的镇纸", "text": "后厨水缸底下沉着那块铜镇纸，边角还缠着几根花白的头发。"},
-    "stock_gap": {"name": "对不上的存货", "text": "储藏室货架上的洋酒少了整整两箱，可周文报上去的账一瓶不少。"},
-    "zhou_slip": {"name": "周文的失言", "text": "看到镇纸时，周文脱口而出“我明明擦干净了”，随即脸色惨白。"},
-    "ferry_log": {"name": "船家的记事本", "text": "十一点过五分，阿芸到码头，一直待到快十二点；十一点一刻，顾先生雇船到旅馆后墙下，十一点半回船。"},
-    "ayun_truth": {"name": "阿芸的实话", "text": "钟敲十一下，阿芸就从后门溜去码头见阿水，后厨只剩周文一个人。"}
+    "head_wound": {
+      "name": "后脑的伤",
+      "text": "陈掌柜后脑有一处钝器伤，伤口边缘方方正正；手边的茶一口没动。"
+    },
+    "missing_weight": {
+      "name": "消失的镇纸",
+      "text": "书桌上压账本的铜镇纸不见了，只留下一圈没积灰的方形印子。"
+    },
+    "gu_story": {
+      "name": "顾先生的说辞",
+      "text": "顾先生说他整晚都在房里看书，可他的裤脚是湿的。"
+    },
+    "torn_ledger": {
+      "name": "被撕去的账页",
+      "text": "账本最后一页被撕掉，残留的页角写着“顾，欠银三百”。"
+    },
+    "ledger_gap": {
+      "name": "对不上的数目",
+      "text": "残页背面另有一笔流水，与总账相差近四百块大洋，笔迹工整，像是周文的字。"
+    },
+    "salt_mud": {
+      "name": "窗台上的盐泥",
+      "text": "账房窗台有带海盐结晶的湿泥，只有码头一带才有这种泥。"
+    },
+    "wet_coat": {
+      "name": "湿透的外套",
+      "text": "顾先生的外套下摆湿透，沾着海盐泥；袖口和前襟却干干净净，没有一点血迹。"
+    },
+    "footprints": {
+      "name": "墙根的脚印",
+      "text": "一行皮鞋印从码头石阶上来，停在账房窗下；另一行小小的布鞋印从后门出去，走向码头。"
+    },
+    "gu_confession": {
+      "name": "顾先生的供述",
+      "text": "十一点二十分左右，他从码头翻窗进入账房，陈掌柜已经伏在桌上不动了。他撕走账页，原路离开。"
+    },
+    "alibi": {
+      "name": "后厨的证词",
+      "text": "周文说案发时他和阿芸一直在后厨清点货物，钟敲十一下才散。"
+    },
+    "love_letter": {
+      "name": "阿水的信",
+      "text": "木盒里有一封船家阿水写的信：“今夜十一点，老地方码头见。”"
+    },
+    "poison_receipt": {
+      "name": "药铺的收条",
+      "text": "阁楼桌上压着一张药铺收条：砒霜一包，买主阿芸，日期是三天前。"
+    },
+    "secret_ledger": {
+      "name": "地板下的暗账",
+      "text": "一本记满亏空的小账本，字迹是周文的，前后挪走了近四百块大洋。"
+    },
+    "chen_note": {
+      "name": "掌柜的便条",
+      "text": "暗账里夹着陈掌柜的字：“周文，明早随我去警署说清楚。”"
+    },
+    "vat_weight": {
+      "name": "水缸里的镇纸",
+      "text": "后厨水缸底下沉着那块铜镇纸，边角还缠着几根花白的头发。"
+    },
+    "stock_gap": {
+      "name": "对不上的存货",
+      "text": "储藏室货架上的洋酒少了整整两箱，可周文报上去的账一瓶不少。"
+    },
+    "zhou_slip": {
+      "name": "周文的失言",
+      "text": "看到镇纸时，周文脱口而出“我明明擦干净了”，随即脸色惨白。"
+    },
+    "ferry_log": {
+      "name": "船家的记事本",
+      "text": "十一点过五分，阿芸到码头，一直待到快十二点；十一点一刻，顾先生雇船到旅馆后墙下，十一点半回船。"
+    },
+    "ayun_truth": {
+      "name": "阿芸的实话",
+      "text": "钟敲十一下，阿芸就从后门溜去码头见阿水，后厨只剩周文一个人。"
+    }
   },
   "accusation": {
-    "when": {"flag": "gathered"},
+    "when": {
+      "flag": "gathered"
+    },
     "suspects": {
-      "gu": {"name": "顾先生", "aliases": ["顾", "商人", "gu"]},
-      "zhou": {"name": "周文", "aliases": ["周", "账房先生", "zhou"]},
-      "ayun": {"name": "阿芸", "aliases": ["芸", "女招待", "ayun"]}
+      "gu": {
+        "name": "顾先生",
+        "aliases": [
+          "顾",
+          "商人",
+          "gu"
+        ]
+      },
+      "zhou": {
+        "name": "周文",
+        "aliases": [
+          "周",
+          "账房先生",
+          "zhou"
+        ]
+      },
+      "ayun": {
+        "name": "阿芸",
+        "aliases": [
+          "芸",
+          "女招待",
+          "ayun"
+        ]
+      }
     },
     "reasons": [
-      {"id": "motive", "label": "动机", "options": [
-        {"id": "debt", "name": "欠债"},
-        {"id": "embezzle", "name": "挪用账款被发现", "aliases": ["挪用账款", "亏空"],
-         "when": {"any": [{"has_clue": "ledger_gap"}, {"has_clue": "stock_gap"}, {"has_clue": "secret_ledger"}]}},
-        {"id": "love", "name": "私情败露", "when": {"has_clue": "love_letter"}},
-        {"id": "robbery", "name": "谋财"}
-      ]},
-      {"id": "means", "label": "手段", "options": [
-        {"id": "poison", "name": "下毒"},
-        {"id": "paperweight", "name": "用铜镇纸击打后脑", "aliases": ["镇纸"], "when": {"has_clue": "missing_weight"}},
-        {"id": "window", "name": "翻窗潜入", "when": {"has_clue": "salt_mud"}}
-      ]},
-      {"id": "evidence", "label": "关键证据", "from": "clues"}
+      {
+        "id": "motive",
+        "label": "动机",
+        "options": [
+          {
+            "id": "debt",
+            "name": "欠债"
+          },
+          {
+            "id": "embezzle",
+            "name": "挪用账款被发现",
+            "aliases": [
+              "挪用账款",
+              "亏空"
+            ],
+            "when": {
+              "any": [
+                {
+                  "has_clue": "ledger_gap"
+                },
+                {
+                  "has_clue": "stock_gap"
+                },
+                {
+                  "has_clue": "secret_ledger"
+                }
+              ]
+            }
+          },
+          {
+            "id": "love",
+            "name": "私情败露",
+            "when": {
+              "has_clue": "love_letter"
+            }
+          },
+          {
+            "id": "robbery",
+            "name": "谋财"
+          }
+        ]
+      },
+      {
+        "id": "means",
+        "label": "手段",
+        "options": [
+          {
+            "id": "poison",
+            "name": "下毒"
+          },
+          {
+            "id": "paperweight",
+            "name": "用铜镇纸击打后脑",
+            "aliases": [
+              "镇纸"
+            ],
+            "when": {
+              "has_clue": "missing_weight"
+            }
+          },
+          {
+            "id": "window",
+            "name": "翻窗潜入",
+            "when": {
+              "has_clue": "salt_mud"
+            }
+          }
+        ]
+      },
+      {
+        "id": "evidence",
+        "label": "关键证据",
+        "from": "clues"
+      }
     ],
     "outcomes": [
-      {"suspect": "zhou", "when": {"has_clue": "ayun_truth"},
-       "reasons": {"motive": "embezzle", "means": "paperweight", "evidence": ["vat_weight", "zhou_slip"]},
-       "goto": "end_truth"},
-      {"suspect": "zhou", "goto": "end_insufficient"},
-      {"suspect": "gu", "goto": "end_scapegoat"}
+      {
+        "suspect": "zhou",
+        "when": {
+          "has_clue": "ayun_truth"
+        },
+        "reasons": {
+          "motive": "embezzle",
+          "means": "paperweight",
+          "evidence": [
+            "vat_weight",
+            "zhou_slip"
+          ]
+        },
+        "goto": "end_truth"
+      },
+      {
+        "suspect": "zhou",
+        "goto": "end_insufficient"
+      },
+      {
+        "suspect": "gu",
+        "goto": "end_scapegoat"
+      }
     ],
     "default": "end_wrong"
   },
@@ -72,87 +240,270 @@
       "title": "海鸥旅馆·大堂",
       "text": "一九三一年，雾港。午夜的雾把煤气灯压成一团昏黄。\n陈掌柜被发现倒在账房里，警署的人要到天亮才能上岛。旅馆里只剩三个人：账房先生周文、女招待阿芸，和昨天才住进来的外地商人顾先生。顾先生坐在大堂角落的藤椅上，一根接一根地抽烟。\n你是这里唯一的客人，也是唯一愿意查下去的人。",
       "choices": [
-        {"id": "office", "text": "推开账房的门", "goto": "office"},
-        {"id": "gu", "text": "先盘问角落里的顾先生", "goto": "gu_first"}
+        {
+          "id": "office",
+          "text": "推开账房的门",
+          "goto": "office"
+        },
+        {
+          "id": "gu",
+          "text": "先盘问角落里的顾先生",
+          "goto": "gu_first"
+        },
+        {
+          "id": "bluff",
+          "text": "直接指着顾先生：人是你杀的吧？",
+          "goto": "gu_bluff"
+        }
       ]
     },
     {
       "id": "gu_first",
       "title": "盘问·顾先生",
       "text": "你在顾先生对面坐下。他把烟灰弹进茶碟，没抬头。\n“我一整晚都在房里看书，哪儿也没去。”\n他说话的时候，你注意到他的裤脚湿了一大截，鞋边还沾着灰白的泥。",
-      "on_enter": [{"add_clue": "gu_story"}],
+      "on_enter": [
+        {
+          "add_clue": "gu_story"
+        }
+      ],
       "choices": [
-        {"id": "office", "text": "不再追问，去账房看现场", "goto": "office"}
+        {
+          "id": "office",
+          "text": "不再追问，去账房看现场",
+          "goto": "office"
+        }
+      ]
+    },
+    {
+      "id": "gu_bluff",
+      "title": "逼问·顾先生",
+      "text": "你走到藤椅前，指着顾先生：“人是你杀的吧？”\n顾先生愣了一下，随即冷笑：“证据呢？”他把烟按灭在茶碟里，“在警署的人来之前，我一个字也不会再跟你说。”",
+      "on_enter": [
+        {
+          "set_var": [
+            "wary_gu",
+            1
+          ]
+        },
+        {
+          "say": "【戒备】顾先生对你起了戒心，之后不会再开口。"
+        }
+      ],
+      "choices": [
+        {
+          "id": "office",
+          "text": "碰了一鼻子灰，去账房看现场",
+          "goto": "office"
+        }
       ]
     },
     {
       "id": "office",
       "title": "账房",
       "text": "账房的门虚掩着。陈掌柜伏在桌上，算盘散了一地，窗户半开，雾气正往里灌。\n你蹲下细看：他的后脑有一处钝器伤，伤口方方正正。桌上那块压账本的铜镇纸不见了。",
-      "on_enter": [{"add_clue": "head_wound"}, {"add_clue": "missing_weight"}],
+      "on_enter": [
+        {
+          "add_clue": "head_wound"
+        },
+        {
+          "add_clue": "missing_weight"
+        }
+      ],
       "choices": [
-        {"id": "ledger", "text": "翻开桌上的账本", "goto": "office_ledger"},
-        {"id": "window", "text": "查看半开的窗户", "goto": "office_window"}
+        {
+          "id": "ledger",
+          "text": "翻开桌上的账本",
+          "goto": "office_ledger"
+        },
+        {
+          "id": "window",
+          "text": "查看半开的窗户",
+          "goto": "office_window"
+        }
       ]
     },
     {
       "id": "office_ledger",
       "title": "账房·账本",
       "text": "账本最后一页被人撕掉了，残角上写着一个“顾”字和一笔欠款。\n你把残角凑到灯下：背面还有几行小字，记的是另一笔进出，和总账上的数目怎么也对不上。",
-      "on_enter": [{"add_clue": "torn_ledger"}, {"add_clue": "ledger_gap"}],
+      "on_enter": [
+        {
+          "add_clue": "torn_ledger"
+        },
+        {
+          "add_clue": "ledger_gap"
+        }
+      ],
       "choices": [
-        {"id": "zhou", "text": "拿着账本去后厨找账房先生", "goto": "kitchen_zhou"},
-        {"id": "gu", "text": "账页上写着顾先生的名字——上楼搜他的客房", "goto": "guest_room"}
+        {
+          "id": "zhou",
+          "text": "拿着账本去后厨找账房先生",
+          "goto": "kitchen_zhou"
+        },
+        {
+          "id": "gu",
+          "text": "账页上写着顾先生的名字——上楼搜他的客房",
+          "goto": "guest_room"
+        }
       ]
     },
     {
       "id": "office_window",
       "title": "账房·窗台",
       "text": "窗台上有一层带盐粒的湿泥，只有码头一带才有这种泥。\n窗外就是后院，雾里隐约能看见墙根下有一串脚印。",
-      "on_enter": [{"add_clue": "salt_mud"}],
+      "on_enter": [
+        {
+          "add_clue": "salt_mud"
+        }
+      ],
       "choices": [
-        {"id": "guest", "text": "上楼搜顾先生的客房", "goto": "guest_room"},
-        {"id": "yard", "text": "绕到后院，看看窗下的脚印", "goto": "backyard"}
+        {
+          "id": "guest",
+          "text": "上楼搜顾先生的客房",
+          "goto": "guest_room"
+        },
+        {
+          "id": "yard",
+          "text": "绕到后院，看看窗下的脚印",
+          "goto": "backyard"
+        }
       ]
     },
     {
       "id": "backyard",
       "title": "后院",
       "text": "后院的雾浓得化不开。墙根下有两行脚印：一行皮鞋印从码头的石阶上来，停在账房窗下；另一行小小的布鞋印，从后门出去，一路走向码头。",
-      "on_enter": [{"add_clue": "footprints"}],
+      "on_enter": [
+        {
+          "add_clue": "footprints"
+        }
+      ],
       "choices": [
-        {"id": "leather", "text": "跟着皮鞋印，上楼搜顾先生的客房", "goto": "guest_room"},
-        {"id": "cloth", "text": "跟着布鞋印，去后厨找阿芸", "goto": "kitchen_ayun"}
+        {
+          "id": "leather",
+          "text": "跟着皮鞋印，上楼搜顾先生的客房",
+          "goto": "guest_room"
+        },
+        {
+          "id": "cloth",
+          "text": "跟着布鞋印，去后厨找阿芸",
+          "goto": "kitchen_ayun"
+        },
+        {
+          "id": "stairs",
+          "text": "趁着夜色，沿石阶下到码头",
+          "goto": "end_fail_tide"
+        }
       ]
     },
     {
       "id": "guest_room",
       "title": "顾先生的客房",
       "text": "顾先生不在房里。椅背上搭着一件深色外套，下摆湿透，沾着同样的海盐泥。\n你把外套翻过来：袖口和前襟干干净净，一点血迹也没有。",
-      "on_enter": [{"add_clue": "wet_coat"}],
+      "on_enter": [
+        {
+          "add_clue": "wet_coat"
+        }
+      ],
       "choices": [
-        {"id": "confront", "text": "拿着外套下楼，当面质问顾先生", "goto": "gu_confront"},
-        {"id": "quiet", "text": "把外套放回原处，去后厨找周文", "goto": "kitchen_zhou"}
+        {
+          "id": "confront",
+          "text": "拿着外套下楼，当面质问顾先生",
+          "goto": "gu_confront",
+          "when": {
+            "var": [
+              "wary_gu",
+              "<",
+              1
+            ]
+          }
+        },
+        {
+          "id": "confront_silent",
+          "text": "拿着外套下楼，当面质问顾先生",
+          "goto": "gu_silent",
+          "when": {
+            "var": [
+              "wary_gu",
+              ">=",
+              1
+            ]
+          }
+        },
+        {
+          "id": "quiet",
+          "text": "把外套放回原处，去后厨找周文",
+          "goto": "kitchen_zhou"
+        }
       ]
     },
     {
       "id": "gu_confront",
       "title": "质问·顾先生",
       "text": "你把湿外套扔在顾先生面前。他的烟掉在了地上。\n“……好吧。我坐船从码头过来，翻窗进的账房，只想把那页欠条撕了。可我进去的时候，他已经趴在桌上不动了！我吓坏了，撕了账页就原路跑了。”\n“那是几点？”“十一点二十，最多二十五。我听见钟敲过十一下。”",
-      "on_enter": [{"add_clue": "gu_confession"}],
+      "on_enter": [
+        {
+          "add_clue": "gu_confession"
+        }
+      ],
       "choices": [
-        {"id": "kitchen", "text": "十一点到十一点二十分之间，后厨里有谁？——去后厨", "goto": "kitchen_zhou"},
-        {"id": "dawn", "text": "把他看住，等天亮交给警署", "goto": "end_dawn"}
+        {
+          "id": "kitchen",
+          "text": "十一点到十一点二十分之间，后厨里有谁？——去后厨",
+          "goto": "kitchen_zhou"
+        },
+        {
+          "id": "dawn",
+          "text": "把他看住，等天亮交给警署",
+          "goto": "end_dawn"
+        }
+      ]
+    },
+    {
+      "id": "gu_silent",
+      "title": "质问·顾先生",
+      "text": "你把湿外套扔在顾先生面前。他只看了一眼，就把脸转向窗外。\n“等警署的人来。”之后，他再没说一句话。",
+      "choices": [
+        {
+          "id": "kitchen",
+          "text": "问不出东西，去后厨找周文",
+          "goto": "kitchen_zhou"
+        }
       ]
     },
     {
       "id": "kitchen_zhou",
       "title": "后厨·周文",
       "text": "灶火还没熄。周文在一旁擦眼镜，阿芸攥着围裙站在灶台边。\n“我和阿芸在后厨清点货物，钟敲十一下才散。散了我就回房睡了。”周文把眼镜擦了又擦。",
-      "on_enter": [{"add_clue": "alibi"}],
+      "on_enter": [
+        {
+          "add_clue": "alibi"
+        }
+      ],
       "choices": [
-        {"id": "press", "text": "追问账上对不上的数", "goto": "zhou_gap", "when": {"has_clue": "ledger_gap"}},
-        {"id": "ayun", "text": "转身去问阿芸", "goto": "kitchen_ayun"}
+        {
+          "id": "press",
+          "text": "追问账上对不上的数",
+          "goto": "zhou_gap",
+          "when": {
+            "has_clue": "ledger_gap"
+          }
+        },
+        {
+          "id": "bluff",
+          "text": "没凭没据，直接逼问周文是不是他干的",
+          "goto": "zhou_bluff"
+        },
+        {
+          "id": "sneak",
+          "text": "趁他们说话，悄悄溜去周文的房间",
+          "goto": "end_fail_caught"
+        },
+        {
+          "id": "ayun",
+          "text": "转身去问阿芸",
+          "goto": "kitchen_ayun"
+        }
       ]
     },
     {
@@ -160,17 +511,59 @@
       "title": "追问·周文",
       "text": "你把残页背面那几行小字摊在灶台上。\n“那是……那是掌柜让我另记的流水，跟总账本来就分开。”周文的声音越来越低，额头上渗出一层细汗。",
       "choices": [
-        {"id": "room", "text": "趁他还在后厨，去他房里看看", "goto": "zhou_room"},
-        {"id": "ayun", "text": "先放过他，去问阿芸", "goto": "kitchen_ayun"}
+        {
+          "id": "room",
+          "text": "趁他还在后厨，去他房里看看",
+          "goto": "zhou_room"
+        },
+        {
+          "id": "ayun",
+          "text": "先放过他，去问阿芸",
+          "goto": "kitchen_ayun"
+        }
+      ]
+    },
+    {
+      "id": "zhou_bluff",
+      "title": "逼问·周文",
+      "text": "“是不是你干的？”你盯着周文。\n周文慢慢把眼镜戴好，语气冷了下来：“你算什么人，也来审我？要问，等警署的人来问。”",
+      "on_enter": [
+        {
+          "set_var": [
+            "wary_zhou",
+            1
+          ]
+        },
+        {
+          "say": "【戒备】周文对你起了戒心，之后不会再露出破绽。"
+        }
+      ],
+      "choices": [
+        {
+          "id": "ayun",
+          "text": "转身去问阿芸",
+          "goto": "kitchen_ayun"
+        }
       ]
     },
     {
       "id": "zhou_room",
       "title": "周文的房间",
       "text": "周文的房间收拾得一丝不苟。床下有一块地板踩上去吱呀作响。\n你把它撬开：下面藏着一本小账本，记满了亏空。最后一页夹着一张便条，是陈掌柜的字。",
-      "on_enter": [{"add_clue": "secret_ledger"}, {"add_clue": "chen_note"}],
+      "on_enter": [
+        {
+          "add_clue": "secret_ledger"
+        },
+        {
+          "add_clue": "chen_note"
+        }
+      ],
       "choices": [
-        {"id": "ebb", "text": "回大堂，把线索理一理", "goto": "ebb"}
+        {
+          "id": "ebb",
+          "text": "回大堂，把线索理一理",
+          "goto": "ebb"
+        }
       ]
     },
     {
@@ -178,110 +571,402 @@
       "title": "后厨·阿芸",
       "text": "阿芸的手指绞着围裙。“我……我和周先生一直在后厨，十一点就回阁楼睡了。”\n她说完，飞快地朝后门看了一眼。",
       "choices": [
-        {"id": "attic", "text": "去她住的阁楼看看", "goto": "attic"},
-        {"id": "ebb", "text": "不再逼她，回大堂把线索理一理", "goto": "ebb"}
+        {
+          "id": "attic",
+          "text": "去她住的阁楼看看",
+          "goto": "attic"
+        },
+        {
+          "id": "bluff",
+          "text": "厉声质问她为什么撒谎",
+          "goto": "ayun_bluff"
+        },
+        {
+          "id": "ebb",
+          "text": "不再逼她，回大堂把线索理一理",
+          "goto": "ebb"
+        }
+      ]
+    },
+    {
+      "id": "ayun_bluff",
+      "title": "逼问·阿芸",
+      "text": "“你在撒谎！”你的声音在后厨里炸开。\n阿芸的眼泪一下子涌了出来。她推开你，跑上阁楼，把门从里面闩上了。",
+      "on_enter": [
+        {
+          "set_var": [
+            "wary_ayun",
+            1
+          ]
+        },
+        {
+          "say": "【戒备】阿芸被吓坏了，之后不会再对你说实话。"
+        }
+      ],
+      "choices": [
+        {
+          "id": "ebb",
+          "text": "回大堂，把线索理一理",
+          "goto": "ebb"
+        }
       ]
     },
     {
       "id": "attic",
       "title": "阁楼",
       "text": "阁楼低矮，只容得下一张窄床和一张小桌。\n枕边的小木盒里有一封信；桌上压着一张药铺的收条。",
-      "on_enter": [{"add_clue": "love_letter"}, {"add_clue": "poison_receipt"}],
+      "on_enter": [
+        {
+          "add_clue": "love_letter"
+        },
+        {
+          "add_clue": "poison_receipt"
+        }
+      ],
       "choices": [
-        {"id": "ebb", "text": "回大堂，把线索理一理", "goto": "ebb"}
+        {
+          "id": "ebb",
+          "text": "回大堂，把线索理一理",
+          "goto": "ebb"
+        }
       ]
     },
     {
       "id": "ebb",
       "title": "大堂·退潮",
       "text": "炉火只剩一点红。窗外，后院通往码头的石阶一级一级露了出来。",
-      "on_enter": [{"start_act": "ebb"}],
+      "on_enter": [
+        {
+          "start_act": "ebb"
+        }
+      ],
       "choices": [
-        {"id": "vat", "text": "顾先生空着手进出——镇纸一定还在旅馆里。去后厨摸一摸水缸", "goto": "vat",
-         "when": {"has_clue": "gu_confession"}},
-        {"id": "letter", "text": "拿着阿水的信去找阿芸", "goto": "ayun_truth", "when": {"has_clue": "love_letter"}},
-        {"id": "dock", "text": "趁退潮下到码头，找昨晚的船家", "goto": "dock"},
-        {"id": "gather", "text": "召集所有人到大堂对质", "goto": "gathering"}
+        {
+          "id": "vat",
+          "text": "顾先生空着手进出——镇纸一定还在旅馆里。去后厨摸一摸水缸",
+          "goto": "vat",
+          "when": {
+            "has_clue": "gu_confession"
+          }
+        },
+        {
+          "id": "letter",
+          "text": "拿着阿水的信去找阿芸",
+          "goto": "ayun_truth",
+          "when": {
+            "all": [
+              {
+                "has_clue": "love_letter"
+              },
+              {
+                "var": [
+                  "wary_ayun",
+                  "<",
+                  1
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "dock",
+          "text": "趁退潮下到码头，找昨晚的船家",
+          "goto": "dock"
+        },
+        {
+          "id": "gather",
+          "text": "召集所有人到大堂对质",
+          "goto": "gathering"
+        }
       ]
     },
     {
       "id": "vat",
       "title": "后厨·水缸",
       "text": "你卷起袖子，把手伸进冰冷的缸底，摸到了一块沉甸甸的铜块——正是那块镇纸，边角缠着几根花白的头发。\n水缸旁就是储藏室，货架上的洋酒空了两格。",
-      "on_enter": [{"add_clue": "vat_weight"}, {"add_clue": "stock_gap"}],
+      "on_enter": [
+        {
+          "add_clue": "vat_weight"
+        },
+        {
+          "add_clue": "stock_gap"
+        }
+      ],
       "choices": [
-        {"id": "zhou", "text": "把湿漉漉的镇纸放到周文面前", "goto": "zhou_weight"},
-        {"id": "gather", "text": "召集所有人到大堂对质", "goto": "gathering"}
+        {
+          "id": "zhou",
+          "text": "把湿漉漉的镇纸放到周文面前",
+          "goto": "zhou_weight",
+          "when": {
+            "var": [
+              "wary_zhou",
+              "<",
+              1
+            ]
+          }
+        },
+        {
+          "id": "zhou_guarded",
+          "text": "把湿漉漉的镇纸放到周文面前",
+          "goto": "zhou_guarded",
+          "when": {
+            "var": [
+              "wary_zhou",
+              ">=",
+              1
+            ]
+          }
+        },
+        {
+          "id": "gather",
+          "text": "召集所有人到大堂对质",
+          "goto": "gathering"
+        }
       ]
     },
     {
       "id": "zhou_weight",
       "title": "出示镇纸·周文",
       "text": "你把湿漉漉的铜镇纸放到灶台上。\n周文脱口而出：“不可能，我明明擦干净了——”话说到一半，他自己先愣住了。",
-      "on_enter": [{"add_clue": "zhou_slip"}],
+      "on_enter": [
+        {
+          "add_clue": "zhou_slip"
+        }
+      ],
       "choices": [
-        {"id": "ayun", "text": "去问阿芸：她到底几点离开的后厨", "goto": "ayun_truth", "when": {"has_clue": "love_letter"}},
-        {"id": "dock", "text": "下到码头，找船家核对时间", "goto": "dock"},
-        {"id": "gather", "text": "召集所有人到大堂对质", "goto": "gathering"}
+        {
+          "id": "ayun",
+          "text": "去问阿芸：她到底几点离开的后厨",
+          "goto": "ayun_truth",
+          "when": {
+            "all": [
+              {
+                "has_clue": "love_letter"
+              },
+              {
+                "var": [
+                  "wary_ayun",
+                  "<",
+                  1
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "force",
+          "text": "趁他慌了，逼他当场认罪",
+          "goto": "end_fail_attacked"
+        },
+        {
+          "id": "dock",
+          "text": "下到码头，找船家核对时间",
+          "goto": "dock"
+        },
+        {
+          "id": "gather",
+          "text": "召集所有人到大堂对质",
+          "goto": "gathering"
+        }
+      ]
+    },
+    {
+      "id": "zhou_guarded",
+      "title": "出示镇纸·周文",
+      "text": "你把湿漉漉的铜镇纸放到灶台上。\n周文只是冷冷地看着它：“一块铜疙瘩，能说明什么？”他早有防备，这一次什么也没漏。",
+      "choices": [
+        {
+          "id": "dock",
+          "text": "下到码头，找船家核对时间",
+          "goto": "dock"
+        },
+        {
+          "id": "gather",
+          "text": "召集所有人到大堂对质",
+          "goto": "gathering"
+        }
       ]
     },
     {
       "id": "dock",
       "title": "码头石阶",
       "text": "退潮后的石阶又湿又滑。木桩上系着一条小船，船篷下挂着一本被雾打潮的记事本。\n上面记着昨夜的两笔：阿芸十一点过五分到码头；顾先生十一点一刻雇船到旅馆后墙下。",
-      "on_enter": [{"add_clue": "ferry_log"}],
+      "on_enter": [
+        {
+          "add_clue": "ferry_log"
+        }
+      ],
       "choices": [
-        {"id": "ayun", "text": "船家说阿芸十一点就到了码头——回去问她", "goto": "ayun_truth"},
-        {"id": "gather", "text": "回旅馆，召集所有人对质", "goto": "gathering"}
+        {
+          "id": "ayun",
+          "text": "船家说阿芸十一点就到了码头——回去问她",
+          "goto": "ayun_truth",
+          "when": {
+            "var": [
+              "wary_ayun",
+              "<",
+              1
+            ]
+          }
+        },
+        {
+          "id": "ayun_silent",
+          "text": "船家说阿芸十一点就到了码头——回去问她",
+          "goto": "ayun_silent",
+          "when": {
+            "var": [
+              "wary_ayun",
+              ">=",
+              1
+            ]
+          }
+        },
+        {
+          "id": "gather",
+          "text": "回旅馆，召集所有人对质",
+          "goto": "gathering"
+        }
       ]
     },
     {
       "id": "ayun_truth",
       "title": "阿芸的实话",
       "text": "阿芸的脸一下子红了，又一下子白了。\n“求你别告诉别人……钟敲十一下，我就从后门溜去码头见阿水了。我走的时候，周先生还一个人在后厨。”",
-      "on_enter": [{"add_clue": "ayun_truth"}],
+      "on_enter": [
+        {
+          "add_clue": "ayun_truth"
+        }
+      ],
       "choices": [
-        {"id": "gather", "text": "召集所有人到大堂对质", "goto": "gathering"}
+        {
+          "id": "gather",
+          "text": "召集所有人到大堂对质",
+          "goto": "gathering"
+        }
+      ]
+    },
+    {
+      "id": "ayun_silent",
+      "title": "阁楼门外",
+      "text": "阁楼的门还闩着。你敲了很久，里面只有压低的哭声。\n“我什么都不知道……你走吧。”",
+      "choices": [
+        {
+          "id": "gather",
+          "text": "召集所有人到大堂对质",
+          "goto": "gathering"
+        }
       ]
     },
     {
       "id": "gathering",
       "title": "大堂·对质",
       "text": "炉火噼啪作响，三个人被叫到大堂。顾先生捏着一根没点着的烟，周文把眼镜擦了又擦，阿芸缩在柱子后面。\n现在，说出你的结论：凶手是谁，为什么，怎么做的，凭什么。",
-      "on_enter": [{"set_flag": "gathered"}],
+      "on_enter": [
+        {
+          "set_flag": "gathered"
+        }
+      ],
       "choices": [
-        {"id": "wait", "text": "不作指认，等天亮警署的人来", "goto": "end_dawn"}
+        {
+          "id": "wait",
+          "text": "不作指认，等天亮警署的人来",
+          "goto": "end_dawn"
+        }
       ]
     },
     {
       "id": "end_truth",
       "title": "真相",
       "text": "你把水缸里捞出的铜镇纸、账上的亏空和阿芸的证词一样样摆在桌上。\n周文摘下眼镜，很久没有说话。他挪走的四百块大洋，陈掌柜昨夜才查出来，约他天亮一起去警署。十一点钟声一响，阿芸刚从后门离开，他就推开了账房的门……\n顾先生翻窗进来的时候，一切已经结束。天亮时，警署的船靠了岸。",
-      "ending": {"id": "truth", "title": "雾散"}
+      "ending": {
+        "id": "truth",
+        "title": "雾散"
+      }
     },
     {
       "id": "end_insufficient",
       "title": "证据不足",
       "text": "你指认了周文，可你的理由前后接不上。周文很快镇定下来，一条条反问：他有不在场证明，凶器在哪里，动机又是什么？\n警署的人听完，把他放了。案子挂了起来，雾港的雾，好几天都没有散。",
-      "ending": {"id": "insufficient", "title": "雾未散"}
+      "ending": {
+        "id": "insufficient",
+        "title": "雾未散"
+      }
     },
     {
       "id": "end_scapegoat",
       "title": "替罪羊",
       "text": "欠条、湿外套、窗台的盐泥，桩桩件件都指向顾先生。他被押上警署的船，一路喊着冤枉。\n多年以后，你在旧报纸的角落里读到一则短讯：雾港海鸥旅馆的前账房先生周文，因挪用公款被捕，供出了一桩旧案。",
-      "ending": {"id": "scapegoat", "title": "替罪羊"}
+      "ending": {
+        "id": "scapegoat",
+        "title": "替罪羊"
+      }
     },
     {
       "id": "end_wrong",
       "title": "错案",
       "text": "被你指认的人脸色煞白，却拿得出不在场的证人。第二天，船家阿水找上门来作证。\n等你回过神，账房先生周文已经结清了工钱，搭早班船离开了雾港。",
-      "ending": {"id": "wrong", "title": "错认"}
+      "ending": {
+        "id": "wrong",
+        "title": "错认"
+      }
     },
     {
       "id": "end_dawn",
       "title": "天亮",
       "text": "你决定把一切交给警署。天亮时警官上了岛，只看了看窗台的盐泥和顾先生的湿外套，就给他戴上了手铐。\n你站在码头，看着船驶进雾里，总觉得有什么地方不对。",
-      "ending": {"id": "dawn", "title": "交给天亮"}
+      "ending": {
+        "id": "dawn",
+        "title": "交给天亮"
+      }
+    },
+    {
+      "id": "end_fail_tide",
+      "title": "潮水",
+      "text": "潮水还漫在石阶上。你刚踩下第二级，一个浪头打来，脚下一滑……\n船家阿水把你从水里捞起来的时候，天已经亮了。",
+      "ending": {
+        "id": "fail_tide",
+        "title": "失足"
+      }
+    },
+    {
+      "id": "end_fail_caught",
+      "title": "被撞见",
+      "text": "你刚撬开床下的地板，门口就响起了脚步声。周文站在门边，手里攥着什么东西，在灯下闪了一下黄铜的光。\n等你醒来，天已大亮。周文和他的账本，一起消失在了早班船上。",
+      "ending": {
+        "id": "fail_caught",
+        "title": "被撞见"
+      }
+    },
+    {
+      "id": "end_fail_attacked",
+      "title": "困兽",
+      "text": "周文的脸一下子扭曲了。他抄起灶台上的菜刀，把你逼进储藏室，反手锁上了门。\n等你撞开门，码头上只剩一条空空的缆绳。",
+      "ending": {
+        "id": "fail_attacked",
+        "title": "困兽"
+      }
+    }
+  ],
+  "vars": {
+    "wary_gu": 0,
+    "wary_zhou": 0,
+    "wary_ayun": 0
+  },
+  "resources": [
+    {
+      "var": "wary_gu",
+      "name": "顾先生的戒心",
+      "max": 1
+    },
+    {
+      "var": "wary_zhou",
+      "name": "周文的戒心",
+      "max": 1
+    },
+    {
+      "var": "wary_ayun",
+      "name": "阿芸的戒心",
+      "max": 1
     }
   ]
 }

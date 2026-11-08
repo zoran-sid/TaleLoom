@@ -11,6 +11,8 @@ from contextlib import redirect_stdout
 import main
 from taleloom import replay
 from taleloom.loader import load_story
+from taleloom.session_factory import create_session
+from taleloom.ui_contract import ActionRequest
 from taleloom.validator import validate
 from tests.fixtures import ROOT, STORIES
 from tools import build_web
@@ -85,6 +87,26 @@ class FilmStoriesTest(unittest.TestCase):
         for d in FILM_DIRS:
             self.assertIn(d.name, buf.getvalue())
         self.assertEqual(main.resolve(FILM_DIRS[0].name), FILM_DIRS[0])
+
+    def test_failure_endings_are_reached_by_choices(self):
+        """中途失败的结局 id 以 fail_ 开头，并且由普通选择进入，影像模式才能退回上一个选择。"""
+        for d in FILM_DIRS:
+            story = load_story(d)
+            fails = {sid for sid, s in story.scenes.items() if s.ending and s.ending["id"].startswith("fail_")}
+            self.assertTrue(fails, d.name)
+            reached = {c.goto for s in story.scenes.values() for c in s.choices}
+            self.assertLessEqual(fails, reached)
+
+    def test_pressing_without_evidence_makes_suspect_wary(self):
+        story = load_story(STORIES / "film" / "fog_harbor_film")
+        session = create_session(story)
+        view = session.start().view
+        self.assertEqual({(r.id, r.value, r.maximum) for r in view.resources},
+                         {("wary_gu", 0, 1), ("wary_zhou", 0, 1), ("wary_ayun", 0, 1)})
+        result = session.dispatch(ActionRequest("choice:bluff", view.revision))
+        self.assertTrue(result.ok)
+        self.assertTrue(any(m.startswith("【戒备】") for m in result.messages))
+        self.assertIn(("wary_gu", 1), {(r.id, r.value) for r in result.view.resources})
 
 
 if __name__ == "__main__":

@@ -144,6 +144,8 @@ html, body {
   pointer-events: none;
 }
 .clue.show { opacity: 1; transform: translateY(0) rotate(-1.2deg); }
+.clue.warn { background: linear-gradient(170deg, #3a1512, #22100d); color: #f3d6cf; border: 1px solid rgba(220, 90, 70, 0.5); }
+.clue.warn .clue-kicker { color: #ff8a70; }
 .clue-kicker { margin: 0; font-family: var(--sans); font-size: 0.72em; letter-spacing: 0.35em; color: #8a5a22; }
 .clue-name { margin: 0.35em 0 0.4em; font-size: 1.35em; }
 .clue-text { margin: 0; line-height: 1.65; }
@@ -278,17 +280,31 @@ button { font: inherit; }
 .form-actions { display: flex; gap: 0.6em; width: 100%; justify-content: center; }
 
 /* 随身笔记 */
-.notes-toggle {
+.hud {
   position: absolute;
   top: 4%;
   right: 3%;
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  font-size: clamp(11px, 1.1cqi, 14px);
+}
+.chances {
+  padding: 0.45em 0.9em;
+  border-radius: 999px;
+  background: rgba(8, 8, 10, 0.5);
+  color: var(--amber);
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+.notes-toggle {
   padding: 0.45em 0.95em;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: rgba(8, 8, 10, 0.6);
   backdrop-filter: blur(4px);
   color: var(--paper);
-  font-size: clamp(11px, 1.1cqi, 14px);
+  font-size: inherit;
   letter-spacing: 0.15em;
   cursor: pointer;
 }
@@ -349,6 +365,11 @@ button { font: inherit; }
 .nb-clues { margin: 0; padding-left: 1.3em; }
 .nb-clue { margin-bottom: 0.7em; line-height: 1.6; font-size: 15px; }
 .nb-clue strong { display: block; font-size: 16px; }
+.nb-meters { margin: 0; padding: 0; list-style: none; }
+.nb-meter { display: flex; justify-content: space-between; padding: 0.2em 0; font-size: 15px; }
+.nb-meter .dots { letter-spacing: 0.2em; color: #8a5a22; }
+.nb-meter.raised { color: #8e2a1c; }
+.nb-meter.raised .dots { color: #b0301c; }
 .nb-scene, .nb-empty { margin: 0 0 0.5em; font-size: 14px; line-height: 1.7; color: #4a3d2e; }
 .nb-foot { margin: 0; padding: 0.6em 1.2em 0.9em; font-family: var(--sans); font-size: 11px; color: #7a6a55; }
 

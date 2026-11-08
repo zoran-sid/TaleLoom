@@ -7,6 +7,9 @@
  *
  * 默认播放影像版专用剧本 stories/film/fog_harbor_film（线性分支，不上书架）；
  * ?story=<id> 可以换成其他剧本，例如探索版 fog_harbor。
+ *
+ * 失败惩罚：每次选择前用会话的标准存档记一个检查点；到达 id 以 fail_ 开头的
+ * 结局时，可以退回上一个选择重来，整局共 CHANCES 次机会，每次退回记一次失误。
  */
 import './cinematic.css';
 import { GameClient } from '../runtime/client.js';
@@ -14,6 +17,7 @@ import { Stage } from './stage.js';
 import { Sound } from './sound.js';
 
 const STORY_ID = new URLSearchParams(location.search).get('story') || 'fog_harbor_film';
+const CHANCES = 3;
 const FAST = new URLSearchParams(location.search).get('fast') === '1';
 const T = (ms) => (FAST ? Math.min(ms, 40) : ms);
 // 场景 → 画面：[画面名, 选项]。审问类节点用人物特写，speaker 作为字幕上的说话人。
@@ -24,6 +28,12 @@ const ART = {
   dock: ['harbor'], backyard: ['generic'],
   gu_first: ['portrait', { suspect: 'gu', place: 'lobby', speaker: '顾先生' }],
   gu_confront: ['portrait', { suspect: 'gu', place: 'lobby', speaker: '顾先生' }],
+  gu_bluff: ['portrait', { suspect: 'gu', place: 'lobby', speaker: '顾先生' }],
+  gu_silent: ['portrait', { suspect: 'gu', place: 'lobby', speaker: '顾先生' }],
+  zhou_bluff: ['portrait', { suspect: 'zhou', place: 'kitchen', speaker: '周文' }],
+  zhou_guarded: ['portrait', { suspect: 'zhou', place: 'kitchen', speaker: '周文' }],
+  ayun_bluff: ['portrait', { suspect: 'ayun', place: 'kitchen', speaker: '阿芸' }],
+  ayun_silent: ['generic', { speaker: '阿芸' }],
   zhou_gap: ['portrait', { suspect: 'zhou', place: 'kitchen', speaker: '周文' }],
   zhou_weight: ['portrait', { suspect: 'zhou', place: 'kitchen', speaker: '周文' }],
   kitchen_ayun: ['portrait', { suspect: 'ayun', place: 'kitchen', speaker: '阿芸' }],
@@ -47,7 +57,10 @@ let actTitle = '第一幕 · 雾夜';
 let poke = null;
 let paused = false;          // 打开笔记时暂停字幕与转场计时
 let seen = new Set();        // 已经播过描述的场景，回来时不再重播
-let notes = { clues: [], sceneTitle: '', sceneText: '' };
+let notes = { clues: [], resources: [], sceneTitle: '', sceneText: '' };
+let checkpoint = null;       // 上一个选择之前的标准存档
+let chances = CHANCES;       // 剩余的“回到上一个选择”次数
+let mistakes = 0;            // 本局退回过几次
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -162,6 +175,21 @@ function hideCard() {
   setTimeout(() => { if (!card.classList.contains('show')) card.hidden = true; }, T(700));
 }
 
+/** 嫌疑人起了戒心：红色提示卡，配低沉的一声。 */
+async function warnCard(text) {
+  sound.thud();
+  const card = $('clue');
+  card.classList.add('warn');
+  card.replaceChildren(el('p', 'clue-kicker', '戒备'), el('p', 'clue-text', text));
+  card.hidden = false;
+  requestAnimationFrame(() => card.classList.add('show'));
+  await hold(2400 + text.length * 45);
+  card.classList.remove('show');
+  await sleep(500);
+  card.hidden = true;
+  card.classList.remove('warn');
+}
+
 async function clueCard(name, text) {
   sound.bell();
   stage.flash();
@@ -183,7 +211,9 @@ function beatsFrom(messages) {
     const text = raw.trim();
     if (!text) continue;
     let m;
-    if ((m = text.match(/^【获得线索】(.+?)：([\s\S]*)$/)) || (m = text.match(/^【获得线索】(.+)$/))) {
+    if ((m = text.match(/^【戒备】(.+)$/))) {
+      beats.push({ kind: 'warn', text: m[1] });
+    } else if ((m = text.match(/^【获得线索】(.+?)：([\s\S]*)$/)) || (m = text.match(/^【获得线索】(.+)$/))) {
       beats.push({ kind: 'clue', name: m[1], text: m[2] || '' });
     } else if ((m = text.match(/^【审问】(.+?) · (.+)$/))) {
       beats.push({ kind: 'ask', who: m[1], topic: m[2], lines: [] });
@@ -234,6 +264,7 @@ async function play(messages) {
 async function playBeats(beats) {
   for (const beat of beats) {
     if (beat.kind === 'clue') await clueCard(beat.name, beat.text);
+    else if (beat.kind === 'warn') await warnCard(beat.text);
     else if (beat.kind === 'ask') await interrogate(beat);
     else if (beat.kind === 'examine') {
       for (const line of beat.lines) await type(line, `深入调查 · ${beat.name}`);
@@ -279,19 +310,69 @@ async function enterScene(next) {
   clearSubtitle();
 }
 
+function isFailure(current) {
+  return Boolean(current.ending_id && current.ending_id.startsWith('fail_'));
+}
+
 async function ending(next) {
   clearSubtitle();
+  const failed = isFailure(next);
   await stage.fade(1, T(1200));
   stage.show('ending', { dawn: ['truth', 'dawn'].includes(next.ending_id) });
   sound.setAmbience('ending');
   await stage.fade(0, T(1800));
   for (const line of chunks(next.text)) await type(line);
   clearSubtitle();
-  showCard('结局', next.ending_title || next.ending_id, `第 ${next.turn} 回合`);
-  showChoices([
-    { label: '重新开始', run: restart },
-    { label: '返回文字版', run: () => { location.href = '/'; } },
-  ]);
+  if (failed) {
+    showCard('失败', next.ending_title || next.ending_id, chances > 0 ? `还剩 ${chances} 次机会` : '机会已经用完');
+  } else {
+    showCard('结局', next.ending_title || next.ending_id,
+      mistakes ? `第 ${next.turn} 回合 · 失误 ${mistakes} 次` : `第 ${next.turn} 回合`);
+  }
+  const items = [];
+  if (failed && chances > 0 && checkpoint) {
+    items.push({ label: `回到上一个选择（还剩 ${chances} 次机会）`, run: rewind });
+  }
+  items.push({ label: failed ? '从头再来' : '重新开始', run: restart });
+  items.push({ label: '返回文字版', run: () => { location.href = '/'; } });
+  showChoices(items);
+}
+
+/** 退回上一个选择：恢复检查点存档，扣一次机会、记一次失误，直接回到选项。 */
+async function rewind() {
+  if (busy || !checkpoint || chances <= 0) return;
+  busy = true;
+  hideChoices();
+  hideCard();
+  try {
+    const result = await call({ method: 'restore', payload: checkpoint });
+    if (result.error_code) throw new Error(result.messages.join(' ') || '存档无法恢复');
+    chances -= 1;
+    mistakes += 1;
+    updateChances();
+    clearSubtitle();
+    await stage.fade(1, T(600));
+    sound.thud();
+    view = result.view;
+    updateNotes(view);
+    setArt(view.scene_id);
+    showCard('回到上一个选择', view.scene_title, `还剩 ${chances} 次机会`);
+    await stage.fade(0, T(900));
+    await hold(1400);
+    hideCard();
+    showChoices();
+  } catch (error) {
+    await type(`没能回到上一步：${error.message}`);
+    clearSubtitle();
+    showChoices([{ label: '从头再来', run: restart }]);
+  } finally {
+    busy = false;
+  }
+}
+
+function updateChances() {
+  $('chances').textContent = `机会 ${'●'.repeat(chances)}${'○'.repeat(CHANCES - chances)}`;
+  $('chances').title = `还可以退回上一个选择 ${chances} 次`;
 }
 
 /** 先在原场景演完反馈，再转场；结束时进入结局画面。 */
@@ -402,7 +483,7 @@ function openForm(action) {
 
 function updateNotes(next) {
   const before = notes.clues.length;
-  notes = { clues: next.clues, sceneTitle: next.scene_title, sceneText: next.text };
+  notes = { clues: next.clues, resources: next.resources, sceneTitle: next.scene_title, sceneText: next.text };
   $('notes-count').textContent = String(notes.clues.length);
   if (notes.clues.length > before) {
     for (const id of ['notes-toggle', 'notes-btn']) {
@@ -430,7 +511,22 @@ function renderNotebook() {
     list.append(item);
   }
   found.append(list);
-  body.append(found, scene);
+  body.append(found);
+  if (notes.resources.length) {
+    const people = el('section', 'nb-section');
+    people.append(el('h3', 'nb-heading', '人物状态'));
+    const meters = el('ul', 'nb-meters');
+    for (const resource of notes.resources) {
+      const item = el('li', resource.value ? 'nb-meter raised' : 'nb-meter');
+      const max = resource.maximum || resource.value;
+      item.append(el('span', '', resource.label),
+        el('span', 'dots', `${'●'.repeat(resource.value)}${'○'.repeat(Math.max(0, max - resource.value))}`));
+      meters.append(item);
+    }
+    people.append(meters);
+    body.append(people);
+  }
+  body.append(scene);
 }
 
 function openNotebook() {
@@ -483,7 +579,9 @@ async function act(actionId, values) {
   hideCard();
   try {
     const previous = view;
+    const save = await call({ method: 'export' });
     const result = await call({ method: 'action', action: { action_id: actionId, expected_revision: view.revision, values } });
+    if (!result.error_code) checkpoint = save;
     await present(result, previous);
   } catch (error) {
     await type(`出了点问题：${error.message}`);
@@ -501,6 +599,10 @@ async function restart() {
   hideCard();
   actTitle = '第一幕 · 雾夜';
   seen = new Set();
+  checkpoint = null;
+  chances = CHANCES;
+  mistakes = 0;
+  updateChances();
   closeNotebook();
   try {
     booting = null;
