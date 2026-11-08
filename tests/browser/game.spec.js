@@ -32,6 +32,9 @@ for (const vector of vectors) {
       return route.continue();
     });
     await start(page, vector.story_id);
+    // 新游戏随机播种；用固定起始存档将浏览器与原生回放置于同一随机状态。
+    await page.locator('#import-file').setInputFiles({ name: 'seed.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(vector.initial_save)) });
+    await idle(page);
     for (const action of vector.actions) await act(page, action);
     await expect(page.locator('#chapter')).toHaveAttribute('data-ending', vector.ending);
     await expect(page.locator('#ending')).toBeVisible();

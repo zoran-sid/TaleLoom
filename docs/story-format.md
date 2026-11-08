@@ -156,3 +156,20 @@ stories/<剧本id>/
 ```
 
 优先写选项文字而不是编号：选项顺序变化时脚本仍然有效。
+
+## 可选场景文字扩展
+
+场景可以添加 `variants`，例如：
+
+```json
+"variants": [
+  {"when": {"has_item": "key"}, "mode": "append", "text": "你握着{item:key}。"},
+  {"when": {"var": ["oxygen", "<", 3]}, "mode": "replace", "text": "氧气只剩{vars.oxygen}。"}
+]
+```
+
+按顺序处理满足条件的变体。`append` 追加一行，`replace` 替换已形成的正文；省略 mode 使用 append。场景正文与选项文字支持变量和物品名占位符，未知名称显示提示。
+
+`{"chance": 30}` 表示 30% 条件。也可写 `{"chance": {"percent": 30, "id": "meteor"}}` 指定独立事件名称。不同选项/触发器/变体有独立位置；插件及同一嵌套条件中的等概率事件使用不同 id。相同种子、回合、场景和事件位置的结果稳定，刷新或读档不能重抽。新会话自动播种，测试可传 seed；种子保存在 GameState.random_seed，旧存档默认 0。
+
+教学插件 `example` 提供 `{"bell_rung": true}` 条件、`{"ring_bell": null}` 效果，以及 `摇铃`/`ring` 命令和同名按钮。它只修改自己的 `state.ext.example` 分区。

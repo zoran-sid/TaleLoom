@@ -162,3 +162,15 @@ assert result.view.inventory[0].id == "key"
 - YHT 维护数据与 `to_dict()` 结构；ZC 把同一 JSON 数据映射到 Web Worker 消息并验证真实浏览器回放。
 
 运行 `python -B -m unittest tests.integration.test_ui_contract -v` 验证样例。测试替身使用带 fixture 标记的测试存档，内存存储随实例消失，均不属于正式游戏实现。
+
+## 7 ZQO 正式运行时扩展（兼容 v1）
+
+- `session_factory.create_session` 返回 `session.GameSession`，现有 `Engine` 调用签名保持不变。未启动时调用会话操作抛出开发调用错误；正常用户操作错误返回 `SessionResult`。失败操作回滚状态和 revision；不产生状态变化的尝试仅返回提示。
+- `Scene.variants` 为可选列表，默认空。每项包含 `text`、可选 `when` 和 `mode`（默认 `append`，或 `replace`）。按数组顺序应用，随后替换 `{vars.名称}` 与 `{item:ID}`。未知占位符显示提示；不执行表达式。loader、walk、validator 同步支持此字段。
+- 新游戏由 `GameSession(story, seed=None)` 自动生成 64 位种子；`create_session` 同样接受可选 seed。测试与回放可传整数固定种子。状态保存 `random_seed` 与 `turn`，旧存档缺失 seed 时默认 0。`chance` 支持 0–100 整数，或 `{"percent": 30, "id": "meteor"}`。哈希键包含种子、回合、场景、条件所在的选项/触发器/变体位置、显式 id 和百分比；不同事件独立、同一事件重复读取稳定。插件或同一嵌套条件中的等概率事件应提供不同的显式 id。快照读取不修改随机进度，恢复后相同操作得到相同结果。
+- `Mechanic.actions(engine)` 返回结构化 `ActionSpec`；`Mechanic.clues(engine)` 返回已发现的 `DisplayItem`。两个方法默认空列表，旧插件兼容。展示在引擎副本上进行；插件仍须遵守只读约定。动作 ID 为 `插件名:动词`，参数按声明顺序传入 `Command.args`，支持 `select`、`text` 及可选参数。
+- 存档编码器归 LQ 的 #12。本 PR 不修改 save.py；正式会话暂复用已合入 `LegacySession._decode` 的校验（含 examined/asked/act），待 LQ 的公共编码器合入再替换此单一接入点。
+- `mechanics/example.py` 为可启用的最小铃铛插件，演示注册条件、效果、动词与图形按钮。现有两部剧本不启用它。
+- 展示直接读取 YHT 已合入的 `story.resources` 与 `story.assets`，不再猜测字段或按剧本 ID 硬编码。推理和道具的 actions 方法仅适配各负责人已有 build_actions，保留搜证、审问、指认理由和 use_on。图形正文复用现有命令行提示过滤。
+
+本次 contract PR 涉及 YHT 的场景变体类型/加载/校验、ZRS/ZC 的插件方法适配及 ZC 的会话入口/网页打包。LQ 的 replay.py 和 save.py 保持原实现；当前引擎回放默认 seed=0，后续通关脚本 seed 语法由 LQ 确定。网页验收通过导入固定起始存档，让浏览器与 CPython 在同一随机状态下逐步比较。原有公开方法与存档 v1 保持兼容，新增 seed 参数为可选关键字。

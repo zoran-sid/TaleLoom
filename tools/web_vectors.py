@@ -27,8 +27,9 @@ def build_vectors() -> list:
             walkthrough = load_walkthrough(file)
             native = Engine(story)
             output = native.start()
-            session = create_session(story)
+            session = create_session(story, seed=0)
             session.start()
+            initial_save = session.export_save()
             actions = []
             for text in walkthrough.commands:
                 cmd = parse(text, output.choices, native.verb_aliases())
@@ -63,7 +64,7 @@ def build_vectors() -> list:
                 actions.append({'action_id': action_id, 'values': values})
             assert session.snapshot().ending_id == walkthrough.expect, file
             vectors.append({'story_id': story.id, 'name': walkthrough.name,
-                            'actions': actions, 'ending': walkthrough.expect,
+                            'actions': actions, 'ending': walkthrough.expect, 'initial_save': initial_save,
                             'save': session.export_save()})
     return vectors
 
