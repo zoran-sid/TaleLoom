@@ -8,30 +8,37 @@
 import atexit
 import json
 import tempfile
-import tkinter as tk
 import types
 import unittest
 from pathlib import Path
 
+try:
+    import tkinter as tk
+except ImportError:          # CI 的 Python 可能不带 Tcl/Tk
+    tk = None
+
 from taleloom.gui.controller import GameController
 from tests.ui_fakes import FakeGameSession
 
-_ROOT: tk.Tk | None = None
+_ROOT = None
 _DISPLAY: bool | None = None
 
 
-def root() -> tk.Tk | None:
+def root():
     global _ROOT, _DISPLAY
     if _DISPLAY is None:
-        try:
-            _ROOT = tk.Tk()
-        except tk.TclError:
+        if tk is None:
             _DISPLAY = False
         else:
-            _ROOT.withdraw()
-            _ROOT.geometry("700x520")
-            _DISPLAY = True
-            atexit.register(_ROOT.destroy)
+            try:
+                _ROOT = tk.Tk()
+            except tk.TclError:      # 没有图形显示
+                _DISPLAY = False
+            else:
+                _ROOT.withdraw()
+                _ROOT.geometry("700x520")
+                _DISPLAY = True
+                atexit.register(_ROOT.destroy)
     return _ROOT if _DISPLAY else None
 
 
