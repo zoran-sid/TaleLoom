@@ -104,10 +104,19 @@ stories/<剧本id>/
 
 ```json
 "combinations": [{"items": ["broken_wrench", "tape"], "result": "fixed_wrench", "message": "..."}],
-"uses": [{"item": "fixed_wrench", "scene": "airlock", "when": {}, "effects": [...], "message": "...", "consume": false}]
+"targets": [{"id": "panel", "name": "控制面板", "aliases": ["面板"], "scene": "airlock"}],
+"uses": [
+  {"item": "fixed_wrench", "target": "panel", "scene": "airlock", "when": {}, "effects": [...], "message": "...", "consume": false},
+  {"item": "tape", "scene": "cryo", "effects": [...], "consume": true}
+]
 ```
 
-玩家命令“组合 A B”“使用 A”。
+玩家命令“组合 A B”“使用 A”“把 A 用在 B 上”。
+
+`targets` 声明玩家可以互动的目标；`scene` 省略时该目标在所有场景可用。`uses` 里写 `target` 表示只对这一个目标使用，不写 `target` 则沿用按 `scene` 匹配的旧规则，旧剧本不用改。
+界面动作固定为 `puzzle:use`（参数 `item`）、`puzzle:use_on`（参数 `item` 与 `target`）、`puzzle:combine`（参数 `first` 与 `second`）；候选只含背包物品和当前场景声明的目标，不提示正确配方或使用结果。图形界面提交这些 ID，不拼中文命令。
+校验会报告不存在的物品、场景与目标，以及重复或空的目标 id。
+
 
 ## 7 通关脚本
 

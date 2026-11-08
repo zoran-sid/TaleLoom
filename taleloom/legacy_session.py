@@ -12,6 +12,7 @@ import copy
 import json
 
 from .engine import Engine
+from .mechanics.puzzle import build_actions as puzzle_actions
 from .model import Command, Story
 from .rules import Context
 from .save import SAVE_VERSION, fingerprint
@@ -158,14 +159,9 @@ class LegacySession:
         clues = self.story.data.get('clues', {})
         found = state.ext.get('mystery', {}).get('clues', [])
         actions = []
+        if 'puzzle' in self.story.mechanics:
+            actions.extend(puzzle_actions(self.story, state, inventory))
         if not state.ending:
-            if 'puzzle' in self.story.mechanics and inventory:
-                actions.append(ActionSpec('puzzle:use', '使用道具', [ActionParameter('item', '物品', options=inventory)]))
-                if len(inventory) >= 2:
-                    actions.append(ActionSpec('puzzle:combine', '组合道具', [
-                        ActionParameter('first', '第一件物品', options=inventory),
-                        ActionParameter('second', '第二件物品', options=inventory),
-                    ]))
             acc = self.story.data.get('accusation')
             if 'mystery' in self.story.mechanics and acc and self.engine.registry.check(
                 Context(self.story, state), acc.get('when')
