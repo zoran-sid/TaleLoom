@@ -25,7 +25,26 @@ def game_files(root: Path) -> list[Path]:
     return ([root / 'taleloom' / name for name in CORE]
             + [root / 'web' / '__init__.py']
             + [root / 'web' / 'runtime' / name for name in RUNTIME]
-            + sorted((root / 'stories').glob('*/story.json')))
+            + sorted((root / 'stories').glob('*/story.json'))
+            + sorted((root / 'stories' / 'film').glob('*/story.json')))
+
+
+def catalogs(root: Path) -> tuple[list, list]:
+    """书架上的剧本（stories/*/）与影像版专用剧本（stories/film/*/，不上书架）。
+
+    影像版条目带 path 与 listed: False，只写进游戏包内的目录，供运行桥按路径加载。
+    """
+    def entry(path: Path) -> dict:
+        story = json.loads(path.read_text(encoding='utf-8'))
+        if path.parent.name != story['id']:
+            raise ValueError(f'网页剧本目录与 ID 必须一致：{path}')
+        return {'id': story['id'], 'title': story['title'],
+                'genre': story.get('meta', {}).get('genre', '文字冒险')}
+
+    listed = [entry(p) for p in sorted((root / 'stories').glob('*/story.json'))]
+    films = [{**entry(p), 'path': p.relative_to(root).as_posix(), 'listed': False}
+             for p in sorted((root / 'stories' / 'film').glob('*/story.json'))]
+    return listed, films
 
 
 def make_archive(root: Path, catalog: list) -> bytes:
@@ -44,14 +63,8 @@ def main():
     """复制锁定的本地 Pyodide，产出目录与文件大小均可检查。"""
     package = ROOT / 'node_modules' / 'pyodide'
     version = json.loads((package / 'package.json').read_text())['version']
-    catalog = []
-    for path in sorted((ROOT / 'stories').glob('*/story.json')):
-        story = json.loads(path.read_text(encoding='utf-8'))
-        if path.parent.name != story['id']:
-            raise ValueError(f'网页剧本目录与 ID 必须一致：{path}')
-        catalog.append({'id': story['id'], 'title': story['title'],
-                        'genre': story.get('meta', {}).get('genre', '文字冒险')})
-    archive = make_archive(ROOT, catalog)
+    catalog, films = catalogs(ROOT)
+    archive = make_archive(ROOT, catalog + films)
     name = f'game-{hashlib.sha256(archive).hexdigest()[:16]}.zip'
     if PUBLIC.exists():
         shutil.rmtree(PUBLIC)
@@ -69,7 +82,7 @@ def main():
     for path in PUBLIC.rglob('*'):
         if path.is_file() and path.stat().st_size > 25 * 1024 * 1024:
             raise ValueError(f'文件超过 Static Assets 25 MiB 上限：{path.name}')
-    print(f'网页资源准备完成：{len(catalog)} 个剧本，Pyodide {version}，游戏包 {len(archive)} 字节')
+    print(f'网页资源准备完成：{len(catalog)} 个剧本，{len(films)} 个影像版，Pyodide {version}，游戏包 {len(archive)} 字节')
 
 
 if __name__ == '__main__':

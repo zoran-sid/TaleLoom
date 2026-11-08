@@ -6,6 +6,9 @@
     python main.py graph fog_harbor       输出剧本的 Mermaid 场景图
     python main.py replay fog_harbor      回放该剧本的全部通关脚本
 
+影像版专用剧本放在 stories/film/<id>/：不出现在命令行菜单、桌面与网页书架，
+只由影像模式页面（cinematic.html）使用；validate 不带参数时也会校验它们。
+
 桌面 GUI 的接入约定（ZRS 实现）：包 taleloom.gui 提供
 ``run(stories_dir: Path, saves_dir: Path) -> int``，返回进程退出码。
 """
@@ -23,21 +26,29 @@ from taleloom.validator import errors, format_report, render_mermaid, validate
 
 ROOT = Path(__file__).resolve().parent
 STORIES = ROOT / "stories"
+FILMS = STORIES / "film"
 SAVES = ROOT / "saves"
 
 
 def story_dirs() -> list[Path]:
+    """书架上的剧本（命令行菜单、桌面与网页都会列出）。"""
     return sorted(p.parent for p in STORIES.glob("*/story.json"))
+
+
+def film_dirs() -> list[Path]:
+    """影像版专用剧本，只给影像模式使用。"""
+    return sorted(p.parent for p in FILMS.glob("*/story.json"))
 
 
 def resolve(name: str) -> Path:
     path = Path(name)
     if path.exists():
         return path if path.is_dir() else path.parent
-    candidate = STORIES / name
-    if (candidate / "story.json").is_file():
-        return candidate
-    names = ", ".join(p.name for p in story_dirs())
+    for base in (STORIES, FILMS):
+        candidate = base / name
+        if (candidate / "story.json").is_file():
+            return candidate
+    names = ", ".join(p.name for p in story_dirs() + film_dirs())
     raise SystemExit(f"找不到剧本“{name}”。可用剧本：{names}")
 
 
@@ -79,7 +90,7 @@ def cmd_gui() -> int:
 
 
 def cmd_validate(names: list[str]) -> int:
-    dirs = [resolve(n) for n in names] or story_dirs()
+    dirs = [resolve(n) for n in names] or story_dirs() + film_dirs()
     failed = 0
     for d in dirs:
         try:

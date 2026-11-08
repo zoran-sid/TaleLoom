@@ -1,7 +1,7 @@
 """Worker 内固定 JSON 消息入口；网页输入不会作为 Python 代码执行。"""
 
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from taleloom.loader import load_story
 from taleloom.ui_contract import ActionRequest, PROTOCOL_VERSION
@@ -38,6 +38,18 @@ def _validate(request):
             raise ValueError('操作参数应为字符串对象')
 
 
+def _story_path(story_id: str) -> Path:
+    """按游戏包内目录找到剧本文件；影像版剧本登记了 path，其余在 stories/<id>/。"""
+    catalog = json.loads(Path('catalog.json').read_text(encoding='utf-8'))
+    entry = next((e for e in catalog if isinstance(e, dict) and e.get('id') == story_id), None)
+    if entry is None:
+        raise ValueError('剧本不存在')
+    path = PurePosixPath(entry.get('path') or f'stories/{story_id}/story.json')
+    if path.is_absolute() or path.parts[0] != 'stories' or '..' in path.parts or path.name != 'story.json':
+        raise ValueError('剧本路径无效')
+    return Path(*path.parts)
+
+
 def call(request_json: str) -> str:
     """处理 start/action/restore/export；会话标识隔离迟到的旧请求。"""
     global _session, _session_id
@@ -45,11 +57,7 @@ def call(request_json: str) -> str:
     _validate(request)
     method = request['method']
     if method == 'start':
-        story_id = request['story_id']
-        catalog = json.loads(Path('catalog.json').read_text(encoding='utf-8'))
-        if story_id not in {entry['id'] for entry in catalog}:
-            raise ValueError('剧本不存在')
-        candidate = create_session(load_story(Path('stories') / story_id / 'story.json'))
+        candidate = create_session(load_story(_story_path(request['story_id'])))
         result = candidate.start()
         _session, _session_id = candidate, request['session_id']
     else:
