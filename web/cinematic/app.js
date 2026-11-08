@@ -4,17 +4,32 @@
  * 剧情、选项与判定全部来自浏览器里运行的同一个 Python 引擎（GameClient →
  * Pyodide Worker → session_factory 会话）；本页只把快照与反馈演成画面：
  * 场景转场、逐字字幕、审问特写、线索卡片和画面上的选项。不新增剧情文字。
+ *
+ * 默认播放影像版专用剧本 stories/film/fog_harbor_film（线性分支，不上书架）；
+ * ?story=<id> 可以换成其他剧本，例如探索版 fog_harbor。
  */
 import './cinematic.css';
 import { GameClient } from '../runtime/client.js';
 import { Stage } from './stage.js';
 import { Sound } from './sound.js';
 
-const STORY_ID = 'fog_harbor';
+const STORY_ID = new URLSearchParams(location.search).get('story') || 'fog_harbor_film';
 const FAST = new URLSearchParams(location.search).get('fast') === '1';
 const T = (ms) => (FAST ? Math.min(ms, 40) : ms);
-const ART = { lobby: 'lobby', gathering: 'lobby', office: 'office', kitchen: 'kitchen' };
-const AMBIENCE = { lobby: 'lobby', gathering: 'lobby', office: 'office', kitchen: 'kitchen' };
+// 场景 → 画面：[画面名, 选项]。审问类节点用人物特写，speaker 作为字幕上的说话人。
+const ART = {
+  lobby: ['lobby'], ebb: ['lobby'], gathering: ['lobby', { gathering: true }],
+  office: ['office'], office_ledger: ['office'], office_window: ['office'],
+  kitchen: ['kitchen'], kitchen_zhou: ['kitchen'], vat: ['kitchen'],
+  dock: ['harbor'], backyard: ['generic'],
+  gu_first: ['portrait', { suspect: 'gu', place: 'lobby', speaker: '顾先生' }],
+  gu_confront: ['portrait', { suspect: 'gu', place: 'lobby', speaker: '顾先生' }],
+  zhou_gap: ['portrait', { suspect: 'zhou', place: 'kitchen', speaker: '周文' }],
+  zhou_weight: ['portrait', { suspect: 'zhou', place: 'kitchen', speaker: '周文' }],
+  kitchen_ayun: ['portrait', { suspect: 'ayun', place: 'kitchen', speaker: '阿芸' }],
+  ayun_truth: ['portrait', { suspect: 'ayun', place: 'kitchen', speaker: '阿芸' }],
+};
+const AMBIENCE = { lobby: 'lobby', office: 'office', kitchen: 'kitchen', portrait: 'portrait', harbor: 'harbor' };
 const SUSPECTS = { 顾先生: 'gu', 周文: 'zhou', 阿芸: 'ayun' };
 const VERBS = { 'mystery:ask': '审问', 'mystery:examine': '深入调查', 'puzzle:use': '使用' };
 
@@ -185,9 +200,15 @@ function beatsFrom(messages) {
   return beats;
 }
 
-async function setArt(sceneId, extra = {}) {
-  stage.show(ART[sceneId] || 'generic', { gathering: sceneId === 'gathering', ...extra });
-  sound.setAmbience(AMBIENCE[sceneId] || 'generic');
+function artFor(sceneId) {
+  const [name, options = {}] = ART[sceneId] || ['generic'];
+  return { name, options };
+}
+
+function setArt(sceneId) {
+  const { name, options } = artFor(sceneId);
+  stage.show(name, options);
+  sound.setAmbience(AMBIENCE[name] || 'generic');
 }
 
 async function interrogate(beat) {
@@ -207,7 +228,11 @@ async function interrogate(beat) {
 }
 
 async function play(messages) {
-  for (const beat of beatsFrom(messages)) {
+  await playBeats(beatsFrom(messages));
+}
+
+async function playBeats(beats) {
+  for (const beat of beats) {
     if (beat.kind === 'clue') await clueCard(beat.name, beat.text);
     else if (beat.kind === 'ask') await interrogate(beat);
     else if (beat.kind === 'examine') {
@@ -222,7 +247,7 @@ async function play(messages) {
       hideCard();
       for (const line of beat.lines.flatMap(chunks)) await type(line);
       clearSubtitle();
-      await stage.fade(0, T(1000));
+      if (!beat.keepDark) await stage.fade(0, T(1000));
     } else {
       await type(beat.text);
     }
@@ -249,7 +274,8 @@ async function enterScene(next) {
   await hold(1800);
   hideCard();
   await stage.fade(0, T(1300));
-  for (const line of chunks(next.text)) await type(line);
+  const { speaker = '' } = artFor(next.scene_id).options;
+  for (const line of chunks(next.text)) await type(line, line.includes('“') ? speaker : '');
   clearSubtitle();
 }
 
@@ -278,10 +304,18 @@ async function present(result, previous) {
     clearSubtitle();
     return showChoices();
   }
-  await play(result.messages);
+  const moved = !previous || next.scene_id !== previous.scene_id;
+  if (next.ended || !moved) {
+    await play(result.messages);
+    view = next;
+    return next.ended ? ending(next) : showChoices();
+  }
+  // 换场：先放幕间标题，再进入新场景播描述，最后才弹出在新场景里获得的线索。
+  const beats = beatsFrom(result.messages);
+  await playBeats(beats.filter((b) => b.kind === 'act').map((b) => ({ ...b, keepDark: true })));
   view = next;
-  if (next.ended) return ending(next);
-  if (!previous || next.scene_id !== previous.scene_id) await enterScene(next);
+  await enterScene(next);
+  await playBeats(beats.filter((b) => b.kind !== 'act'));
   return showChoices();
 }
 

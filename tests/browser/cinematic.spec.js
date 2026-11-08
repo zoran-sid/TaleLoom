@@ -1,7 +1,40 @@
 // ZC：影像模式样片的冒烟测试。?fast=1 跳过逐字字幕与转场等待，剧情仍由真实引擎驱动。
 import { test, expect } from '@playwright/test';
 
-test('影像模式：大堂 → 账房获得线索 → 回大堂审问顾先生', async ({ page }) => {
+test('影像版：每个选择都进入下一段，线索进笔记，一路走到结局', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto('/cinematic.html?fast=1');
+  await page.locator('#begin').click();
+  const choices = page.locator('#choices');
+  const pick = (name) => choices.getByRole('button', { name }).click();
+  const seen = [];
+  const record = async () => seen.push(...await choices.locator('button.choice .label').allTextContents());
+
+  await expect(choices.getByRole('button', { name: /推开账房的门/ })).toBeVisible({ timeout: 90_000 });
+  await record();
+  await pick(/推开账房的门/);
+  await expect(choices.getByRole('button', { name: /翻开桌上的账本/ })).toBeVisible();
+  await expect(page.locator('#notes-count')).toHaveText('2');
+  await record();
+  await pick(/翻开桌上的账本/);
+  await expect(page.locator('#notes-count')).toHaveText('4');
+  await page.getByRole('button', { name: /线索笔记/ }).click();
+  await expect(page.locator('#notebook')).toContainText('对不上的数目');
+  await page.keyboard.press('Escape');
+  await record();
+  await pick(/上楼搜他的客房/);
+  await record();
+  await pick(/当面质问顾先生/);
+  await record();
+  await pick(/把他看住，等天亮交给警署/);
+  await expect(page.locator('#card')).toContainText('交给天亮');
+  await expect(choices.getByRole('button', { name: /重新开始/ })).toBeVisible();
+  expect(seen.filter((label) => label.startsWith('回到'))).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test('探索版（?story=fog_harbor）：大堂 → 账房获得线索 → 回大堂审问顾先生', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   // 记录每一条出现过的字幕（连续相同的只算一次），用来检查回到大堂时不重播描述。
@@ -15,7 +48,7 @@ test('影像模式：大堂 → 账房获得线索 → 回大堂审问顾先生'
       }).observe(box, { childList: true, subtree: true, characterData: true });
     });
   });
-  await page.goto('/cinematic.html?fast=1');
+  await page.goto('/cinematic.html?fast=1&story=fog_harbor');
   await page.locator('#begin').click();
   const choices = page.locator('#choices');
   const pick = (name) => choices.getByRole('button', { name }).click();
@@ -55,7 +88,7 @@ test('影像模式：手机宽度下选项在画面下方，没有横向溢出',
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/cinematic.html?fast=1');
   await page.locator('#begin').click();
-  const first = page.locator('#choices').getByRole('button', { name: /去账房查看现场/ });
+  const first = page.locator('#choices').getByRole('button', { name: /推开账房的门/ });
   await expect(first).toBeVisible({ timeout: 90_000 });
   const frame = await page.locator('#frame').boundingBox();
   const box = await first.boundingBox();
