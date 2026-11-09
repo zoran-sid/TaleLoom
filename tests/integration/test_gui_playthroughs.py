@@ -26,7 +26,7 @@ class GuiPlaythroughTest(unittest.TestCase):
         self.saves.cleanup()
 
     def make(self):
-        controller = GameController(STORIES, Path(self.saves.name), create_session)
+        controller = GameController(STORIES, Path(self.saves.name), lambda story: create_session(story, seed=0))
         controller.load_catalog()
         return controller
 
@@ -42,6 +42,8 @@ class GuiPlaythroughTest(unittest.TestCase):
         controller = self.make()
         for vector in self.vectors:
             with self.subTest(story=vector["story_id"], walkthrough=vector["name"]):
+                seed = vector['initial_save']['state'].get('random_seed', 0)
+                controller._create_session = lambda story: create_session(story, seed=seed)
                 self.assertTrue(controller.start(vector["story_id"]), controller.error)
                 for index, step in enumerate(vector["actions"]):
                     offered = {a.id for a in controller.view.choices + controller.view.actions}
