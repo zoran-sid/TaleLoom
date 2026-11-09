@@ -6,8 +6,7 @@ import copy
 
 from .engine import Engine
 from .model import Command, Story
-from .save import SAVE_VERSION, fingerprint
-from .legacy_session import LegacySession
+from .save import encode_save, decode_save
 import secrets
 from .ui_contract import (
     ActionRequest,
@@ -23,7 +22,8 @@ class GameSession:
         if seed is not None and type(seed) is not int:
             raise ValueError("seed 必须是整数")
         self.engine = Engine(story)
-        self.engine.state.random_seed = secrets.randbits(64) if seed is None else seed
+        # JSON 经 JavaScript 传递时整数须精确；新游戏种子限制在 Number 安全范围。
+        self.engine.state.random_seed = secrets.randbits(53) if seed is None else seed
         self._view = None
         self._revision = 0
 
@@ -92,16 +92,14 @@ class GameSession:
     def export_save(self) -> dict:
         """导出与现有 CLI 相同的 v1 JSON 信封。"""
         self.snapshot()
-        return {'save_version': SAVE_VERSION, 'story_id': self.story.id,
-                'fingerprint': fingerprint(self.story), 'state': self.engine.state.to_dict()}
+        return encode_save(self.engine.state, self.story)
 
     def restore(self, payload: dict) -> SessionResult:
         """验证存档并原子恢复；任何失败均保留当前进度。"""
         self.snapshot()
         old_engine, old_revision = self.engine, self._revision
         try:
-            # 暂复用已合入的完整校验；纯数据编码器归 LQ 的 #12。
-            state = LegacySession._decode(self, payload)
+            state, notes = decode_save(payload, self.story)
             self.engine = Engine(self.story, state)
             self.engine.start()  # resumed 只描述，不再次执行 on_enter
             self._revision += 1
@@ -109,9 +107,6 @@ class GameSession:
         except (KeyError, TypeError, ValueError, AttributeError):
             self.engine, self._revision = old_engine, old_revision
             return self._error('invalid_save', '存档内容无效或与当前剧本不兼容，原进度已保留。')
-        notes = []
-        if payload.get('fingerprint') != fingerprint(self.story):
-            notes.append('剧本结构已更新，部分进度可能与当前版本不同。')
         return SessionResult(self.snapshot(), notes)
 
     def _error(self, code, message):
