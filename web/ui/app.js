@@ -115,21 +115,27 @@ function renderLibrary() {
     row.append(detail, buttons);
     $('stories').append(row);
   }
-  $('stories').append(cinematicRow());
+  for (const film of FILMS) $('stories').append(cinematicRow(film));
 }
 
+/** 影像版剧本不在书架目录里（不在桌面和命令行出现），这里各给一个入口。 */
+const FILMS = [
+  { id: 'fog_harbor_ledger', href: '/cinematic', genre: '互动影像 · 推理搜证', title: '雾港旧案：未结的账',
+    text: '一九三一年的雾港旅馆：查看现场、核对账目、比对证词，在天亮前把问题说完整。' },
+  { id: 'deep_space_film', href: '/cinematic?story=deep_space_film', genre: '互动影像 · 资源与解谜', title: '深空回声 · 影像版',
+    text: '氧气和电量都在下降：在耗尽之前找到离开回声号的办法，选错会付出代价。' },
+];
+
 /** 影像模式入口：不是会话剧本，只链到 /cinematic，不读取存档。 */
-function cinematicRow() {
+function cinematicRow(film) {
   const row = element('article', undefined, 'story story-cinematic');
-  row.dataset.cinematic = '1';
+  row.dataset.cinematic = film.id;
   row.append(element('span', '影', 'story-number'));
   const detail = element('div');
-  detail.append(element('p', '互动影像', 'genre'),
-    element('h3', '影像模式'),
-    element('p', '《雾港旧案 · 影像版》：画面与声音随剧情推进，选错会付出代价。'));
+  detail.append(element('p', film.genre, 'genre'), element('h3', film.title), element('p', film.text));
   const buttons = element('div', undefined, 'story-buttons');
   const link = element('a', '进入影像模式 →', 'cinematic-link primary');
-  link.href = '/cinematic';
+  link.href = film.href;
   buttons.append(link);
   row.append(detail, buttons);
   return row;
