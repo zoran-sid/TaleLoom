@@ -206,6 +206,8 @@ test('影像模式（?story=deep_space）：飞船主题、画面内的氧气与
   await expect(meters).toHaveText(['氧气 8', '电量 20']);
   await choices.getByRole('button', { name: /前往走廊/ }).click();
   await expect(choices.getByRole('button', { name: /去工具间/ })).toBeVisible();
-  await expect(meters).toHaveText(['氧气 7', '电量 19']);
+  // 深空剧本有 35% 概率的电量波动（随机种子每局不同），电量可能多掉一格。
+  await expect(meters.first()).toHaveText('氧气 7');
+  await expect(meters.nth(1)).toHaveText(/^电量 1[89]$/);
   expect(errors).toEqual([]);
 });
