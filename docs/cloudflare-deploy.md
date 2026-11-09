@@ -18,9 +18,9 @@ npm run dev -- --open
 ## 2 发布分支
 
 - Cloudflare 项目 `taleloom` 已连接本仓库（Workers Builds）。
-- **正式网址**：<https://taleloom.zoranzhou28.workers.dev>
+- **正式网址**：<https://taleloom.zoranzhou.com>（自定义域名，生产和预览都已开启；<https://taleloom.zoranzhou28.workers.dev> 同样可用）
 - **生产分支**：当前为 `develop`（2026-11-08 起），PR 合入 `develop` 后自动部署；从 `develop` 向 `main` 的发布 PR 合并后改为 `main`。只有一个同名项目，不要另建。
-- **非生产分支**（成员分支）：构建并上传版本预览，不切换正式网址。
+- **非生产分支**（成员分支）：构建并部署以分支命名的预览（Worker Preview），网址为 `<预览名>.taleloom.zoranzhou.com`，同时有 workers.dev 预览网址；不切换正式网址。预览名取自分支名，`/` 换成 `-`，例如 `zc/custom-domain` → <https://zc-custom-domain.taleloom.zoranzhou.com>。同一分支再次推送会更新同一个预览网址。
 - 改生产分支只在 Cloudflare 控制台 **Settings → Build → Branch control** 中操作；Worker 的其他设置一律改 `cloudflare.config.ts`（见 2.1）。
 
 ### 2.1 Worker 配置同步（2026-11-08 已完成）
@@ -67,13 +67,13 @@ Cloudflare 构建依次运行：锁定依赖安装 → 全部 Python 测试 → 
 
 真实 Chromium 验收由 GitHub Actions 的 `web (build + browser + deploy dry-run)` 检查运行，完整覆盖浏览器通关、存档和错误处理。Cloudflare 构建环境不允许安装器通过 `su` 获取管理员权限，因此浏览器及其 Linux 系统依赖在 GitHub 的 Ubuntu runner 中安装。合入 `develop`／`main` 前须确认包括 `web` 在内的全部 GitHub 检查通过；正式开通时将这些检查加入分支保护的必需状态检查。Cloudflare 原生 Git 构建与 GitHub 检查并行，不会等待 GitHub；临时直接部署功能分支时，应在其 GitHub 检查通过后验收试玩网址。
 
-当前非生产命令用 `cf workers versions create` 上传版本，生成版本预览 URL，不切换正式流量；`previewUrls` 已开启。这里使用 **Version preview URLs**，不是另一个需要专用 preview build 的 `cf previews deploy` 命令。生产命令 `cf deploy` 才更新正式版本。Cloudflare CLI 和 Vite 插件目前为 beta，仓库锁定已验证版本，升级须重新验收。
+当前非生产命令用 `cf previews deploy` 部署以分支命名的预览：自定义域名上为 `<预览名>.taleloom.zoranzhou.com`，workers.dev 上为 `<预览名>-taleloom.zoranzhou28.workers.dev`，不切换正式流量。自定义域名在 `cloudflare.config.ts` 的 `domains` 中声明（生产与预览均开启），必须与控制台一致。生产命令 `cf deploy` 才更新正式版本。Cloudflare CLI 和 Vite 插件目前为 beta，仓库锁定已验证版本，升级须重新验收。
 
 ## 4 首次发布验收
 
 - 等待第一次 Build 与 Deploy 都成功，打开控制台给出的 `workers.dev` 地址。
 - 分别进入两个故事，完成一次行动、存档、刷新继续；用手机宽度检查选项和笔记。
-- 推送非生产分支后打开构建日志中的版本预览 URL，确认正式地址保持原版本。
+- 推送非生产分支后打开 `<预览名>.taleloom.zoranzhou.com`，确认正式地址保持原版本。
 - 后续通过发布 PR 更新 `main`，核对部署提交号与固定网址的新版本。
 - 若构建失败，查看日志并修复；保留当前成功版本，继续使用相同发布流程。
 
@@ -118,7 +118,7 @@ npm run test:web
 - [Workers Builds 配置](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/)：原生 Git 集成和构建命令。
 - [构建分支](https://developers.cloudflare.com/workers/ci-cd/builds/build-branches/)：生产与非生产构建。
 - [构建镜像](https://developers.cloudflare.com/workers/ci-cd/builds/build-image/)：Node／Python 版本变量、依赖安装设置和 Ubuntu 环境。
-- [Cloudflare CLI 构建与部署](https://developers.cloudflare.com/cf/projects/)：`--prebuilt --mode production`、无上传预检及版本预览。
+- [Cloudflare CLI 构建与部署](https://developers.cloudflare.com/cf/projects/)：`--prebuilt --mode production`、无上传预检及分支预览（`cf previews deploy`）。
 - [Pyodide Web Worker](https://pyodide.org/en/stable/usage/webworker.html)：模块型 Worker 运行 Python；运行时文件随网站自托管。
 
 运行时版本和许可证见 `web/runtime/THIRD_PARTY_NOTICES.txt`，依赖及完整性校验固定在 `package-lock.json`。网页不从第三方 CDN 下载运行时，不需要在线 Python 服务器。
