@@ -65,7 +65,11 @@
 
 待做（交给下一位）：
 
-1. 跑完浏览器测试并修失败项：`npm run build && npx playwright test`（新用例在 `tests/browser/cinematic-ledger.spec.js`，其中全程通关一条约需数分钟）。
+1. 修浏览器测试 `tests/browser/cinematic-ledger.spec.js`。最近一次（不含全程通关）：15 条中 11 条通过，4 条失败，尚未定位：
+   - “灯下残页”“后厨水缸”：在调查台上连续操作后的断言失败（重新运行后看 `test-results/` 的 error-context）；
+   - “存档点”：回到“一 · 夜深取账”并关闭调查台后，等不到 `choice:still` 按钮出现（可能是关闭后自动重开调查台，或 `ready()` 判断过早）；
+   - “声音”：某个布尔断言为 false（静音状态或“环境声”文字说明，二者之一）。
+   全程通关一条（`走完信任沟通路线`）还没跑过。命令：`npm run build && npx playwright test tests/browser/cinematic-ledger.spec.js`，全部：`npx playwright test`。
 2. 在真实浏览器里桌面与手机各试玩一遍，截图放进 PR。
 3. 推送 `zc/ledger-film`，开 PR 到 develop，附预览链接 `zc-ledger-film.taleloom.zoranzhou.com/cinematic`。
 4. 时长（每幕分钟数）为设计目标，未实测。
