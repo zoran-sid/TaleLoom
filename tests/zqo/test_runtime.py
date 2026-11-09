@@ -185,6 +185,8 @@ class CodecAndPluginTest(unittest.TestCase):
         self.assertEqual(encoded['state']['flags'], [])
         self.assertEqual(s.engine.state.flags, [])
         self.assertEqual(restored.engine.state.random_seed, 89)
+        # 真正的旧档既没有种子，也没有后来新增的会话回退记录。
+        encoded['state']['ext'].pop('session', None)
         del encoded['state']['random_seed']
         self.assertTrue(restored.restore(encoded).ok)
         self.assertEqual(restored.engine.state.random_seed, 0)

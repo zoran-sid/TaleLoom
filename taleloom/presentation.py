@@ -53,5 +53,25 @@ def build_snapshot(engine, revision):
         text=text, revision=revision, turn=state.turn,
         choices=[ActionSpec('choice:' + c.id, interpolate(c.text, story, state)) for c in view_engine.available_choices()],
         actions=actions, inventory=inventory, clues=clues, resources=resources, assets=dict(story.assets),
+        art=getattr(scene, "art", None), ending_kind=ending_kind(scene) if state.ending else None,
         ended=state.ending is not None, ending_id=state.ending, ending_title=(scene.ending or {}).get('title'),
     )
+
+
+def ending_kind(scene):
+    """优先读取正式 kind；迁移期间兼容旧影像版 fail_ 前缀。"""
+    if not scene.ending:
+        return None
+    return scene.ending.get('kind', 'failure' if scene.ending.get('id', scene.id).startswith('fail_') else 'normal')
+
+
+def checkpoint_label(scene):
+    """读取正式存档点名称；旧剧本暂兼容进入提示标记。"""
+    label = getattr(scene, 'checkpoint', None)
+    if label is not None:
+        return label
+    for effect in scene.on_enter:
+        text = effect.get('say')
+        if isinstance(text, str) and text.startswith('【存档点】'):
+            return text[len('【存档点】'):].strip() or None
+    return None

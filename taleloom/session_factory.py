@@ -10,11 +10,11 @@ from .model import Story
 from .ui_contract import GameSession
 
 
-def create_session(story: Story, *, seed: int | None = None) -> GameSession:
+def create_session(story: Story, *, seed: int | None = None, rewind_limit: int = 3) -> GameSession:
     """为已加载、已通过校验的剧本创建一个新会话。
 
     返回 ZQO 的正式会话。
     """
     from .session import GameSession
 
-    return GameSession(story, seed=seed)
+    return GameSession(story, seed=seed, rewind_limit=rewind_limit)
