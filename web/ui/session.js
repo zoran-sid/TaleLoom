@@ -55,6 +55,20 @@ export class FixtureSession {
         id: 'puzzle:use', label: '使用物品', enabled: true, disabled_reason: '',
         parameters: [{ key: 'item', label: '物品', kind: 'select', required: true,
           options: [{ id: 'key', label: '钥匙', description: '' }] }],
+      }, {
+        // 四参数动作：和真实剧本的指认一样宽，用来验证窄屏不溢出。
+        id: 'mystery:accuse', label: '作出指认', enabled: true, disabled_reason: '',
+        parameters: [
+          { key: 'suspect', label: '指认对象', kind: 'select', required: true,
+            options: [{ id: 'gu', label: '顾先生' }, { id: 'zhou', label: '周文' }] },
+          { key: 'motive', label: '动机', kind: 'select', required: true,
+            options: [{ id: 'debt', label: '欠债' }, { id: 'embezzle', label: '挪用账款被发现' }] },
+          { key: 'means', label: '手段', kind: 'select', required: true,
+            options: [{ id: 'poison', label: '下毒' }, { id: 'weight', label: '用铜镇纸击打后脑' }] },
+          { key: 'evidence', label: '关键证据', kind: 'select', required: true,
+            options: ['水缸里的镇纸', '周文的失言', '阿芸的实话', '地板下的暗账'].map(
+              (label, i) => ({ id: `clue${i}`, label })) },
+        ],
       }];
     }
     return view;
@@ -69,8 +83,16 @@ export class FixtureSession {
     if (!allowed.includes(actionId)) {
       return { view, messages: ['当前不能执行这个操作。'], error_code: 'invalid_action' };
     }
-    const expected = actionId === 'puzzle:use' ? { item: 'key' } : {};
-    if (JSON.stringify(values) !== JSON.stringify(expected)) {
+    const expected = {
+      'puzzle:use': { item: 'key' },
+      // 四参数指认：只校验键与候选范围，用来验证表单提交链路。
+      'mystery:accuse': { suspect: ['gu', 'zhou'], motive: ['debt', 'embezzle'],
+        means: ['poison', 'weight'], evidence: ['clue0', 'clue1', 'clue2', 'clue3'] },
+    }[actionId] ?? {};
+    const valid = Object.entries(expected).every(([key, want]) => (
+      Array.isArray(want) ? want.includes(values[key]) : values[key] === want))
+      && Object.keys(values).length === Object.keys(expected).length;
+    if (actionId === 'puzzle:use' ? JSON.stringify(values) !== JSON.stringify(expected) : !valid) {
       return { view, messages: ['请选择有效的操作参数。'], error_code: 'invalid_parameters' };
     }
     this.step += 1;

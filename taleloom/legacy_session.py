@@ -9,15 +9,13 @@ ZQO 的正式会话（taleloom/session.py）完成后在 session_factory.py 中�
 from __future__ import annotations
 
 import copy
-import json
 import re
 
 from .engine import Engine
 from .mechanics.mystery import build_actions as mystery_actions
 from .mechanics.puzzle import build_actions as puzzle_actions
 from .model import Command, Story
-from .save import SAVE_VERSION, fingerprint
-from .state import GameState
+from .save import encode_save, decode_save
 from .ui_contract import (
     ActionParameter, ActionRequest, ActionSpec, DisplayItem, ResourceView,
     SessionResult, ViewSnapshot,
@@ -94,15 +92,14 @@ class LegacySession:
     def export_save(self) -> dict:
         """导出与现有 CLI 相同的 v1 JSON 信封。"""
         self.start()
-        return {'save_version': SAVE_VERSION, 'story_id': self.story.id,
-                'fingerprint': fingerprint(self.story), 'state': self.engine.state.to_dict()}
+        return encode_save(self.engine.state, self.story)
 
     def restore(self, payload: dict) -> SessionResult:
         """验证存档并原子恢复；任何失败均保留当前进度。"""
         self.start()
         old_engine, old_revision = self.engine, self._revision
         try:
-            state = self._decode(payload)
+            state, notes = decode_save(payload, self.story)
             self.engine = Engine(self.story, state)
             self.engine.start()  # resumed 只描述，不再次执行 on_enter
             self._revision += 1
@@ -110,52 +107,13 @@ class LegacySession:
         except (KeyError, TypeError, ValueError, AttributeError):
             self.engine, self._revision = old_engine, old_revision
             return self._error('invalid_save', '存档内容无效或与当前剧本不兼容，原进度已保留。')
-        notes = []
-        if payload.get('fingerprint') != fingerprint(self.story):
-            notes.append('剧本结构已更新，部分进度可能与当前版本不同。')
         return SessionResult(self.snapshot(), notes)
 
     def _error(self, code, message):
         return SessionResult(self.snapshot(), [message], code)
 
     def _decode(self, payload):
-        if not isinstance(payload, dict) or type(payload.get('save_version')) is not int:
-            raise ValueError('存档信封无效')
-        if payload['save_version'] != SAVE_VERSION or payload.get('story_id') != self.story.id:
-            raise ValueError('版本或剧本不匹配')
-        # 复制也验证 JSON 边界，拒绝 NaN、Python 对象与共享引用。
-        data = json.loads(json.dumps(payload['state'], allow_nan=False))
-        if not isinstance(data, dict):
-            raise ValueError('状态应为对象')
-        state = GameState.from_dict(data)
-        if state.story_id != self.story.id or state.scene not in self.story.scenes:
-            raise ValueError('未知剧本或场景')
-        for field in ('flags', 'inventory', 'visited', 'used_choices', 'fired_triggers', 'history'):
-            value = getattr(state, field)
-            if not isinstance(value, list) or not all(isinstance(x, str) for x in value):
-                raise ValueError(field)
-        if not isinstance(state.vars, dict) or not all(
-            isinstance(k, str) and type(v) is int for k, v in state.vars.items()
-        ):
-            raise ValueError('vars')
-        if type(state.turn) is not int or state.turn < 0:
-            raise ValueError('turn')
-        if not isinstance(state.ext, dict) or not all(isinstance(v, dict) for v in state.ext.values()):
-            raise ValueError('ext')
-        mystery = state.ext.get('mystery', {})
-        for key in ('clues', 'examined', 'asked'):
-            values = mystery.get(key, [])
-            if not isinstance(values, list) or not all(isinstance(v, str) for v in values):
-                raise ValueError(key)
-        if not isinstance(mystery.get('act', ''), str):
-            raise ValueError('act')
-        ending = self.story.scenes[state.scene].ending
-        expected = ending.get('id', state.scene) if ending else None
-        if state.ending != expected:
-            raise ValueError('ending')
-        if any(i not in self.story.items for i in state.inventory):
-            raise ValueError('inventory')
-        return state
+        return decode_save(payload, self.story)[0]
 
     def _publish(self):
         state, scene = self.engine.state, self.engine.scene

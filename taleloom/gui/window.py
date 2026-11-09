@@ -9,12 +9,13 @@
 """
 
 from __future__ import annotations
+from tkinter import filedialog
 
 import tkinter as tk
 from tkinter import font as tkfont
 from tkinter import messagebox, ttk
 
-from ..ui_contract import ActionSpec, ViewSnapshot
+from ..ui_contract import ActionSpec, ViewSnapshot, StorageError
 from .controller import GameController
 
 FONT_CANDIDATES = ("Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", "Segoe UI")
@@ -138,10 +139,13 @@ class TaleLoomWindow:
             row=1, column=0, sticky="w", pady=(4, 18))
         self.catalog_problem = ttk.Label(self.library, style="Muted.TLabel", wraplength=760)
         self.catalog_problem.grid(row=2, column=0, sticky="w")
+        self.open_error = ttk.Label(self.library, style="Muted.TLabel", wraplength=760, foreground="#8a3324")
+        self.open_error.grid(row=3, column=0, sticky="w", pady=(0, 8))
+        self.open_error.grid_remove()
         self.shelf = ttk.Frame(self.library)
-        self.shelf.grid(row=3, column=0, sticky="nsew")
+        self.shelf.grid(row=4, column=0, sticky="nsew")
         self.shelf.columnconfigure(0, weight=1)
-        self.library.rowconfigure(3, weight=1)
+        self.library.rowconfigure(4, weight=1)
 
     def _fill_shelf(self) -> None:
         for child in self.shelf.winfo_children():
@@ -170,6 +174,7 @@ class TaleLoomWindow:
         self.controller.home()
         self.controller.load_catalog()
         self._fill_shelf()
+        self.open_error.grid_remove()
         self.game.grid_remove()
         self.library.grid()
         self._set_busy(False)
@@ -195,6 +200,16 @@ class TaleLoomWindow:
         self.save_button.grid(row=0, column=2, padx=(0, 6))
         self.load_button = ttk.Button(nav, text="读取存档", command=self._load)
         self.load_button.grid(row=0, column=3, padx=(0, 6))
+        slotbar = ttk.Frame(nav)
+        slotbar.grid(row=1, column=0, columnspan=5, sticky="ew", pady=(6, 0))
+        self.slot_name = tk.StringVar(value="快速存档")
+        ttk.Label(slotbar, text="存档位置：").pack(side="left")
+        ttk.Combobox(slotbar, textvariable=self.slot_name, state="readonly", width=12,
+                     values=("快速存档", "存档 1", "存档 2", "存档 3", "自动存档")).pack(side="left")
+        ttk.Button(slotbar, text="存档列表", command=self._list_saves).pack(side="left", padx=6)
+        ttk.Button(slotbar, text="导出", command=self._export_json).pack(side="left", padx=2)
+        ttk.Button(slotbar, text="导入", command=self._import_json).pack(side="left", padx=2)
+
         self.restart_button = ttk.Button(nav, text="重新开始", command=self._restart)
         self.restart_button.grid(row=0, column=4)
         ttk.Separator(self.game).grid(row=0, column=0, sticky="sew", pady=(44, 0))
@@ -262,8 +277,20 @@ class TaleLoomWindow:
     def _start(self, story_id: str, resume: bool) -> None:
         if self.controller.start(story_id, resume):
             self._show_game()
-        else:
-            self.show_library()
+            return
+        # 失败时留在书架并显示原因；show_library 会清掉 controller.error。
+        failed = self.controller.error or "无法打开这个剧本。"
+        self.controller.home()
+        self.controller.load_catalog()
+        self._fill_shelf()
+        self.game.grid_remove()
+        self.library.grid()
+        self._set_busy(False)
+        self.open_error.configure(text=failed)
+        self.open_error.grid()
+        first = next(iter(self._story_buttons.values()), None)
+        if first is not None:
+            first.focus_set()
 
     def _show_game(self) -> None:
         self.library.grid_remove()
@@ -328,34 +355,43 @@ class TaleLoomWindow:
             self.actions.columnconfigure(index, weight=1)
 
     def _render_action_form(self, action: ActionSpec, row: int) -> None:
+        """每个参数一行：标签在上、控件占满整行，递交按钮单独一行。
+
+        指认需要四个参数；横排会让表单比窗口还宽，递交按钮被挤出可视区域，
+        所以这里按纵向排布，任何窗口宽度下都能完整操作。
+        """
         card = ttk.Frame(self.actions, style="Card.TFrame", padding=(14, 12))
         card.grid(row=row, column=0, sticky="ew", pady=(0, 8))
         card.columnconfigure(0, weight=1)
         ttk.Label(card, text=action.label, style="Card.TLabel").grid(row=0, column=0, sticky="w")
         if action.disabled_reason:
             ttk.Label(card, text=action.disabled_reason, style="CardMuted.TLabel").grid(
-                row=0, column=1, sticky="e")
-        fields = ttk.Frame(card, style="Card.TFrame")
-        fields.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(8, 0))
+                row=1, column=0, sticky="w", pady=(4, 0))
         variables = {}
-        for column, parameter in enumerate(action.parameters):
-            ttk.Label(fields, text=parameter.label, style="CardMuted.TLabel").grid(
-                row=0, column=column, sticky="w", padx=(0, 10))
+        next_row = 2
+        for parameter in action.parameters:
+            ttk.Label(card, text=parameter.label, style="CardMuted.TLabel").grid(
+                row=next_row, column=0, sticky="w", pady=(8, 2))
             if parameter.kind == "text":
                 var = tk.StringVar()
-                entry = ttk.Entry(fields, textvariable=var, width=18)
+                control = ttk.Entry(card, textvariable=var)
             else:
                 labels = [option.label for option in parameter.options]
                 var = tk.StringVar(value=labels[0] if labels else "")
                 if parameter.key == "second" and len(labels) > 1:
                     var.set(labels[1])
-                entry = ttk.Combobox(fields, textvariable=var, values=labels, state="readonly", width=18)
-            entry.grid(row=1, column=column, sticky="w", padx=(0, 10))
+                control = ttk.Combobox(
+                    card, textvariable=var, values=labels,
+                    state="disabled" if not action.enabled else "readonly")
+            if action.enabled and parameter.kind == "text":
+                control.configure(state="normal")
+            control.grid(row=next_row + 1, column=0, sticky="ew")
             variables[parameter.key] = (var, parameter)
-        submit = ttk.Button(
-            fields, text=action.label, state="disabled" if (self._busy or not action.enabled) else "normal",
-            command=lambda spec=action, vars_=variables: self._submit_parameters(spec, vars_))
-        submit.grid(row=1, column=len(action.parameters), sticky="e", padx=(6, 0))
+            next_row += 2
+        ttk.Button(
+            card, text=action.label, state="disabled" if (self._busy or not action.enabled) else "normal",
+            command=lambda spec=action, vars_=variables: self._submit_parameters(spec, vars_),
+        ).grid(row=next_row, column=0, sticky="ew", pady=(10, 0))
 
     def _submit_parameters(self, action: ActionSpec, variables: dict) -> None:
         values = {}
@@ -420,21 +456,59 @@ class TaleLoomWindow:
         self.status_label.configure(text=message, wraplength=self._wrap())
         self.status_label.grid(row=9, column=0, sticky="w", pady=(12, 0))
 
-    def _save(self) -> None:
-        if self.controller.has_save(self.controller.story.id):
-            if not messagebox.askyesno("覆盖存档", "已经有存档，覆盖它吗？", parent=self.root):
-                return
-        if self.controller.save():
+    def _export_json(self) -> None:
+        path = filedialog.asksaveasfilename(parent=self.root, defaultextension=".json", filetypes=[("JSON 存档", "*.json")])
+        if path:
+            self.controller.export_json(path)
             self.render()
 
+    def _import_json(self) -> None:
+        path = filedialog.askopenfilename(parent=self.root, filetypes=[("JSON 存档", "*.json")])
+        if path and messagebox.askyesno("导入存档", "导入会替换当前未保存的进度，继续吗？", parent=self.root):
+            self.controller.import_json(path)
+            self.render()
+
+    def _selected_slot(self) -> str:
+        return {"快速存档": "quick", "自动存档": "auto", "存档 1": "1", "存档 2": "2", "存档 3": "3"}[self.slot_name.get()]
+
+    def _list_saves(self) -> None:
+        try:
+            rows = self.controller.list_saves()
+        except StorageError as exc:
+            self._status(str(exc))
+            return
+        text = "\n".join(f"{r['slot']}  {r.get('saved_at', '')}\n场景 {r.get('scene', '未知')} · 回合 {r.get('turn', '?')} {r.get('error', '')}" for r in rows)
+        messagebox.showinfo("存档列表", text or "还没有存档。", parent=self.root)
+
+    def _save(self) -> None:
+        slots = self._available_slots()
+        if slots is None:
+            return
+        if self.controller._slot(self.controller.story.id, self._selected_slot()) in slots:
+            if not messagebox.askyesno("覆盖存档", "已经有存档，覆盖它吗？", parent=self.root):
+                return
+        self.controller.save(self._selected_slot())
+        self.render()
+
+    def _available_slots(self):
+        try:
+            return self.controller.store.list_slots()
+        except StorageError as exc:
+            self._status(str(exc))
+            return None
+
     def _load(self) -> None:
-        if not self.controller.has_save(self.controller.story.id):
-            self._status("还没有保存过进度，先点“保存进度”。")
+        selected = self.controller._slot(self.controller.story.id, self._selected_slot())
+        slots = self._available_slots()
+        if slots is None:
+            return
+        if selected not in slots:
+            self._status("还没有保存过这个位置的进度，先点“保存进度”。")
             return
         if not messagebox.askyesno("读取存档", "读取存档会替换当前未保存的进度，继续吗？", parent=self.root):
             return
-        if self.controller.load():
-            self.render()
+        self.controller.load(self._selected_slot())
+        self.render()
 
     def _restart(self) -> None:
         if self.controller.dirty and not messagebox.askyesno(

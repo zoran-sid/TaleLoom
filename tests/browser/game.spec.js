@@ -32,6 +32,9 @@ for (const vector of vectors) {
       return route.continue();
     });
     await start(page, vector.story_id);
+    // 新游戏随机播种；用固定起始存档将浏览器与原生回放置于同一随机状态。
+    await page.locator('#import-file').setInputFiles({ name: 'seed.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(vector.initial_save)) });
+    await idle(page);
     for (const action of vector.actions) await act(page, action);
     await expect(page.locator('#chapter')).toHaveAttribute('data-ending', vector.ending);
     await expect(page.locator('#ending')).toBeVisible();
@@ -39,7 +42,9 @@ for (const vector of vectors) {
     await page.locator('#save').click();
     await idle(page);
     const saved = await page.evaluate((id) => JSON.parse(localStorage.getItem(`taleloom:v1:${id}`)), vector.story_id);
-    expect(saved).toEqual(vector.save);
+    const { saved_at, ...payload } = saved;
+    expect(Number.isNaN(Date.parse(saved_at))).toBe(false);
+    expect(payload).toEqual(vector.save);
     expect(errors).toEqual([]);
   });
 }

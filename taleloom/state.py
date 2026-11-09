@@ -25,6 +25,8 @@ class GameState:
     history: list[str] = field(default_factory=list)       # 玩家原始输入，供回放
     ext: dict[str, Any] = field(default_factory=dict)       # 机制插件的状态，按插件名分区
 
+    random_seed: int = 0  # 与回合、场景共同确定随机事件；旧存档默认为 0
+
     # ---- 便捷操作：保持列表去重且有序，方便存档对比 ----
     def has_flag(self, name: str) -> bool:
         return name in self.flags
@@ -59,4 +61,8 @@ class GameState:
         unknown = set(data) - known
         if unknown:
             raise ValueError(f"未知的状态字段：{sorted(unknown)}")
-        return cls(**data)
+        import copy
+        seed = data.get('random_seed', 0)
+        if type(seed) is not int:
+            raise ValueError('random_seed 必须是整数')
+        return cls(**copy.deepcopy(data))

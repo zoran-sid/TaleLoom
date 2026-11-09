@@ -8,6 +8,7 @@ register_effect 扩展，不需要改引擎核心。
 from __future__ import annotations
 
 import operator
+import hashlib
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
@@ -27,6 +28,7 @@ class Context:
     state: GameState
     lines: list[str] = field(default_factory=list)
     goto: str | None = None
+    condition_path: str = ""
 
     def say(self, text: str) -> None:
         self.lines.append(text)
@@ -111,8 +113,29 @@ def _goto(ctx: Context, scene_id: str) -> None:
     ctx.goto = scene_id
 
 
+def _chance(ctx: Context, percent: Any) -> bool:
+    """按种子、回合、场景和事件位置独立判定；读取不推进随机进度。
+
+    chance 支持百分比整数，或 {"percent": 30, "id": "meteor"}。
+    显式 id 用于插件中重复概率或嵌套事件，避免共享一次抽样。
+    """
+    event = ''
+    if isinstance(percent, dict):
+        if set(percent) != {'percent', 'id'} or not isinstance(percent['id'], str) or not percent['id'].strip():
+            raise RuleError('chance 对象需要 percent 和非空 id')
+        event, percent = percent['id'], percent['percent']
+    if type(percent) is not int or not 0 <= percent <= 100:
+        raise RuleError('chance 必须是 0 到 100 的整数')
+    import json
+    key = json.dumps([ctx.state.random_seed, ctx.state.turn, ctx.state.scene,
+                      ctx.condition_path, event, percent], ensure_ascii=False).encode('utf-8')
+    value = int.from_bytes(hashlib.sha256(key).digest(), 'big')
+    return value * 100 < percent * (1 << 256)
+
+
 def default_registry() -> Registry:
     r = Registry()
+    r.register_condition("chance", _chance)
     r.register_condition("all", lambda ctx, conds: all(r.check(ctx, c) for c in conds))
     r.register_condition("any", lambda ctx, conds: any(r.check(ctx, c) for c in conds))
     r.register_condition("not", lambda ctx, cond: not r.check(ctx, cond))

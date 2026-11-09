@@ -10,6 +10,8 @@ from .model import Story
 def iter_conditions(story: Story) -> Iterator[tuple[str, str, Any]]:
     """产出 (位置, 条件名, 参数)，会展开 all / any / not。"""
     for sid, scene in story.scenes.items():
+        for i, variant in enumerate(scene.variants):
+            yield from expand_condition(f'scenes.{sid}.variants[{i}].when', variant.get('when'))
         for c in scene.choices:
             if c.when:
                 yield from _expand(f"scenes.{sid}.choices.{c.id}.when", c.when)

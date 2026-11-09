@@ -12,7 +12,7 @@ PUBLIC = ROOT / '.web-public'
 CORE = [
     '__init__.py', 'engine.py', 'model.py', 'state.py', 'rules.py', 'loader.py',
     'save.py', 'walk.py', 'ui_contract.py', 'session_factory.py', 'legacy_session.py',
-    'mechanics/__init__.py',
+    'session.py', 'presentation.py', 'mechanics/example.py', 'mechanics/__init__.py',
     'mechanics/base.py', 'mechanics/mystery.py', 'mechanics/puzzle.py',
 ]
 RUNTIME = ['__init__.py', 'bridge.py']

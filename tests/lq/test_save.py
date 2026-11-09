@@ -46,7 +46,10 @@ class SaveTest(unittest.TestCase):
             load_game(self.path, self.story)
 
     def test_save_from_other_story(self):
-        save_game(self.engine.state, mini_story(id="other", title="别的故事"), self.path)
+        other = mini_story(id="other", title="别的故事")
+        foreign = Engine(other)
+        foreign.start()
+        save_game(foreign.state, other, self.path)
         with self.assertRaisesRegex(SaveError, "不能用于"):
             load_game(self.path, self.story)
 

@@ -3,80 +3,557 @@
   "id": "deep_space",
   "title": "深空回声",
   "start": "cryo",
-  "mechanics": ["puzzle"],
+  "mechanics": [
+    "puzzle"
+  ],
   "meta": {
     "owner": "LQ",
     "genre": "资源管理与道具解谜",
-    "status": "v0 序章：氧气倒计时、道具组合与两个结局，供 LQ 扩写"
+    "status": "完整版：双资源、目标道具、固定种子随机事件、四个结局"
   },
-  "vars": {"oxygen": 8},
-  "resources": [{"var": "oxygen", "name": "氧气"}],
-  "every_turn": [{"add_var": ["oxygen", -1]}],
+  "vars": {
+    "oxygen": 8,
+    "battery": 20
+  },
+  "resources": [
+    {
+      "var": "oxygen",
+      "name": "氧气"
+    },
+    {
+      "var": "battery",
+      "name": "电量"
+    }
+  ],
+  "every_turn": [
+    {
+      "add_var": [
+        "oxygen",
+        -1
+      ]
+    },
+    {
+      "add_var": [
+        "battery",
+        -1
+      ]
+    }
+  ],
   "triggers": [
-    {"id": "low_oxygen", "when": {"var": ["oxygen", "<=", 3]}, "effects": [{"say": "【警告】氧气剩余不多，呼吸开始变得急促。"}]},
-    {"id": "no_oxygen", "when": {"var": ["oxygen", "<=", 0]}, "effects": [{"goto": "end_suffocate"}]}
+    {
+      "id": "low_oxygen",
+      "when": {
+        "var": [
+          "oxygen",
+          "<=",
+          3
+        ]
+      },
+      "effects": [
+        {
+          "say": "【警告】氧气剩余不多，呼吸开始变得急促。"
+        }
+      ]
+    },
+    {
+      "id": "no_oxygen",
+      "when": {
+        "var": [
+          "oxygen",
+          "<=",
+          0
+        ]
+      },
+      "effects": [
+        {
+          "goto": "end_suffocate"
+        }
+      ]
+    },
+    {
+      "id": "power_surge",
+      "once": true,
+      "when": {
+        "all": [
+          {
+            "var": [
+              "battery",
+              ">",
+              3
+            ]
+          },
+          {
+            "chance": {
+              "percent": 35,
+              "id": "deep-space-surge"
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "add_var": [
+            "battery",
+            -1
+          ]
+        },
+        {
+          "say": "【电力波动】外壳划过细小的碎片，备用电量损失一格。"
+        }
+      ]
+    },
+    {
+      "id": "no_battery",
+      "when": {
+        "var": [
+          "battery",
+          "<=",
+          0
+        ]
+      },
+      "effects": [
+        {
+          "goto": "end_blackout"
+        }
+      ]
+    }
   ],
   "items": [
-    {"id": "tape", "name": "绝缘胶带", "aliases": ["胶带"]},
-    {"id": "broken_wrench", "name": "断裂的扳手", "aliases": ["扳手", "断扳手"]},
-    {"id": "fixed_wrench", "name": "修好的扳手", "description": "用胶带缠紧的扳手，勉强能用。", "aliases": ["扳手", "修好的扳手"]}
+    {
+      "id": "tape",
+      "name": "绝缘胶带",
+      "aliases": [
+        "胶带"
+      ]
+    },
+    {
+      "id": "broken_wrench",
+      "name": "断裂的扳手",
+      "aliases": [
+        "扳手",
+        "断扳手"
+      ]
+    },
+    {
+      "id": "fixed_wrench",
+      "name": "修好的扳手",
+      "description": "用胶带缠紧的扳手，勉强能用。",
+      "aliases": [
+        "扳手",
+        "修好的扳手"
+      ]
+    },
+    {
+      "id": "power_cell",
+      "name": "备用电芯",
+      "aliases": [
+        "电芯"
+      ],
+      "description": "能源舱里独立封装的应急电芯，可以重新启动一台设备。"
+    },
+    {
+      "id": "data_chip",
+      "name": "回声记录芯片",
+      "aliases": [
+        "芯片"
+      ],
+      "description": "记录了一次没有被写进航海日志的求救。"
+    }
   ],
   "combinations": [
-    {"items": ["broken_wrench", "tape"], "result": "fixed_wrench", "message": "你用胶带一圈圈缠紧扳手的断口。"}
+    {
+      "items": [
+        "broken_wrench",
+        "tape"
+      ],
+      "result": "fixed_wrench",
+      "message": "你用胶带一圈圈缠紧扳手的断口。"
+    }
   ],
   "uses": [
-    {"item": "fixed_wrench", "scene": "airlock", "message": "你拧紧了控制面板的固定螺栓，指示灯由红转绿。", "effects": [{"set_flag": "panel_fixed"}]}
+    {
+      "item": "fixed_wrench",
+      "scene": "airlock",
+      "message": "你拧紧了控制面板的固定螺栓，指示灯由红转绿。",
+      "effects": [
+        {
+          "set_flag": "panel_fixed"
+        }
+      ],
+      "when": {
+        "not": {
+          "flag": "panel_fixed"
+        }
+      }
+    },
+    {
+      "item": "fixed_wrench",
+      "scene": "airlock",
+      "message": "你拧紧了控制面板的固定螺栓，指示灯由红转绿。",
+      "effects": [
+        {
+          "set_flag": "panel_fixed"
+        }
+      ],
+      "when": {
+        "not": {
+          "flag": "panel_fixed"
+        }
+      },
+      "target": "panel"
+    },
+    {
+      "item": "power_cell",
+      "target": "antenna",
+      "scene": "comms",
+      "consume": true,
+      "when": {
+        "not": {
+          "flag": "signal_link"
+        }
+      },
+      "message": "你接入电芯，失去电源的通信终端亮起了稳定的蓝光。",
+      "effects": [
+        {
+          "set_flag": "signal_link"
+        }
+      ]
+    }
   ],
   "scenes": [
     {
       "id": "cryo",
       "title": "休眠舱",
-      "text": "警报声把你从休眠中拽醒。舱壁上的屏幕闪着一行字：生命维持系统故障，剩余氧气有限。\n“回声号”上似乎只剩你一个人。（输入“看”可重读当前场景，“背包”查看物品，“帮助”查看命令。）",
+      "text": "警报把你从休眠中拽醒。“回声号”失去航向，主屏幕的求救信息却提前写好了你的名字。氧气 {vars.oxygen}，电量 {vars.battery}。每次行动消耗一格氧气与电量，查看不消耗资源。你可以立刻寻找逃生舱，也可以查清是谁留下了那段回声。",
       "choices": [
-        {"id": "locker", "text": "搜索床边的储物柜", "once": true, "effects": [{"give_item": "tape"}]},
-        {"id": "out", "text": "前往走廊", "goto": "corridor"}
+        {
+          "id": "locker",
+          "text": "搜索床边的储物柜",
+          "once": true,
+          "effects": [
+            {
+              "give_item": "tape"
+            }
+          ]
+        },
+        {
+          "id": "out",
+          "text": "前往走廊",
+          "goto": "corridor"
+        }
       ]
     },
     {
       "id": "corridor",
       "title": "主走廊",
-      "text": "应急灯一明一暗。走廊一端通向工具间，另一端是气闸门和逃生舱。",
+      "text": "应急灯沿走廊逐段闪灭。门牌分别指向工具间、能源舱、通信室与气闸。腕表显示：氧气 {vars.oxygen}，电量 {vars.battery}。",
       "choices": [
-        {"id": "tools", "text": "去工具间", "goto": "toolroom"},
-        {"id": "airlock", "text": "去气闸门", "goto": "airlock"},
-        {"id": "cryo", "text": "回休眠舱", "goto": "cryo"}
+        {
+          "id": "tools",
+          "text": "去工具间",
+          "goto": "toolroom"
+        },
+        {
+          "id": "airlock",
+          "text": "去气闸门",
+          "goto": "airlock"
+        },
+        {
+          "id": "cryo",
+          "text": "回休眠舱",
+          "goto": "cryo"
+        },
+        {
+          "id": "energy",
+          "text": "去能源舱",
+          "goto": "energy"
+        },
+        {
+          "id": "comms",
+          "text": "去通信室",
+          "goto": "comms"
+        }
       ]
     },
     {
       "id": "toolroom",
       "title": "工具间",
-      "text": "工具散落一地，墙角固定着一个备用氧气罐。",
+      "text": "工具散落一地，备用氧气罐还封着完好的标签。{item:tape} 可以临时固定断裂工具，但修复动作本身也需要时间。",
       "choices": [
-        {"id": "wrench", "text": "捡起地上的扳手", "once": true, "effects": [{"give_item": "broken_wrench"}]},
-        {"id": "tank", "text": "接上备用氧气罐", "once": true, "effects": [{"add_var": ["oxygen", 4]}, {"say": "冰凉的氧气涌进面罩，你多了一点时间。"}]},
-        {"id": "back", "text": "回到走廊", "goto": "corridor"}
+        {
+          "id": "wrench",
+          "text": "捡起地上的扳手",
+          "once": true,
+          "effects": [
+            {
+              "give_item": "broken_wrench"
+            }
+          ]
+        },
+        {
+          "id": "tank",
+          "text": "接上备用氧气罐",
+          "once": true,
+          "effects": [
+            {
+              "add_var": [
+                "oxygen",
+                4
+              ]
+            },
+            {
+              "say": "冰凉的氧气涌进面罩，你多了一点时间。"
+            }
+          ]
+        },
+        {
+          "id": "back",
+          "text": "回到走廊",
+          "goto": "corridor"
+        }
       ]
     },
     {
       "id": "airlock",
       "title": "气闸门",
-      "text": "逃生舱就在门后，但控制面板松脱了，螺栓需要工具才能拧紧。（试试“使用 物品”。）",
+      "text": "逃生舱的机械锁已经松脱。控制面板的固定螺栓需要工具；你也许能逃走，但未发出的求救仍留在船内。氧气 {vars.oxygen}，电量 {vars.battery}。",
       "choices": [
-        {"id": "escape", "text": "进入逃生舱", "goto": "end_escape", "when": {"flag": "panel_fixed"}},
-        {"id": "back", "text": "回到走廊", "goto": "corridor"}
+        {
+          "id": "truth_escape",
+          "text": "带着真相进入逃生舱",
+          "goto": "end_truth",
+          "when": {
+            "all": [
+              {
+                "flag": "panel_fixed"
+              },
+              {
+                "flag": "truth_sent"
+              }
+            ]
+          }
+        },
+        {
+          "id": "escape",
+          "text": "进入逃生舱",
+          "goto": "end_escape",
+          "when": {
+            "all": [
+              {
+                "flag": "panel_fixed"
+              },
+              {
+                "not": {
+                  "flag": "truth_sent"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "back",
+          "text": "回到走廊",
+          "goto": "corridor"
+        }
       ]
     },
     {
       "id": "end_escape",
       "title": "脱离",
       "text": "逃生舱弹离“回声号”。舷窗外，那艘船的灯一盏盏熄灭，而无线电里传来了一段不属于任何人的回声……",
-      "ending": {"id": "escape", "title": "回声"}
+      "ending": {
+        "id": "escape",
+        "title": "回声"
+      }
     },
     {
       "id": "end_suffocate",
       "title": "寂静",
       "text": "最后一格氧气耗尽。警报声越来越远，直到什么也听不见。",
-      "ending": {"id": "suffocate", "title": "寂静"}
+      "ending": {
+        "id": "suffocate",
+        "title": "寂静"
+      }
+    },
+    {
+      "id": "energy",
+      "title": "能源舱",
+      "text": "冷却泵已经停止，备用电芯藏在防火罩后。控制台仍能做两件事：接通独立蓄电池，或者花费三格电量循环制造十格氧气。两项补给都只能使用一次。",
+      "variants": [
+        {
+          "when": {
+            "flag": "life_support"
+          },
+          "text": "循环泵重新转动，玻璃管内亮起了细小的水珠。",
+          "mode": "append"
+        }
+      ],
+      "choices": [
+        {
+          "id": "cell",
+          "text": "取出备用电芯",
+          "once": true,
+          "effects": [
+            {
+              "give_item": "power_cell"
+            }
+          ]
+        },
+        {
+          "id": "charge",
+          "text": "接通独立蓄电池",
+          "once": true,
+          "effects": [
+            {
+              "add_var": [
+                "battery",
+                12
+              ]
+            }
+          ]
+        },
+        {
+          "id": "support",
+          "text": "启动生命维持循环",
+          "once": true,
+          "when": {
+            "var": [
+              "battery",
+              ">=",
+              4
+            ]
+          },
+          "effects": [
+            {
+              "add_var": [
+                "battery",
+                -3
+              ]
+            },
+            {
+              "add_var": [
+                "oxygen",
+                10
+              ]
+            },
+            {
+              "set_flag": "life_support"
+            }
+          ]
+        },
+        {
+          "id": "back",
+          "text": "回到走廊",
+          "goto": "corridor"
+        }
+      ]
+    },
+    {
+      "id": "comms",
+      "title": "通信室",
+      "text": "终端失去电力，旁边贴着手写字条：“若有人听见回声，请把原始记录传回去。”观察窗外，观测室的记录灯仍在闪烁。",
+      "variants": [
+        {
+          "when": {
+            "flag": "signal_link"
+          },
+          "text": "终端已接通，可以把记录芯片的内容送回地球。",
+          "mode": "append"
+        }
+      ],
+      "choices": [
+        {
+          "id": "observatory",
+          "text": "去观测室",
+          "goto": "observatory"
+        },
+        {
+          "id": "send",
+          "text": "发送回声记录",
+          "once": true,
+          "when": {
+            "all": [
+              {
+                "flag": "signal_link"
+              },
+              {
+                "has_item": "data_chip"
+              }
+            ]
+          },
+          "effects": [
+            {
+              "set_flag": "truth_sent"
+            },
+            {
+              "say": "信号中没有怪物，也没有陌生人。那是上一班船员在自动休眠前留下的求救，循环了整整三年。地球站确认收到。"
+            }
+          ]
+        },
+        {
+          "id": "back",
+          "text": "回到走廊",
+          "goto": "corridor"
+        }
+      ]
+    },
+    {
+      "id": "observatory",
+      "title": "观测室",
+      "text": "舷窗上结着薄霜。记录器在同一段时间戳上反复跳动；所谓“不属于任何人的声音”，来自被系统删去的上一班船员。现在你可以带走证据，也可以选择只保住自己的生命。",
+      "choices": [
+        {
+          "id": "record",
+          "text": "下载回声记录",
+          "once": true,
+          "effects": [
+            {
+              "give_item": "data_chip"
+            }
+          ]
+        },
+        {
+          "id": "back",
+          "text": "返回通信室",
+          "goto": "comms"
+        }
+      ]
+    },
+    {
+      "id": "end_truth",
+      "title": "有人听见",
+      "text": "逃生舱升入晨光前，你收到地球站的回复：“原始记录已保存，我们听见了。”回声终于不再循环。你不是孤独的幸存者，而是把另一班人的名字带回家的人。",
+      "ending": {
+        "id": "truth",
+        "title": "有人听见"
+      }
+    },
+    {
+      "id": "end_blackout",
+      "title": "熄灯",
+      "text": "腕表还有氧气，供电却已经归零。机械门停止响应，通信终端也暗了下去。你终于明白，只守住一种资源并不足以离开这里。",
+      "ending": {
+        "id": "blackout",
+        "title": "熄灯"
+      }
+    }
+  ],
+  "targets": [
+    {
+      "id": "panel",
+      "name": "控制面板",
+      "aliases": [
+        "面板"
+      ],
+      "scene": "airlock"
+    },
+    {
+      "id": "antenna",
+      "name": "通信终端",
+      "aliases": [
+        "终端"
+      ],
+      "scene": "comms"
     }
   ]
 }
