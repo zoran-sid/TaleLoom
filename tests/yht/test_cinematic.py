@@ -80,12 +80,23 @@ class LoaderCinematicFieldsTest(unittest.TestCase):
         with self.assertRaisesRegex(StoryFormatError, r"scenes\[0\]\.art"):
             parse_story(story_raw(scene("a", art=["lobby"])))
 
+    def test_rejects_empty_art(self):
+        with self.assertRaisesRegex(StoryFormatError, r"scenes\[0\]\.art"):
+            parse_story(story_raw(scene("a", art="  ")))
+
     def test_rejects_non_boolean_linear_meta(self):
         with self.assertRaisesRegex(StoryFormatError, r"meta\.linear"):
             parse_story(story_raw(scene("a"), meta={"linear": "true"}))
 
 
 class ValidatorCinematicFieldsTest(unittest.TestCase):
+    def test_unique_checkpoint_names_are_ok(self):
+        story = parse_story(story_raw(
+            scene("a", choices=[choice("go", goto="b")], checkpoint="第一幕"),
+            scene("b", ending={"id": "out"}, checkpoint="第二幕"),
+        ))
+        self.assertEqual([str(issue) for issue in validate(story)], [])
+
     def test_duplicate_checkpoint_names_are_rejected(self):
         story = parse_story(story_raw(
             scene("a", choices=[choice("go", goto="b")], checkpoint="第一幕"),
