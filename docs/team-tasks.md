@@ -16,7 +16,7 @@
 | M2 桌面闭环 | 已完成：Tkinter 桌面 GUI（ZRS，PR #9），`python main.py` 无参数打开窗口，缺少 Tk 时回退命令行；CI 中窗口测试仍被跳过（#15） |
 | M3 浏览器核心 | 已完成：两个剧本的全部通关脚本在 Pyodide 与 CPython 中逐步一致（PR #4、#10） |
 | M4 网页与存档 | 正式网页界面已完成（`web/ui/`、`web/styles/`，ZRS，PR #9）；存储仍为临时单槽 `web/preview/storage.js`，待 LQ 的 `web/storage/` |
-| M5 自动发布 | 已上线：<https://taleloom.zoranzhou28.workers.dev>（生产分支 `develop`，PR 合入后自动部署；正式发布后改为 `main`） |
+| M5 自动发布 | 已上线：<https://taleloom.zoranzhou.com>（生产分支 `develop`，PR 合入后自动部署；正式发布后改为 `main`）；成员分支预览在 `<分支名>.taleloom.zoranzhou.com` |
 
 | 成员 | 已完成 | 下一个 PR | 接入点 |
 | --- | --- | --- | --- |
