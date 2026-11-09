@@ -10,6 +10,7 @@
     "status": "v0 序章：氧气倒计时、道具组合与两个结局，供 LQ 扩写"
   },
   "vars": {"oxygen": 8},
+  "resources": [{"var": "oxygen", "name": "氧气"}],
   "every_turn": [{"add_var": ["oxygen", -1]}],
   "triggers": [
     {"id": "low_oxygen", "when": {"var": ["oxygen", "<=", 3]}, "effects": [{"say": "【警告】氧气剩余不多，呼吸开始变得急促。"}]},
