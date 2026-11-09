@@ -115,6 +115,24 @@ function renderLibrary() {
     row.append(detail, buttons);
     $('stories').append(row);
   }
+  $('stories').append(cinematicRow());
+}
+
+/** 影像模式入口：不是会话剧本，只链到 /cinematic，不读取存档。 */
+function cinematicRow() {
+  const row = element('article', undefined, 'story story-cinematic');
+  row.dataset.cinematic = '1';
+  row.append(element('span', '影', 'story-number'));
+  const detail = element('div');
+  detail.append(element('p', '互动影像', 'genre'),
+    element('h3', '影像模式'),
+    element('p', '《雾港旧案 · 影像版》：画面与声音随剧情推进，选错会付出代价。'));
+  const buttons = element('div', undefined, 'story-buttons');
+  const link = element('a', '进入影像模式 →', 'cinematic-link primary');
+  link.href = '/cinematic';
+  buttons.append(link);
+  row.append(detail, buttons);
+  return row;
 }
 
 async function start(storyId, resume = false) {
