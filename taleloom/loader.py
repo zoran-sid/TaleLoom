@@ -27,6 +27,7 @@ _RESOURCE_FIELDS = {
 
 _MISSING = object()
 _TYPE_NAMES = {dict: "对象", list: "数组", str: "字符串", bool: "布尔值", int: "整数", float: "数值"}
+ENDING_KINDS = ("normal", "failure")
 
 
 class StoryFormatError(ValueError):
@@ -136,6 +137,8 @@ def parse_story(raw: Any) -> Story:
     assets = _assets(raw.get("assets", {}), "$.assets")
     meta = raw.get("meta", {})
     _expect(meta, dict, "$.meta")
+    if "linear" in meta:
+        _expect(meta["linear"], bool, "$.meta.linear")
 
     return Story(
         id=raw["id"],
@@ -237,6 +240,27 @@ def _scene(s: Any, path: str) -> Scene:
         ending = {"id": _str(raw_ending, "id", f"{path}.ending", non_empty=True)}
         if "title" in raw_ending:
             ending["title"] = _str(raw_ending, "title", f"{path}.ending")
+        if "kind" in raw_ending:
+            kind = _str(raw_ending, "kind", f"{path}.ending", non_empty=True)
+            if kind not in ENDING_KINDS:
+                raise StoryFormatError(
+                    f"{path}.ending.kind: 结局类型应为 normal 或 failure，实际为 {kind!r}"
+                )
+            ending["kind"] = kind
+
+    checkpoint = None
+    if s.get("checkpoint") is not None:
+        _expect(s["checkpoint"], str, f"{path}.checkpoint")
+        if not s["checkpoint"].strip():
+            raise StoryFormatError(f"{path}.checkpoint: 存档点名称不能为空")
+        checkpoint = s["checkpoint"]
+
+    art = None
+    if s.get("art") is not None:
+        _expect(s["art"], str, f"{path}.art")
+        if not s["art"].strip():
+            raise StoryFormatError(f"{path}.art: 画面键不能为空")
+        art = s["art"]
 
     variants = s.get('variants', [])
     _expect(variants, list, f'{path}.variants')
@@ -256,6 +280,8 @@ def _scene(s: Any, path: str) -> Scene:
         choices=choices,
         on_enter=_effects(s.get("on_enter", []), f"{path}.on_enter"),
         ending=ending,
+        checkpoint=checkpoint,
+        art=art,
     )
 
 
