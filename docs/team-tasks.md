@@ -34,7 +34,7 @@
 | 2 | ZQO | 运行时核心与插件接口；正式会话与展示快照 | `state.py` `rules.py` `engine.py` `mechanics/base.py`；`session.py` `presentation.py`（新建） | `tests/zqo/` |
 | 3 | ZRS | 命令行与桌面／网页界面；道具谜题插件 | `parser.py` `cli.py` `mechanics/puzzle.py`；`gui/`（新建）；`web/ui/` `web/styles/`（新建） | `tests/zrs/` |
 | 4 | ZC | 推理插件、剧本 A《雾港旧案》、整合与发布 | `mechanics/mystery.py` `session_factory.py` `legacy_session.py`（临时）；`main.py`、`.vscode/launch.json`、`stories/fog_harbor/`；`web/runtime/`、`web/preview/storage.js`（临时）、`tools/`、CI 与 Cloudflare 配置 | `tests/zc/`、`tests/integration/`、`tests/browser/` |
-| 5 | LQ | 存档与存储、回放与探索测试、剧本 B《深空回声》 | `save.py` `replay.py`；`web/storage/`（新建）；`stories/deep_space/` | `tests/lq/` |
+| 5 | LQ | 存档与存储、回放与探索测试、剧本 B《深空回声》 | `save.py` `storage.py` `replay.py`；`gui/storage.py`（兼容导入）；`web/storage/`；`stories/deep_space/` | `tests/lq/` |
 
 - 共享接口 `taleloom/ui_contract.py` 与测试替身 `tests/ui_fakes.py` 的改动走 contract PR（[接口约定](contracts.md) 第 5 节）。
 - [`.github/CODEOWNERS`](../.github/CODEOWNERS) 与本表一致：PR 改到别人的文件时，GitHub 自动请求该成员审阅。两处修改时保持同步。

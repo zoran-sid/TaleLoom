@@ -9,12 +9,13 @@
 """
 
 from __future__ import annotations
+from tkinter import filedialog
 
 import tkinter as tk
 from tkinter import font as tkfont
 from tkinter import messagebox, ttk
 
-from ..ui_contract import ActionSpec, ViewSnapshot
+from ..ui_contract import ActionSpec, ViewSnapshot, StorageError
 from .controller import GameController
 
 FONT_CANDIDATES = ("Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", "Segoe UI")
@@ -199,6 +200,16 @@ class TaleLoomWindow:
         self.save_button.grid(row=0, column=2, padx=(0, 6))
         self.load_button = ttk.Button(nav, text="读取存档", command=self._load)
         self.load_button.grid(row=0, column=3, padx=(0, 6))
+        slotbar = ttk.Frame(nav)
+        slotbar.grid(row=1, column=0, columnspan=5, sticky="ew", pady=(6, 0))
+        self.slot_name = tk.StringVar(value="快速存档")
+        ttk.Label(slotbar, text="存档位置：").pack(side="left")
+        ttk.Combobox(slotbar, textvariable=self.slot_name, state="readonly", width=12,
+                     values=("快速存档", "存档 1", "存档 2", "存档 3", "自动存档")).pack(side="left")
+        ttk.Button(slotbar, text="存档列表", command=self._list_saves).pack(side="left", padx=6)
+        ttk.Button(slotbar, text="导出", command=self._export_json).pack(side="left", padx=2)
+        ttk.Button(slotbar, text="导入", command=self._import_json).pack(side="left", padx=2)
+
         self.restart_button = ttk.Button(nav, text="重新开始", command=self._restart)
         self.restart_button.grid(row=0, column=4)
         ttk.Separator(self.game).grid(row=0, column=0, sticky="sew", pady=(44, 0))
@@ -445,21 +456,59 @@ class TaleLoomWindow:
         self.status_label.configure(text=message, wraplength=self._wrap())
         self.status_label.grid(row=9, column=0, sticky="w", pady=(12, 0))
 
-    def _save(self) -> None:
-        if self.controller.has_save(self.controller.story.id):
-            if not messagebox.askyesno("覆盖存档", "已经有存档，覆盖它吗？", parent=self.root):
-                return
-        if self.controller.save():
+    def _export_json(self) -> None:
+        path = filedialog.asksaveasfilename(parent=self.root, defaultextension=".json", filetypes=[("JSON 存档", "*.json")])
+        if path:
+            self.controller.export_json(path)
             self.render()
 
+    def _import_json(self) -> None:
+        path = filedialog.askopenfilename(parent=self.root, filetypes=[("JSON 存档", "*.json")])
+        if path and messagebox.askyesno("导入存档", "导入会替换当前未保存的进度，继续吗？", parent=self.root):
+            self.controller.import_json(path)
+            self.render()
+
+    def _selected_slot(self) -> str:
+        return {"快速存档": "quick", "自动存档": "auto", "存档 1": "1", "存档 2": "2", "存档 3": "3"}[self.slot_name.get()]
+
+    def _list_saves(self) -> None:
+        try:
+            rows = self.controller.list_saves()
+        except StorageError as exc:
+            self._status(str(exc))
+            return
+        text = "\n".join(f"{r['slot']}  {r.get('saved_at', '')}\n场景 {r.get('scene', '未知')} · 回合 {r.get('turn', '?')} {r.get('error', '')}" for r in rows)
+        messagebox.showinfo("存档列表", text or "还没有存档。", parent=self.root)
+
+    def _save(self) -> None:
+        slots = self._available_slots()
+        if slots is None:
+            return
+        if self.controller._slot(self.controller.story.id, self._selected_slot()) in slots:
+            if not messagebox.askyesno("覆盖存档", "已经有存档，覆盖它吗？", parent=self.root):
+                return
+        self.controller.save(self._selected_slot())
+        self.render()
+
+    def _available_slots(self):
+        try:
+            return self.controller.store.list_slots()
+        except StorageError as exc:
+            self._status(str(exc))
+            return None
+
     def _load(self) -> None:
-        if not self.controller.has_save(self.controller.story.id):
-            self._status("还没有保存过进度，先点“保存进度”。")
+        selected = self.controller._slot(self.controller.story.id, self._selected_slot())
+        slots = self._available_slots()
+        if slots is None:
+            return
+        if selected not in slots:
+            self._status("还没有保存过这个位置的进度，先点“保存进度”。")
             return
         if not messagebox.askyesno("读取存档", "读取存档会替换当前未保存的进度，继续吗？", parent=self.root):
             return
-        if self.controller.load():
-            self.render()
+        self.controller.load(self._selected_slot())
+        self.render()
 
     def _restart(self) -> None:
         if self.controller.dirty and not messagebox.askyesno(
