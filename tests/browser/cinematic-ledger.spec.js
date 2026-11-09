@@ -278,7 +278,8 @@ test('键盘：单选用方向键，排序卡片用 Enter、↑↓、Delete', as
   await expect(desk.locator('.seq-slot .tile')).toHaveText(['阿芸在值房写回信']);
 
   await resumeAt(page, 'truth', [['b02_kitchen', '测试 · 两句话']]);
-  await desk.locator('input[name="slot-sentence"][value="bell"]').focus();
+  // 入场完成后应主动交付焦点，不能对仍被动画隐藏的字段调用 focus。
+  await expect(desk.locator('input[name="slot-sentence"][value="bell"]')).toBeFocused();
   await page.keyboard.press('ArrowDown');
   await expect(desk.locator('input[name="slot-sentence"][value="until"]')).toBeChecked();
   await expect(desk.locator('label.chip.on')).toHaveText('周：“阿芸一直在，约到十一点二十分，我们才散。”');

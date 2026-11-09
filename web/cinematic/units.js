@@ -77,6 +77,7 @@ export class Desk {
     this.feedback = '';
     this.draggables = [];
     this.busy = false;
+    this.entrance = null;
     this.celebration = null;
     root.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
@@ -100,13 +101,19 @@ export class Desk {
       this.root.hidden = false;
       this.sound.paper?.();
       const sheet = this.root.querySelector('.desk-sheet');
-      gsap.fromTo(this.root, { autoAlpha: 0 }, { autoAlpha: 1, duration: this.dur(0.3) });
-      gsap.fromTo(sheet, { y: 28 }, { y: 0, duration: this.dur(0.45), ease: 'power3.out' });
-      gsap.from(this.root.querySelectorAll('.desk-spot, .slot, .seq-slot'), {
-        autoAlpha: 0, y: 10, duration: this.dur(0.3), stagger: this.dur(0.04), ease: 'power2.out', clearProps: 'all',
-      });
-      (this.root.querySelector('.desk-spot:not(.seen)') || this.root.querySelector('input, .tile, .desk-submit'))
-        ?.focus({ preventScroll: true });
+      const focusOrigin = document.activeElement;
+      this.entrance = gsap.timeline({ onComplete: () => {
+        // 隐藏中的字段无法接收焦点；若玩家已主动移动焦点，则不再抢回。
+        if (!this.open || this.unit?.id !== unit.id
+            || ![focusOrigin, document.body].includes(document.activeElement)) return;
+        (this.root.querySelector('.desk-spot:not(.seen)') || this.root.querySelector('input, .tile, .desk-submit'))
+          ?.focus({ preventScroll: true });
+      } })
+        .fromTo(this.root, { autoAlpha: 0 }, { autoAlpha: 1, duration: this.dur(0.3) }, 0)
+        .fromTo(sheet, { y: 28 }, { y: 0, duration: this.dur(0.45), ease: 'power3.out' }, 0)
+        .from(this.root.querySelectorAll('.desk-spot, .slot, .seq-slot'), {
+          autoAlpha: 0, y: 10, duration: this.dur(0.3), stagger: this.dur(0.04), ease: 'power2.out', clearProps: 'all',
+        }, 0);
     }
     return true;
   }
@@ -121,6 +128,8 @@ export class Desk {
   }
 
   close(silent = false) {
+    this.entrance?.kill();
+    this.entrance = null;
     if (!this.open) return;
     this.killDrag();
     this.celebration?.progress(1);
