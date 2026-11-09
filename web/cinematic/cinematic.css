@@ -373,6 +373,40 @@ button { font: inherit; }
 .nb-scene, .nb-empty { margin: 0 0 0.5em; font-size: 14px; line-height: 1.7; color: #4a3d2e; }
 .nb-foot { margin: 0; padding: 0.6em 1.2em 0.9em; font-family: var(--sans); font-size: 11px; color: #7a6a55; }
 
+.nb-saves { margin: 0; padding: 0; list-style: none; }
+.nb-save { display: flex; align-items: center; justify-content: space-between; gap: 0.8em; padding: 0.35em 0; border-bottom: 1px dashed rgba(42, 32, 22, 0.15); }
+.nb-save-info { font-size: 14px; color: #4a3d2e; }
+.nb-save-info strong { color: #2a2016; font-size: 15px; }
+.nb-go {
+  flex: none;
+  padding: 0.3em 0.8em;
+  border: 1px solid rgba(138, 90, 34, 0.5);
+  border-radius: 999px;
+  background: transparent;
+  color: #8a5a22;
+  font-family: var(--sans);
+  font-size: 12px;
+  cursor: pointer;
+}
+.nb-go[data-armed="1"] { background: #8a5a22; color: #f6efe0; }
+
+.toast {
+  position: absolute;
+  top: 4%;
+  left: 3%;
+  margin: 0;
+  padding: 0.45em 1em;
+  border-radius: 999px;
+  background: rgba(8, 8, 10, 0.65);
+  color: var(--amber);
+  font-size: clamp(11px, 1.1cqi, 14px);
+  letter-spacing: 0.15em;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.toast.show { opacity: 1; }
+.begin.secondary { background: transparent; border-color: var(--line); font-size: 0.92em; }
+
 /* 控制条 */
 .controls {
   display: flex;

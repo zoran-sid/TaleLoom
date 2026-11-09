@@ -10,6 +10,10 @@
  *
  * 失败惩罚：每次选择前用会话的标准存档记一个检查点；到达 id 以 fail_ 开头的
  * 结局时，可以退回上一个选择重来，整局共 CHANCES 次机会，每次退回记一次失误。
+ *
+ * 关键节点自动存档：开场，以及剧情里“【存档点】名称”提示出现时，导出标准存档
+ * 保存在本机（localStorage）。笔记里可以随时回到任一存档点；失败或较差的结局
+ * 也可以回到最近的存档点（不消耗机会，但之后的进度作废）。刷新页面后可从存档点继续。
  */
 import './cinematic.css';
 import { GameClient } from '../runtime/client.js';
@@ -18,28 +22,37 @@ import { Sound } from './sound.js';
 
 const STORY_ID = new URLSearchParams(location.search).get('story') || 'fog_harbor_film';
 const CHANCES = 3;
+const CHECKPOINT = '【存档点】';
+const AUTOSAVE_KEY = `taleloom:cinematic:${STORY_ID}:autosaves`;
 const FAST = new URLSearchParams(location.search).get('fast') === '1';
-const T = (ms) => (FAST ? Math.min(ms, 40) : ms);
+// rushing：演出途中要回到存档点时，把剩下的字幕与转场快速播完。
+let rushing = false;
+const T = (ms) => (FAST || rushing ? Math.min(ms, 40) : ms);
 // 场景 → 画面：[画面名, 选项]。审问类节点用人物特写，speaker 作为字幕上的说话人。
 const ART = {
   lobby: ['lobby'], ebb: ['lobby'], gathering: ['lobby', { gathering: true }],
   office: ['office'], office_ledger: ['office'], office_window: ['office'],
   kitchen: ['kitchen'], kitchen_zhou: ['kitchen'], vat: ['kitchen'],
-  dock: ['harbor'], backyard: ['generic'],
+  dock: ['harbor'], backyard: ['backyard'], guest_room: ['guestroom'],
+  zhou_room: ['zhouroom', { open: true }], attic: ['attic'],
   gu_first: ['portrait', { suspect: 'gu', place: 'lobby', speaker: '顾先生' }],
-  gu_confront: ['portrait', { suspect: 'gu', place: 'lobby', speaker: '顾先生' }],
-  gu_bluff: ['portrait', { suspect: 'gu', place: 'lobby', speaker: '顾先生' }],
-  gu_silent: ['portrait', { suspect: 'gu', place: 'lobby', speaker: '顾先生' }],
-  zhou_bluff: ['portrait', { suspect: 'zhou', place: 'kitchen', speaker: '周文' }],
-  zhou_guarded: ['portrait', { suspect: 'zhou', place: 'kitchen', speaker: '周文' }],
-  ayun_bluff: ['portrait', { suspect: 'ayun', place: 'kitchen', speaker: '阿芸' }],
-  ayun_silent: ['generic', { speaker: '阿芸' }],
-  zhou_gap: ['portrait', { suspect: 'zhou', place: 'kitchen', speaker: '周文' }],
-  zhou_weight: ['portrait', { suspect: 'zhou', place: 'kitchen', speaker: '周文' }],
-  kitchen_ayun: ['portrait', { suspect: 'ayun', place: 'kitchen', speaker: '阿芸' }],
-  ayun_truth: ['portrait', { suspect: 'ayun', place: 'kitchen', speaker: '阿芸' }],
+  gu_confront: ['portrait', { suspect: 'gu', place: 'lobby', speaker: '顾先生', mood: 'nervous' }],
+  gu_bluff: ['portrait', { suspect: 'gu', place: 'lobby', speaker: '顾先生', mood: 'cold' }],
+  gu_silent: ['portrait', { suspect: 'gu', place: 'lobby', speaker: '顾先生', mood: 'cold' }],
+  zhou_gap: ['portrait', { suspect: 'zhou', place: 'kitchen', speaker: '周文', mood: 'nervous' }],
+  zhou_weight: ['portrait', { suspect: 'zhou', place: 'kitchen', speaker: '周文', mood: 'nervous' }],
+  zhou_bluff: ['portrait', { suspect: 'zhou', place: 'kitchen', speaker: '周文', mood: 'cold' }],
+  zhou_guarded: ['portrait', { suspect: 'zhou', place: 'kitchen', speaker: '周文', mood: 'cold' }],
+  kitchen_ayun: ['portrait', { suspect: 'ayun', place: 'kitchen', speaker: '阿芸', mood: 'nervous' }],
+  ayun_truth: ['portrait', { suspect: 'ayun', place: 'kitchen', speaker: '阿芸', mood: 'tears' }],
+  ayun_bluff: ['portrait', { suspect: 'ayun', place: 'kitchen', speaker: '阿芸', mood: 'tears' }],
+  ayun_silent: ['attic', { closed: true, speaker: '阿芸' }],
 };
-const AMBIENCE = { lobby: 'lobby', office: 'office', kitchen: 'kitchen', portrait: 'portrait', harbor: 'harbor' };
+const AMBIENCE = {
+  lobby: 'lobby', office: 'office', kitchen: 'kitchen', portrait: 'portrait', harbor: 'harbor',
+  guestroom: 'rain', backyard: 'harbor', zhouroom: 'lobby', attic: 'attic',
+  doorway: 'tension', storeroom: 'tension',
+};
 const SUSPECTS = { 顾先生: 'gu', 周文: 'zhou', 阿芸: 'ayun' };
 const VERBS = { 'mystery:ask': '审问', 'mystery:examine': '深入调查', 'puzzle:use': '使用' };
 
@@ -58,9 +71,12 @@ let poke = null;
 let paused = false;          // 打开笔记时暂停字幕与转场计时
 let seen = new Set();        // 已经播过描述的场景，回来时不再重播
 let notes = { clues: [], resources: [], sceneTitle: '', sceneText: '' };
-let checkpoint = null;       // 上一个选择之前的标准存档
+let checkpoint = null;       // 上一个选择之前的标准存档 { save, at }
 let chances = CHANCES;       // 剩余的“回到上一个选择”次数
 let mistakes = 0;            // 本局退回过几次
+let rollbacks = 0;           // 本局回到存档点几次
+let autosaves = loadAutosaves();
+let pendingRollback = null;   // 演出结束后要回到的存档点
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -124,7 +140,7 @@ async function type(text, speaker = '') {
   const line = el('span', 'line', '');
   box.append(line);
   box.hidden = false;
-  let skipped = FAST;
+  let skipped = FAST || rushing;
   poke = () => { skipped = true; };
   for (const ch of text) {
     await whilePaused();
@@ -314,53 +330,86 @@ function isFailure(current) {
   return Boolean(current.ending_id && current.ending_id.startsWith('fail_'));
 }
 
+// 结局 → 画面：失败结局各有专门的画面，其余在港口（天亮或夜里有船离开）。
+const ENDING_ART = {
+  truth: ['harbor', { dawn: true, boat: 'arrive' }],
+  dawn: ['harbor', { dawn: true, boat: 'arrive' }],
+  scapegoat: ['harbor', { boat: 'leave' }],
+  wrong: ['harbor', { boat: 'leave' }],
+  insufficient: ['harbor', {}],
+  fail_tide: ['harbor', { storm: true }],
+  fail_caught: ['doorway', {}],
+  fail_attacked: ['storeroom', {}],
+};
+
+function latestAutosave() {
+  return autosaves.reduce((best, entry) => (!best || entry.at > best.at ? entry : best), null);
+}
+
 async function ending(next) {
   clearSubtitle();
   const failed = isFailure(next);
   await stage.fade(1, T(1200));
-  stage.show('ending', { dawn: ['truth', 'dawn'].includes(next.ending_id) });
-  sound.setAmbience('ending');
+  const [art, options] = ENDING_ART[next.ending_id] || ['harbor', { dawn: ['truth', 'dawn'].includes(next.ending_id) }];
+  stage.show(art, options);
+  sound.setAmbience(art === 'harbor' ? (options.storm ? 'storm' : 'ending') : 'tension');
+  if (failed) stage.shake(900, 14);
   await stage.fade(0, T(1800));
   for (const line of chunks(next.text)) await type(line);
   clearSubtitle();
+  const record = [`第 ${next.turn} 回合`];
+  if (mistakes) record.push(`失误 ${mistakes} 次`);
+  if (rollbacks) record.push(`回到存档点 ${rollbacks} 次`);
   if (failed) {
-    showCard('失败', next.ending_title || next.ending_id, chances > 0 ? `还剩 ${chances} 次机会` : '机会已经用完');
+    showCard('任务失败', next.ending_title || next.ending_id, chances > 0 ? `还剩 ${chances} 次机会` : '机会已经用完');
   } else {
-    showCard('结局', next.ending_title || next.ending_id,
-      mistakes ? `第 ${next.turn} 回合 · 失误 ${mistakes} 次` : `第 ${next.turn} 回合`);
+    showCard('结局', next.ending_title || next.ending_id, record.join(' · '));
   }
   const items = [];
   if (failed && chances > 0 && checkpoint) {
     items.push({ label: `回到上一个选择（还剩 ${chances} 次机会）`, run: rewind });
+  }
+  const saved = latestAutosave();
+  if (saved && next.ending_id !== 'truth') {
+    items.push({ label: `回到存档点「${saved.label}」`, run: () => rollbackTo(saved) });
   }
   items.push({ label: failed ? '从头再来' : '重新开始', run: restart });
   items.push({ label: '返回文字版', run: () => { location.href = '/'; } });
   showChoices(items);
 }
 
-/** 退回上一个选择：恢复检查点存档，扣一次机会、记一次失误，直接回到选项。 */
+/** 恢复一份标准存档并直接回到选项；kicker/place 用于转场卡片。 */
+async function restoreTo(save, kicker, place) {
+  const result = await call({ method: 'restore', payload: save });
+  if (result.error_code) throw new Error(result.messages.join(' ') || '存档无法恢复');
+  clearSubtitle();
+  closeNotebook();
+  await stage.fade(1, T(600));
+  sound.thud();
+  view = result.view;
+  updateNotes(view);
+  seen.add(view.scene_id);
+  setArt(view.scene_id);
+  showCard(kicker, view.scene_title, place);
+  await stage.fade(0, T(900));
+  await hold(1400);
+  hideCard();
+  showChoices();
+}
+
+/** 退回上一个选择：扣一次机会、记一次失误；之后记下的存档点作废。 */
 async function rewind() {
   if (busy || !checkpoint || chances <= 0) return;
   busy = true;
   hideChoices();
   hideCard();
   try {
-    const result = await call({ method: 'restore', payload: checkpoint });
-    if (result.error_code) throw new Error(result.messages.join(' ') || '存档无法恢复');
     chances -= 1;
     mistakes += 1;
     updateChances();
-    clearSubtitle();
-    await stage.fade(1, T(600));
-    sound.thud();
-    view = result.view;
-    updateNotes(view);
-    setArt(view.scene_id);
-    showCard('回到上一个选择', view.scene_title, `还剩 ${chances} 次机会`);
-    await stage.fade(0, T(900));
-    await hold(1400);
-    hideCard();
-    showChoices();
+    autosaves = autosaves.filter((entry) => entry.at < checkpoint.at);
+    saveAutosaves();
+    await restoreTo(checkpoint.save, '回到上一个选择', `还剩 ${chances} 次机会`);
   } catch (error) {
     await type(`没能回到上一步：${error.message}`);
     clearSubtitle();
@@ -368,6 +417,66 @@ async function rewind() {
   } finally {
     busy = false;
   }
+}
+
+/** 回到某个自动存档点：不消耗机会，但存档点之后的进度和存档作废。 */
+async function rollbackTo(entry, { counted = true } = {}) {
+  if (busy) return;
+  busy = true;
+  hideChoices();
+  hideCard();
+  try {
+    if (counted) rollbacks += 1;
+    checkpoint = null;
+    autosaves = autosaves.filter((other) => other.at <= entry.at);
+    saveAutosaves();
+    await restoreTo(entry.save, counted ? '回到存档点' : '从存档点继续', entry.label);
+  } catch (error) {
+    await type(`没能回到存档点：${error.message}`);
+    clearSubtitle();
+    showChoices([{ label: '从头再来', run: restart }]);
+  } finally {
+    busy = false;
+  }
+}
+
+// ---------- 关键节点自动存档（本机 localStorage，读写失败时只在本页保留） ----------
+
+function loadAutosaves() {
+  try {
+    const data = JSON.parse(localStorage.getItem(AUTOSAVE_KEY) || '[]');
+    return Array.isArray(data) ? data.filter((e) => e && typeof e.label === 'string' && e.save && typeof e.at === 'number') : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveAutosaves() {
+  try {
+    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(autosaves));
+  } catch {
+    /* 隐私模式或空间不足：自动存档只在本页有效 */
+  }
+  if (!$('notebook').hidden) renderNotebook();
+}
+
+async function recordAutosave(label, current) {
+  const save = await call({ method: 'export' });
+  autosaves = autosaves.filter((entry) => entry.label !== label);
+  autosaves.push({ label, scene: current.scene_title, turn: current.turn, at: Date.now(), save });
+  saveAutosaves();
+  toast(`已自动存档 · ${label}`);
+}
+
+function toast(text) {
+  const node = $('toast');
+  node.textContent = text;
+  node.hidden = false;
+  node.classList.remove('show');
+  void node.offsetWidth;
+  node.classList.add('show');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => { node.classList.remove('show'); node.hidden = true; }, FAST ? 300 : 2600);
 }
 
 function updateChances() {
@@ -526,6 +635,39 @@ function renderNotebook() {
     people.append(meters);
     body.append(people);
   }
+  if (autosaves.length) {
+    const saves = el('section', 'nb-section');
+    saves.append(el('h3', 'nb-heading', '自动存档（回到存档点不消耗机会，之后的进度会作废）'));
+    const list = el('ul', 'nb-saves');
+    for (const entry of [...autosaves].sort((a, b) => b.at - a.at)) {
+      const item = el('li', 'nb-save');
+      const info = el('span', 'nb-save-info');
+      info.append(el('strong', '', entry.label), el('span', '', ` ${entry.scene} · 第 ${entry.turn} 回合`));
+      const go = el('button', 'nb-go', '回到这里');
+      go.type = 'button';
+      go.addEventListener('click', () => {
+        if (go.dataset.armed !== '1') {
+          go.dataset.armed = '1';
+          go.textContent = '确定回到这里？';
+          return;
+        }
+        if (busy) {
+          // 正在演出：快速播完这一段，结束后立即回到存档点
+          pendingRollback = entry;
+          rushing = true;
+          closeNotebook();
+          nudge();
+          toast(`正在回到存档点 · ${entry.label}`);
+          return;
+        }
+        rollbackTo(entry);
+      });
+      item.append(info, go);
+      list.append(item);
+    }
+    saves.append(list);
+    body.append(saves);
+  }
   body.append(scene);
 }
 
@@ -572,6 +714,15 @@ function boot() {
   return booting;
 }
 
+/** 演出结束后，如果玩家在演出途中选择了回到存档点，现在执行。 */
+function runPendingRollback() {
+  rushing = false;
+  if (!pendingRollback) return;
+  const entry = pendingRollback;
+  pendingRollback = null;
+  rollbackTo(entry);
+}
+
 async function act(actionId, values) {
   if (busy) return;
   busy = true;
@@ -580,8 +731,15 @@ async function act(actionId, values) {
   try {
     const previous = view;
     const save = await call({ method: 'export' });
+    const at = Date.now();
     const result = await call({ method: 'action', action: { action_id: actionId, expected_revision: view.revision, values } });
-    if (!result.error_code) checkpoint = save;
+    if (!result.error_code) {
+      checkpoint = { save, at };
+      for (const mark of result.messages.filter((m) => m.startsWith(CHECKPOINT))) {
+        await recordAutosave(mark.slice(CHECKPOINT.length), result.view);
+      }
+      result.messages = result.messages.filter((m) => !m.startsWith(CHECKPOINT));
+    }
     await present(result, previous);
   } catch (error) {
     await type(`出了点问题：${error.message}`);
@@ -589,6 +747,7 @@ async function act(actionId, values) {
     showChoices();
   } finally {
     busy = false;
+    runPendingRollback();
   }
 }
 
@@ -602,11 +761,15 @@ async function restart() {
   checkpoint = null;
   chances = CHANCES;
   mistakes = 0;
+  rollbacks = 0;
+  autosaves = [];
+  saveAutosaves();
   updateChances();
   closeNotebook();
   try {
     booting = null;
     const result = await boot();
+    await recordAutosave('开场', result.view);
     await present(result, null);
   } finally {
     busy = false;
@@ -624,12 +787,20 @@ async function opening() {
   await sleep(1400);
 }
 
-async function begin() {
+async function begin(resume = null) {
   $('begin').disabled = true;
+  $('resume').disabled = true;
   await sound.start();
   $('intro').classList.add('gone');
   busy = true;
   try {
+    if (resume) {
+      await boot();
+      busy = false;
+      return await rollbackTo(resume, { counted: false });
+    }
+    autosaves = [];
+    saveAutosaves();
     const intro = opening();
     let result;
     try {
@@ -643,13 +814,21 @@ async function begin() {
       return;
     }
     await intro;
+    await recordAutosave('开场', result.view);
     await present(result, null);
   } finally {
     busy = false;
   }
 }
 
-$('begin').addEventListener('click', begin);
+$('begin').addEventListener('click', () => begin());
+(() => {
+  const saved = latestAutosave();
+  if (!saved) return;
+  $('resume').hidden = false;
+  $('resume').textContent = `从存档点继续：${saved.label}`;
+  $('resume').addEventListener('click', () => begin(saved));
+})();
 $('restart').addEventListener('click', restart);
 $('mute').addEventListener('click', () => {
   const muted = !sound.muted;

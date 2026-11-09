@@ -78,6 +78,47 @@ test('影像版：没有证据就逼问，嫌疑人起戒心并记在笔记里',
   await expect(page.locator('.nb-meter', { hasText: '周文的戒心' })).toContainText('○');
 });
 
+test('影像版：关键节点自动存档，可以从笔记回到存档点，刷新后可以继续', async ({ page }) => {
+  await page.goto('/cinematic.html?fast=1');
+  await page.locator('#begin').click();
+  const choices = page.locator('#choices');
+  const pick = (name) => choices.getByRole('button', { name }).click();
+  await pick(/推开账房的门/);
+  await pick(/翻开桌上的账本/);
+  await expect(page.locator('#notes-count')).toHaveText('4');
+  await page.getByRole('button', { name: /线索笔记/ }).click();
+  const saves = page.locator('.nb-save');
+  await expect(saves).toHaveCount(2);
+  await expect(saves.first()).toContainText('第一幕 · 账房');
+  const back = page.locator('.nb-save', { hasText: '第一幕 · 账房' }).getByRole('button');
+  await back.click();
+  await expect(back).toHaveText('确定回到这里？');
+  await back.click();
+  await expect(choices.getByRole('button', { name: /翻开桌上的账本/ })).toBeVisible();
+  await expect(page.locator('#notes-count')).toHaveText('2');
+
+  await page.reload();
+  await expect(page.locator('#resume')).toHaveText('从存档点继续：第一幕 · 账房');
+  await page.locator('#resume').click();
+  await expect(choices.getByRole('button', { name: /翻开桌上的账本/ })).toBeVisible({ timeout: 90_000 });
+  await expect(page.locator('#notes-count')).toHaveText('2');
+});
+
+test('影像版：较差的结局可以回到最近的存档点重新推理', async ({ page }) => {
+  await page.goto('/cinematic.html?fast=1');
+  await page.locator('#begin').click();
+  const choices = page.locator('#choices');
+  const pick = (name) => choices.getByRole('button', { name }).click();
+  for (const step of [/推开账房的门/, /翻开桌上的账本/, /拿着账本去后厨找账房先生/, /转身去问阿芸/,
+    /不再逼她，回大堂把线索理一理/, /召集所有人到大堂对质/, /不作指认，等天亮警署的人来/]) {
+    await pick(step);
+  }
+  await expect(page.locator('#card')).toContainText('交给天亮');
+  await pick(/回到存档点「对质之前」/);
+  await expect(choices.getByRole('button', { name: /不作指认/ })).toBeVisible();
+  await expect(choices.getByRole('button', { name: /作出指认/ })).toBeVisible();
+});
+
 test('探索版（?story=fog_harbor）：大堂 → 账房获得线索 → 回大堂审问顾先生', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));

@@ -108,6 +108,19 @@ class FilmStoriesTest(unittest.TestCase):
         self.assertTrue(any(m.startswith("【戒备】") for m in result.messages))
         self.assertIn(("wary_gu", 1), {(r.id, r.value) for r in result.view.resources})
 
+    def test_key_nodes_announce_checkpoints(self):
+        """关键节点进入时发出“【存档点】名称”，影像模式据此自动存档；名称不重复。"""
+        for d in FILM_DIRS:
+            story = load_story(d)
+            labels = [e["say"][len("【存档点】"):] for s in story.scenes.values() for e in s.on_enter
+                      if isinstance(e.get("say"), str) and e["say"].startswith("【存档点】")]
+            self.assertGreaterEqual(len(labels), 2, d.name)
+            self.assertEqual(len(labels), len(set(labels)), d.name)
+            session = create_session(story)
+            view = session.start().view
+            result = session.dispatch(ActionRequest("choice:office", view.revision))
+            self.assertIn("【存档点】第一幕 · 账房", result.messages)
+
 
 if __name__ == "__main__":
     unittest.main()
