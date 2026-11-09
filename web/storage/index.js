@@ -18,6 +18,9 @@ function copy(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+// 复用同一严格 JSON 边界；新增导出不改变现有存档读写接口。
+export { copy as copyJson };
+
 export class BrowserSaveStore {
   constructor(storyId, storage = globalThis.localStorage) {
     if (!valid(storyId)) throw new Error('存档剧本名称无效');
