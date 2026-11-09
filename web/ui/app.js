@@ -9,12 +9,11 @@ import '../styles/ui.css';
 import {
   FixtureSession, RemoteSession, FIXTURE_STORY, fixtureRequested,
 } from './session.js';
-// 暂时复用 ZC 的单槽存储；LQ 交付 web/storage/ 后只改这一处导入。
-import { readSave, writeSave } from '../preview/storage.js';
+import { readSave, writeSave, describeSaves } from '../storage/index.js';
 
-function hasSave(storyId) {
+function hasSave(storyId, slot = 'quick') {
   try {
-    return readSave(storyId) !== null;
+    return readSave(storyId, slot) !== null;
   } catch {
     return false;
   }
@@ -109,7 +108,7 @@ function renderLibrary() {
     const buttons = element('div', undefined, 'story-buttons');
     buttons.append(button('开始阅读 →', () => run(() => start(story.id)), 'primary'));
     try {
-      if (hasSave(story.id)) buttons.append(button('继续阅读', () => run(() => start(story.id, true))));
+      if (hasSave(story.id) || hasSave(story.id, 'auto')) buttons.append(button('继续阅读', () => run(() => start(story.id, true))));
     } catch (error) {
       status(error.message);
     }
@@ -120,7 +119,15 @@ function renderLibrary() {
 
 async function start(storyId, resume = false) {
   retry = () => start(storyId, resume);
-  const payload = resume ? readSave(storyId) : null;
+  let payload = null;
+  if (resume) {
+    const candidates = [];
+    for (const slot of ['quick', 'auto']) {
+      try { const data = readSave(storyId, slot); if (data) candidates.push(data); } catch { /* 另一个槽仍可恢复。 */ }
+    }
+    candidates.sort((a, b) => (Date.parse(b.saved_at) || 0) - (Date.parse(a.saved_at) || 0));
+    payload = candidates[0] ?? null;
+  }
   if (resume && !payload) {
     status('本机还没有这个故事的存档。');
     return;
@@ -252,9 +259,16 @@ function renderResources(resources) {
 function act(actionId, values = {}) {
   return run(async () => {
     setBusy(true);
+    const previousRevision = view.revision;
     const result = await session.dispatch(actionId, view.revision, values);
     render(result);
-    if (result.error_code === null) dirty = true;
+    if (result.error_code === null) {
+      dirty = true;
+      if (view.revision !== previousRevision) {
+        try { writeSave(view.story_id, await session.exportSave(), 'auto'); }
+        catch (error) { status('自动存档失败：' + error.message); return; }
+      }
+    }
     status(result.error_code === null ? '' : result.messages.join('\n'));
     $('scene-title').focus();
   });
@@ -276,14 +290,19 @@ function restart() {
   if (confirm('重新开始当前故事？已保存的存档会保留。')) run(() => start(view.story_id));
 }
 
+$('save-list-button').onclick = () => run(async () => {
+  const rows = describeSaves(view.story_id);
+  $('save-list').textContent = rows.map(r => `${r.slot} · ${r.saved_at ? new Date(r.saved_at).toLocaleString() : '旧存档时间未知'} · 场景 ${r.scene || '?'} · 回合 ${r.turn ?? '?'} ${r.error || ''}`).join('\n') || '还没有存档。';
+  $('save-list').hidden = false;
+});
 $('home').onclick = home;
 $('finish').onclick = home;
 $('retry').onclick = () => run(() => retry?.());
 $('restart').onclick = restart;
 
 $('save').onclick = () => run(async () => {
-  if (hasSave(view.story_id) && !confirm('覆盖这个故事在本机保存的进度吗？')) return;
-  writeSave(view.story_id, await session.exportSave());
+  if (hasSave(view.story_id, $('save-slot').value) && !confirm('覆盖这个故事在本机保存的进度吗？')) return;
+  writeSave(view.story_id, await session.exportSave(), $('save-slot').value);
   dirty = false;
   status('进度已保存在当前浏览器。可以导出 JSON 文件带到其他设备。');
 });
@@ -291,7 +310,7 @@ $('save').onclick = () => run(async () => {
 $('load').onclick = () => run(async () => {
   let payload;
   try {
-    payload = readSave(view.story_id);
+    payload = readSave(view.story_id, $('save-slot').value);
   } catch (error) {
     status(error.message);
     return;

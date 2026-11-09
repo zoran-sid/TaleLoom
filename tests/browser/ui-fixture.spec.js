@@ -74,7 +74,8 @@ test('测试替身：保存、继续与损坏存档保留进度', async ({ page 
   await page.locator('#save').click();
   await idle(page);
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('taleloom:v1:ui_demo')));
-  expect(saved).toEqual({ fixture: 'ui_demo', step: 1 });
+  expect(saved).toMatchObject({ fixture: 'ui_demo', step: 1 });
+  expect(Number.isNaN(Date.parse(saved.saved_at))).toBe(false);
   await page.goto('/?fixture=1');
   await idle(page);
   await page.locator('[data-story="ui_demo"]').getByRole('button', { name: '继续阅读' }).click();

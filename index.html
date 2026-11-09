@@ -33,6 +33,11 @@
         <button id="home" class="text-button">← 返回书架</button>
         <span id="story-title"></span>
         <div class="save-controls">
+          <label>存档位置 <select id="save-slot" aria-label="存档位置">
+            <option value="quick">快速存档</option><option value="1">存档 1</option>
+            <option value="2">存档 2</option><option value="3">存档 3</option>
+            <option value="auto">自动存档</option></select></label>
+          <button id="save-list-button">存档列表</button>
           <button id="save">保存进度</button>
           <button id="load">读取存档</button>
           <button id="export">导出</button>
@@ -40,6 +45,7 @@
           <input id="import-file" type="file" accept="application/json,.json" hidden>
         </div>
       </nav>
+      <pre id="save-list" role="status" hidden></pre>
       <div class="reading-layout">
         <article class="page">
           <div class="chapter-line"><span id="chapter">故事进行中</span><span id="turn"></span></div>

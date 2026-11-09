@@ -42,7 +42,9 @@ for (const vector of vectors) {
     await page.locator('#save').click();
     await idle(page);
     const saved = await page.evaluate((id) => JSON.parse(localStorage.getItem(`taleloom:v1:${id}`)), vector.story_id);
-    expect(saved).toEqual(vector.save);
+    const { saved_at, ...payload } = saved;
+    expect(Number.isNaN(Date.parse(saved_at))).toBe(false);
+    expect(payload).toEqual(vector.save);
     expect(errors).toEqual([]);
   });
 }
