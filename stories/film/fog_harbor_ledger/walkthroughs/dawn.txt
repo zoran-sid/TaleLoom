@@ -50,7 +50,7 @@
 把差额留在空栏，去看交割材料
 “你承认今年有差额？”
 请他自己决定，给不给你看
-收起小账的抄件
+继续核对其余材料
 细看 roster/ledger
 细看 roster/roster
 细看 roster/family

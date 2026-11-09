@@ -129,6 +129,51 @@ class LedgerStoryTest(unittest.TestCase):
         self.assertTrue(any("布片是谁比对的" in line for line in gaps))
         self.assertFalse(any("阿芸到底支持了哪一段时间" in line for line in gaps), "只列真实缺项")
 
+    def interrogation(self, route="truth_guarded"):
+        """按真实路线到达对质，供缺项组合验证使用。"""
+        session = create_session(self.story, seed=0)
+        view = session.start().view
+        for step in self.vectors[route]["actions"]:
+            view = session.dispatch(ActionRequest(step["action_id"], view.revision, step["values"])).view
+            if view.scene_id == "e02_zhou":
+                return session
+        self.fail("通关路线没有到达对质")
+
+    def finish_with_gaps(self, session, weak_units):
+        """完整经历四问，保留指定缺口后进入证据不足结局。"""
+        for step in self.vectors["truth_guarded"]["actions"]:
+            uid = step["values"].get("unit", "")
+            if step["action_id"] != "mystery:solve" or not uid.startswith("q_"):
+                continue
+            values = dict(step["values"])
+            if uid in weak_units:
+                values = {key: value if key == "unit" else "pending" for key, value in values.items()}
+            count = 2 if uid in weak_units else 1
+            for _ in range(count):
+                result = session.dispatch(ActionRequest("mystery:solve", session.snapshot().revision, values))
+                self.assertTrue(result.ok, result.messages)
+        for action in ("gaps", "old_pending", "sign_zhou_gap"):
+            result = session.dispatch(ActionRequest(f"choice:{action}", session.snapshot().revision, {}))
+            self.assertTrue(result.ok, result.messages)
+        return session.snapshot().text
+
+    def test_refused_testimony_does_not_reappear_in_insufficient_ending(self):
+        session = self.interrogation()
+        self.assertNotIn("gu_account", {c.id for c in session.snapshot().clues})
+        text = self.finish_with_gaps(session, {"q_person"})
+        self.assertNotIn("顾坚持保留“翻窗后看见什么”", text)
+        self.assertIn("顾拒绝谈账房经过", text)
+
+    def test_missing_motive_feedback_asks_about_tonight_not_proven_scene_link(self):
+        text = self.finish_with_gaps(self.interrogation(), {"q_motive"})
+        self.assertIn("为什么偏偏是今晚", text)
+        self.assertNotIn("什么把这个人和当夜的现场连起来", text)
+
+    def test_four_gaps_report_three_questions_and_disclose_remaining_gap(self):
+        text = self.finish_with_gaps(self.interrogation(), {"q_time", "q_object", "q_person", "q_motive"})
+        self.assertEqual(text.count("？”"), 3)
+        self.assertIn("另有一项待查：当夜冲突", text)
+
     def test_five_checkpoints_in_order(self):
         labels = [s.checkpoint for s in self.story.scenes.values() if s.checkpoint]
         self.assertEqual(labels, ["一 · 夜深取账", "二 · 旧账", "三 · 后厨", "四 · 对质之前", "五 · 最后签字"])

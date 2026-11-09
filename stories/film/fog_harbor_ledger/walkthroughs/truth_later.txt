@@ -49,7 +49,7 @@
 核对 roster cleared repair
 再看周文自己的账
 请他自己决定，给不给你看
-收起小账的抄件
+继续核对其余材料
 核对 sums gu_debt zhou_new relief_old new_old
 去找失踪的镇纸
 细看 vat/lid

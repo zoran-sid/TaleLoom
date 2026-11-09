@@ -46,7 +46,9 @@ async function solve(page, values) {
     for (const option of Object.values(slots)) await desk.locator(`.seq-pool .tile[data-option="${option}"]`).click();
   } else {
     while (await desk.locator('input[type="checkbox"]:checked').count()) {
-      await desk.locator('input[type="checkbox"]:checked').first().uncheck({ force: true });
+      // 选项变化会重绘；用值锁定原选项，避免 :checked.first() 在重试时指向另一项。
+      const value = await desk.locator('input[type="checkbox"]:checked').first().inputValue();
+      await desk.locator(`input[type="checkbox"][value="${value}"]`).uncheck({ force: true });
     }
     for (const [key, option] of Object.entries(slots)) {
       const radio = desk.locator(`input[name="slot-${key}"][value="${option}"]`);
@@ -108,7 +110,9 @@ test('灯下残页：进场不给细节，查看后才记入；答错可重试�
   // 合成一笔：Python 给出针对性的反馈；连按空格、点画面都不会让它算通过。
   await solve(page, { unit: 'lamp', front: 'merged', back: 'supply', letter: 'gone' });
   await page.keyboard.press('Space');
-  await page.locator('#frame').click({ position: { x: 5, y: 5 } });
+  // 调查台覆盖画面；点击实际坐标，事件应落在最上层的调查台。
+  const frame = await page.locator('#frame').boundingBox();
+  await page.mouse.click(frame.x + 5, frame.y + 5);
   await ready(page);
   await expect(desk.locator('.desk-feedback')).toHaveText('两面标题不同，先核对它们分别属于哪笔账。');
   await expect(desk).toBeVisible();
@@ -190,6 +194,30 @@ test('存档点：刷新后继续，回到更早的存档点，后面的存档�
   await expect(page.locator('#choices button[data-action="choice:route"]')).toBeVisible();
   const fresh = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).entries.map((e) => e.label), KEY);
   expect(fresh).toEqual(['开场']);
+});
+
+test('回到调查前的存档：不保留未来的观察记录、答案草稿和错误反馈', async ({ page }) => {
+  await resumeAt(page, 'truth', [['c01_batch', '测试 · 调查之前']]);
+  const desk = page.locator('#desk');
+  for (const spot of ['batch/confirm', 'batch/trace']) {
+    await desk.locator(`[data-spot="${spot}"]`).click();
+    await ready(page);
+  }
+  // 留下一项草稿，再用缺项提交产生反馈。
+  await desk.locator('input[value="s584"]').first().check({ force: true });
+  await desk.locator('.desk-submit').click();
+  await ready(page);
+  await expect(desk.locator('.desk-feedback')).not.toBeEmpty();
+  await page.getByRole('button', { name: /线索笔记/ }).click();
+  const back = page.locator('.nb-save').filter({ hasText: '测试 · 调查之前' }).getByRole('button');
+  await back.click();
+  await back.click();
+  await ready(page);
+  await expect(desk.locator('.desk-title')).toHaveText('五百八十四与两百');
+  await expect(desk.locator('.desk-log li')).toHaveCount(0);
+  await expect(desk.locator('input:checked')).toHaveCount(0);
+  await expect(desk.locator('.desk-feedback')).toBeEmpty();
+  await expect(desk.locator('.desk-submit')).toBeDisabled();
 });
 
 for (const [walkthrough, ending, choice] of [

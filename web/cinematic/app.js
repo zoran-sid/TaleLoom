@@ -240,9 +240,13 @@ async function clueCard(name, text) {
 }
 
 /** 重要声音的文字说明：静音或听不见时也知道发生了什么。 */
+let soundCaptions = [];
 sound.onCaption = (text) => {
   const node = $('sound-caption');
-  node.textContent = `〔${text}〕`;
+  // 同一镜头的环境声与配乐可能同时开始，两条说明都应可读。
+  if (node.hidden || text.startsWith('环境声：')) soundCaptions = [];
+  soundCaptions = [...soundCaptions.filter((line) => line !== text), text].slice(-3);
+  node.textContent = soundCaptions.map((line) => `〔${line}〕`).join(' ');
   node.hidden = false;
   clearTimeout(sound.captionTimer);
   sound.captionTimer = setTimeout(() => { node.hidden = true; }, FAST ? 400 : 2600);
@@ -449,7 +453,8 @@ async function ending(next) {
 async function arrive(result, kicker, place) {
   clearSubtitle();
   closeNotebook();
-  desk.close(true);
+  desk.reset();
+  deskClosedFor = '';
   await stage.fade(1, T(600));
   sound.thud();
   view = result.view;
@@ -886,11 +891,11 @@ async function act(actionId, values) {
 }
 
 async function restart() {
-  if (busy) return;
+  if (busy || desk.busy) return;
   busy = true;
   hideChoices();
   hideCard();
-  desk.close(true);
+  desk.reset();
   actTitle = THEME.firstAct;
   seen = new Set();
   saves = [];

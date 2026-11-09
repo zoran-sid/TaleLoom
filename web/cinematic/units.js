@@ -93,6 +93,7 @@ export class Desk {
     const unit = unitFrom(view);
     if (!unit) return false;
     const opening = !this.open;
+    if (unit.id !== this.unit?.id) this.feedback = '';
     this.unit = unit;
     this.render();
     if (opening) {
@@ -126,6 +127,15 @@ export class Desk {
     this.root.hidden = true;
     gsap.set(this.root, { clearProps: 'all' });
     if (!silent) this.onClose?.();
+  }
+
+  /** 恢复存档或重新开始时，丢弃旧时间线的本地草稿与观察记录。 */
+  reset() {
+    this.close(true);
+    this.drafts.clear();
+    this.logs.clear();
+    this.feedback = '';
+    this.unit = null;
   }
 
   dur(seconds) {
@@ -505,6 +515,8 @@ export class Desk {
 
   /** 核对通过：落章、卡片归位，然后合上。点击或按空格可以直接播完。 */
   celebrate() {
+    this.drafts.delete(this.unit.id);
+    this.feedback = '';
     this.sound.stamp?.();
     const stamp = this.root.querySelector('.desk-stamp');
     const cards = this.root.querySelectorAll('.tile, .chip.on');
