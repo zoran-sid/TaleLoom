@@ -16,6 +16,11 @@ const AMBIENCE = {
   attic: { cutoff: 260, level: 0.04, drone: [73.4] },
   storm: { cutoff: 1100, level: 0.26, swell: 0.18, rate: 0.3 },
   tension: { cutoff: 160, level: 0.05, drone: [49, 51.5] },
+  ship: { cutoff: 240, level: 0.05, drone: [55, 110] },
+  alarm: { cutoff: 240, level: 0.05, drone: [55, 110], beep: true },
+  reactor: { cutoff: 200, level: 0.06, drone: [41.2, 82.4], swell: 0.04, rate: 0.5 },
+  workshop: { cutoff: 260, level: 0.05, drone: [55], crackle: true },
+  space: { cutoff: 120, level: 0.02, drone: [36.7] },
 };
 
 export class Sound {
@@ -93,6 +98,7 @@ export class Sound {
     }
     this.bed = { gain, stop: () => nodes.forEach((node) => { try { node.stop(); } catch { /* 已停止 */ } }) };
     if (preset.tick) this.timers.push(setInterval(() => this.burst(0.012, 'highpass', 2600, 0.05), 1000));
+    if (preset.beep) this.timers.push(setInterval(() => this.beep(), 1400));
     if (preset.drips) {
       this.timers.push(setInterval(() => {
         if (Math.random() < 0.45) this.burst(0.006, 'highpass', 3200 + Math.random() * 2000, 0.05 + Math.random() * 0.05);
@@ -119,6 +125,23 @@ export class Sound {
     gain.gain.exponentialRampToValueAtTime(0.0001, now + seconds);
     source.connect(filter).connect(gain).connect(this.master);
     source.start(now, Math.random() * 2, seconds + 0.02);
+  }
+
+  /** 飞船警报的短促提示音。 */
+  beep() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(880, now);
+    osc.frequency.setValueAtTime(660, now + 0.18);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.035, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.36);
+    osc.connect(gain).connect(this.master);
+    osc.start(now);
+    osc.stop(now + 0.4);
   }
 
   /** 港口的雾笛。 */

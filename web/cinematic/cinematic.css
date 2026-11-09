@@ -390,10 +390,32 @@ button { font: inherit; }
 }
 .nb-go[data-armed="1"] { background: #8a5a22; color: #f6efe0; }
 
-.toast {
+.meters {
   position: absolute;
   top: 4%;
   left: 3%;
+  display: flex;
+  gap: 0.5em;
+  font-size: clamp(11px, 1.1cqi, 14px);
+}
+.meter {
+  padding: 0.45em 0.9em;
+  border-radius: 999px;
+  background: rgba(8, 8, 10, 0.55);
+  color: #bfe6f0;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+.meter.low { color: #ff8a70; background: rgba(60, 12, 8, 0.7); animation: low 1.2s ease-in-out infinite; }
+.meter.drop { animation: drop 0.9s ease; }
+@keyframes low { 50% { box-shadow: 0 0 0 4px rgba(255, 70, 50, 0.25); } }
+@keyframes drop { 30% { background: rgba(255, 70, 50, 0.5); } }
+
+.toast {
+  position: absolute;
+  top: 4%;
+  left: 50%;
+  transform: translateX(-50%);
   margin: 0;
   padding: 0.45em 1em;
   border-radius: 999px;
@@ -431,6 +453,8 @@ kbd { font: inherit; opacity: 0.6; }
 
 [hidden] { display: none !important; }
 
+button, a { touch-action: manipulation; }
+
 /* 窄屏：选项放到画面下方，避免遮住字幕 */
 @media (max-width: 760px) {
   .theater { justify-content: flex-start; padding: 16px; }
@@ -438,6 +462,50 @@ kbd { font: inherit; opacity: 0.6; }
   .choices { position: static; margin-top: 12px; padding: 0; }
   .choice-list { max-height: none; }
   .clue { width: 52%; }
+  .notebook { position: fixed; inset: 0; width: auto; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+}
+
+/* 竖屏手机：方形画面铺满屏宽，按场景重点裁切；字幕带底部渐隐，控制条收紧 */
+@media (max-width: 760px) and (orientation: portrait) {
+  .theater { padding: env(safe-area-inset-top) 0 calc(12px + env(safe-area-inset-bottom)); gap: 10px; }
+  .frame { aspect-ratio: 1 / 1; border-radius: 0; box-shadow: none; }
+  .subtitle {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 2.2em 16px 14px;
+    font-size: 16px;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.78) 42%);
+  }
+  .subtitle .speaker { font-size: 11px; }
+  .card-title { font-size: 30px; }
+  .card-kicker, .card-place, .caption, .intro-kicker { font-size: 11px; }
+  .clue { top: 14%; left: 6%; right: 6%; width: auto; font-size: 13px; }
+  .hud { top: 12px; right: 12px; font-size: 12px; }
+  .toast { top: 56px; font-size: 12px; }
+  .meters { top: 12px; left: 12px; font-size: 12px; }
+  .caption { top: 52px; left: 16px; }
+  .choices { padding: 0 16px; }
+  .prompt { font-size: 13px; }
+  .choice { font-size: 15px; padding: 0.8em 0.9em; }
+  .controls { padding: 0 16px; gap: 6px; }
+  .controls button, .controls a { padding: 0.4em 0.75em; font-size: 12px; }
+  .controls kbd { display: none; }
+  .note-line { padding: 0 16px; font-size: 11px; }
+}
+
+/* 横屏手机：画面占满宽度与可用高度，宽银幕裁切；隐藏说明，控制条压成一行 */
+@media (max-height: 520px) and (orientation: landscape) {
+  .theater { padding: 0 env(safe-area-inset-right) 0 env(safe-area-inset-left); gap: 4px; justify-content: flex-start; }
+  .stagebox, .controls { width: 100%; }
+  .frame { aspect-ratio: auto; height: calc(100svh - 40px); border-radius: 0; box-shadow: none; }
+  .choices { position: absolute; bottom: 4%; padding: 0 5%; }
+  .choice-list { max-height: 58svh; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .choice { font-size: 14px; padding: 0.55em 0.8em; }
+  .subtitle { font-size: 16px; bottom: 6%; }
+  .controls { flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding: 2px 8px; }
+  .controls button, .controls a { flex: none; padding: 0.3em 0.8em; font-size: 12px; }
+  .controls kbd, .note-line { display: none; }
   .notebook { position: fixed; inset: 0; width: auto; }
 }
 
