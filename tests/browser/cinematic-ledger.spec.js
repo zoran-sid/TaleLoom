@@ -8,7 +8,12 @@ const DATA = JSON.parse(execFileSync('python3', ['-B', 'tools/film_vectors.py', 
 const VECTORS = Object.fromEntries(DATA.vectors.map((v) => [v.name, v]));
 const KEY = 'taleloom:v1:fog_harbor_ledger:checkpoints';
 
-const ready = (page) => page.waitForFunction(() => window.__cinematic?.ready(), null, { timeout: 90_000 });
+async function ready(page) {
+  await page.waitForFunction(() => window.__cinematic?.ready(), null, { timeout: 90_000 });
+  // 会话已就绪时，GSAP 可能刚把调查台设为 visibility:hidden 准备淡入。
+  // 等实际控件出现，避免把“正在打开”误当作“已暂离”。
+  await expect(page.locator('#desk:visible, #choices:visible').first()).toBeVisible();
+}
 
 /** 把若干场景的标准存档写成影像存档点，然后从最后一个继续。 */
 async function resumeAt(page, walkthrough, scenes, url = '/cinematic.html?fast=1') {
