@@ -42,6 +42,7 @@ class Scene:
     on_enter: list[Effect] = field(default_factory=list)
     # 结局场景：{"id": "true_end", "title": "真相大白"}；普通场景为 None
     ending: dict[str, str] | None = None
+    # 条件文字列表：每项含 text、可选 when 与 mode（append/replace）；默认空列表。
     variants: list[dict[str, Any]] = field(default_factory=list)
 
 
