@@ -13,7 +13,7 @@
     "check:deploy": "python3 -B tools/check_web.py && npm run build && npm run test:web && cf deploy --prebuilt --mode production --dry-run",
     "build:cloudflare": "npm ci && python3 -B tools/check_web.py && npm run build && cf deploy --prebuilt --mode production --dry-run",
     "deploy": "cf deploy --prebuilt --mode production",
-    "deploy:preview": "cf previews deploy --prebuilt --mode production"
+    "deploy:preview": "cf previews deploy"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "2.0.0-beta.v.12",
