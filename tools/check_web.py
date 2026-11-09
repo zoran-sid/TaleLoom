@@ -13,7 +13,8 @@ def main():
         ['-m', 'unittest', 'discover', '-s', 'tests', '-t', '.'],
         ['main.py', 'validate'],
     ]
-    commands += [['main.py', 'replay', p.parent.name] for p in sorted((ROOT / 'stories').glob('*/story.json'))]
+    stories = sorted((ROOT / 'stories').glob('*/story.json')) + sorted((ROOT / 'stories' / 'film').glob('*/story.json'))
+    commands += [['main.py', 'replay', str(p.parent)] for p in stories]
     for command in commands:
         subprocess.run([sys.executable, '-B', *command], cwd=ROOT, check=True)
 

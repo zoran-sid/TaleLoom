@@ -35,10 +35,11 @@ jobs:
         run: python -B main.py validate
       - name: Replay all walkthroughs
         run: |
-          for d in stories/*/; do
-            name=$(basename "$d")
-            echo "::group::$name"
-            python -B main.py replay "$name"
+          for f in stories/*/story.json stories/film/*/story.json; do
+            [ -f "$f" ] || continue
+            d=$(dirname "$f")
+            echo "::group::$d"
+            python -B main.py replay "$d"
             echo "::endgroup::"
           done
 
