@@ -1,30 +1,43 @@
 # TaleLoom 五人任务安排
 
-更新日期：2026-11-08。课程要求见 [课程要求全文](course-requirements.md)，交给 AI 的开工提示词见 [提示词](prompts.md)。截止日期以 Moodle 为准，收到后按第 5 节倒推。
+更新日期：2026-11-09。课程要求见 [课程要求全文](course-requirements.md)，交给 AI 的开工提示词见 [提示词](prompts.md)。截止日期以 Moodle 为准，收到后按第 5 节倒推。
 
 **交付目标：一个 Python 核心，三个展示端。** 命令行（已完成）、桌面 GUI（Tkinter，`python main.py` 无参数启动）、网页试玩（Pyodide 在浏览器中运行同一份 Python 核心，GitHub 推送后由 Cloudflare 自动部署）。架构、验收与里程碑 M1–M5 见 [GUI／网页实施要求](gui-web-plan.md)。
 
 **模块阶段聚焦代码。** 实现、测试、剧本 JSON、通关脚本与文档字符串随模块交付；最终报告、PPT、视频和测试报告在第 7 节统一完成。总设计者调整范围、接口或分工时，同步更新必要的需求与协作指引。
 
-## 0 当前进度与每人下一步
+## 0 当前进度与第二轮任务
 
-更新于 2026-11-08。每人从最新 `develop` 开分支做“下一个 PR”；“接入点”是你的成果替换临时实现的位置，替换由你在同一个 PR 内完成。
+更新于 2026-11-09。第一轮模块任务已全部合入 `develop`（PR #2–#23）。**小组一致决定第二轮主线为“影像模式 + 失败惩罚”**：网页以互动影像的方式游玩，每个选择推进到下一段剧情；选错会付出代价（中途失败、嫌疑人起戒心）；关键节点自动存档，失败后可退回上一步或存档点。文字版、桌面版与命令行继续保留，共用同一个 Python 核心。之后从 `develop` 发布到 `main`，按这个方向验收。
 
 | 里程碑 | 状态 |
 | --- | --- |
 | M1 共享契约 | 已完成：`taleloom/ui_contract.py`、`tests/ui_fakes.py`（PR #3） |
-| M2 桌面闭环 | 已完成：Tkinter 桌面 GUI（ZRS，PR #9），`python main.py` 无参数打开窗口，缺少 Tk 时回退命令行；CI 中窗口测试仍被跳过（#15） |
-| M3 浏览器核心 | 已完成：两个剧本的全部通关脚本在 Pyodide 与 CPython 中逐步一致（PR #4、#10） |
-| M4 网页与存档 | 正式网页界面已完成（`web/ui/`、`web/styles/`，ZRS，PR #9）；存储仍为临时单槽 `web/preview/storage.js`，待 LQ 的 `web/storage/` |
-| M5 自动发布 | 已上线：<https://taleloom.zoranzhou.com>（生产分支 `develop`，PR 合入后自动部署；正式发布后改为 `main`）；成员分支预览在 `<分支名>.taleloom.zoranzhou.com` |
+| M2 桌面闭环 | 已完成：Tkinter 桌面 GUI（ZRS，PR #9、#20）；CI 中窗口测试仍被跳过（#15） |
+| M3 浏览器核心 | 已完成：全部通关脚本在 Pyodide 与 CPython 中逐步一致（PR #4、#10） |
+| M4 网页与存档 | 已完成：正式网页界面（ZRS）、统一存档编码与多槽存储 `web/storage/`（LQ，PR #22）；正式会话（ZQO，PR #19） |
+| M5 自动发布 | 已上线：<https://taleloom.zoranzhou.com>；成员分支预览在 `<分支名>.taleloom.zoranzhou.com`（PR #23） |
+| M6 影像模式与失败惩罚 | 样片已合入：<https://taleloom.zoranzhou.com/cinematic>，《雾港旧案 · 影像版》；第二轮按下表完成 |
 
-| 成员 | 已完成 | 下一个 PR | 接入点 |
-| --- | --- | --- | --- |
-| YHT | 加载、参数与结构校验、场景图（PR #2）；公开资源与素材字段（PR #7） | 4.1 必做与加分项已合入；按轮换审阅 ZQO 的 PR | — |
-| ZQO | — | 先接受仓库邀请；`taleloom/session.py` 实现 `GameSession`，以及文本插值与可复现随机（[#16](https://github.com/zoran-sid/TaleLoom/issues/16)） | `taleloom/session_factory.py` 改一行，桌面和网页同时切换 |
-| ZRS | 桌面 GUI、网页正式界面、道具“用在某处”（PR #9） | 真实剧本测试迁到集成测试（[#14](https://github.com/zoran-sid/TaleLoom/issues/14)）、窗口测试在 CI 运行（[#15](https://github.com/zoran-sid/TaleLoom/issues/15)）、与 LQ 商定桌面存档归属（[#13](https://github.com/zoran-sid/TaleLoom/issues/13)） | — |
-| ZC | 共享契约、网页运行时与部署（PR #3–#6）、启动入口；推理插件、剧本 A 扩写、打包脚本（PR #10） | CI 虚拟显示器（[#15](https://github.com/zoran-sid/TaleLoom/issues/15)）；Cloudflare 非生产分支预览；整合各成员 PR | — |
-| LQ | 工作计划与存档核对（PR #8，[共享计划](lq-work-plan.md)）；存档、正式存储、探索与剧本 B 已实现并本地验证（[PR #22](https://github.com/zoran-sid/TaleLoom/pull/22)，待审阅/合并） | 氧气修复 [#21](https://github.com/zoran-sid/TaleLoom/pull/21)；按 #19/#20 → #22 顺序审阅整合，详见 PR 验证与对接说明 | 统一编码器已接兼容/正式会话；唯一 FileSaveStore 位于 `storage.py`；正式网页存储 `web/storage/`；最终材料仍在功能冻结后完成 |
+### 0.1 第二轮任务
+
+| 成员 | 任务 | 交付与验收 |
+| --- | --- | --- |
+| ZC | 影像模式播放器 `web/cinematic/`：画面、声音、字幕、笔记、失败回退、关键节点自动存档；《雾港旧案 · 影像版》；为《深空回声 · 影像版》补充飞船场景画面；整合与发布 | 每个剧情节点都有对应画面；浏览器测试覆盖失败回退、存档点回退、刷新后继续；正式网址实机试玩 |
+| YHT | 把影像版的临时约定改成剧本正式字段（contract PR，与 ZQO 一起）：结局类型 `ending.kind`（`normal`/`failure`，取代 `fail_` 前缀）、场景 `checkpoint`（存档点名称，取代“【存档点】”提示）、场景 `art`（画面键，取代播放器里的映射表）；校验：失败结局必须由选择进入、存档点名称唯一、`stories/film/` 剧本无回路 | 旧剧本不用改仍能通过；每条规则有通过例和失败例 |
+| ZQO | 快照与会话支持上述字段（`ViewSnapshot` 增加画面键、结局类型、存档点）；会话层提供存档点列表与恢复，桌面和网页共用同一套回退逻辑，不只在网页里实现 | 先过接口约定测试，再过影像版通关与浏览器测试 |
+| ZRS | 书架和桌面加入“影像模式”入口；桌面 GUI 接入失败回退与关键节点存档（Tkinter 用文字或静态画面呈现）；影像模式的键盘操作、减少动态效果与字幕可读性检查；与 ZC 一起解决 #15 | 桌面全程点击可走到失败与回退；窗口测试在 CI 中实际运行 |
+| LQ | 《深空回声 · 影像版》`stories/film/deep_space_film/`：线性分支，氧气、电量耗尽即任务失败，关键节点存档点，全部结局有通关脚本；关键节点自动存档接入 `web/storage/` 与桌面存储，取代影像页面临时使用的 localStorage；随机探索覆盖影像版剧本 | 两部影像版各至少 5 个结局（含失败结局）且全部覆盖；刷新和跨端都能从存档点继续 |
+
+### 0.2 当前的临时约定（第二轮改为正式字段）
+
+| 约定 | 现在的写法 | 第二轮正式化 |
+| --- | --- | --- |
+| 影像版剧本 | 放在 `stories/film/<id>/`，不出现在书架、桌面和命令行菜单；`main.py validate`、CI 与发布检查都会校验并回放 | 保持 |
+| 中途失败 | 结局 id 以 `fail_` 开头；影像模式可退回上一个选择（整局 3 次机会） | YHT／ZQO：`ending.kind` |
+| 关键节点存档 | 场景 `on_enter` 里 `{"say": "【存档点】名称"}`；影像模式据此自动存档，可随时回到存档点（不消耗机会，之后进度作废） | YHT／ZQO：场景 `checkpoint` 字段；LQ：存进 `web/storage/` |
+| 嫌疑人戒备 | 变量 `wary_*` 作为公开资源显示；没有证据就逼问会关闭后续线索 | 保持（公开资源已是正式字段） |
+| 画面 | `web/cinematic/app.js` 的 `ART` 表把场景 id 映射到画面 | YHT／ZQO：场景 `art` 字段 |
 
 ## 1 分工总览
 
@@ -33,8 +46,8 @@
 | 1 | YHT | 剧本格式、加载与静态校验；展示数据类型 | `model.py` `loader.py` `validator.py` `walk.py`；`ui_contract.py` 中的展示类型 | `tests/yht/` |
 | 2 | ZQO | 运行时核心与插件接口；正式会话与展示快照 | `state.py` `rules.py` `engine.py` `mechanics/base.py`；`session.py` `presentation.py`（新建） | `tests/zqo/` |
 | 3 | ZRS | 命令行与桌面／网页界面；道具谜题插件 | `parser.py` `cli.py` `mechanics/puzzle.py`；`gui/`（新建）；`web/ui/` `web/styles/`（新建） | `tests/zrs/` |
-| 4 | ZC | 推理插件、剧本 A《雾港旧案》、整合与发布 | `mechanics/mystery.py` `session_factory.py` `legacy_session.py`（临时）；`main.py`、`.vscode/launch.json`、`stories/fog_harbor/`；`web/runtime/`、`web/preview/storage.js`（临时）、`tools/`、CI 与 Cloudflare 配置 | `tests/zc/`、`tests/integration/`、`tests/browser/` |
-| 5 | LQ | 存档与存储、回放与探索测试、剧本 B《深空回声》 | `save.py` `storage.py` `replay.py`；`gui/storage.py`（兼容导入）；`web/storage/`；`stories/deep_space/` | `tests/lq/` |
+| 4 | ZC | 推理插件、剧本 A《雾港旧案》、影像模式、整合与发布 | `mechanics/mystery.py` `session_factory.py` `legacy_session.py`（临时）；`main.py`、`.vscode/launch.json`、`stories/fog_harbor/`、`stories/film/fog_harbor_film/`；`cinematic.html`、`web/cinematic/`；`web/runtime/`、`web/preview/storage.js`（临时）、`tools/`、CI 与 Cloudflare 配置 | `tests/zc/`、`tests/integration/`、`tests/browser/` |
+| 5 | LQ | 存档与存储、回放与探索测试、剧本 B《深空回声》 | `save.py` `storage.py` `replay.py`；`gui/storage.py`（兼容导入）；`web/storage/`；`stories/deep_space/`、`stories/film/deep_space_film/`（第二轮） | `tests/lq/` |
 
 - 共享接口 `taleloom/ui_contract.py` 与测试替身 `tests/ui_fakes.py` 的改动走 contract PR（[接口约定](contracts.md) 第 5 节）。
 - [`.github/CODEOWNERS`](../.github/CODEOWNERS) 与本表一致：PR 改到别人的文件时，GitHub 自动请求该成员审阅。两处修改时保持同步。

@@ -10,7 +10,7 @@
 
 ## 2 项目共同口径
 
-- 项目：TaleLoom 织境，数据驱动的文字冒险引擎；同一个引擎运行两个原创剧本《雾港旧案》（推理搜证）与《深空回声》（资源与道具解谜）。当前已实现 CLI；目标同时交付简洁桌面 GUI 与网页试玩。
+- 项目：TaleLoom 织境，数据驱动的文字冒险引擎；同一个引擎运行两个原创剧本《雾港旧案》（推理搜证）与《深空回声》（资源与道具解谜）。命令行、桌面 GUI 与网页试玩都已上线；第二轮主线是网页“影像模式 + 失败惩罚”（互动影像、选错有代价、关键节点自动存档可回退），任务见 `docs/team-tasks.md` 第 0 节。影像版剧本放在 `stories/film/<id>/`，不上书架。
 - 桌面目标：VS Code 运行 `main.py` 无参数启动 Tkinter + ttk 窗口，全程点击可通关。Python 核心与桌面保持 Python 3.10+ 标准库依赖，演示环境需具备 Tcl/Tk。标准库限制是项目选型，课程原文要求见 `docs/course-requirements.md`。
 - 网页目标：Pyodide 在浏览器 Web Worker 中复用 Python 核心；Cloudflare Workers Static Assets 托管。GitHub 推送由 Workers Builds 自动检查、构建、部署，main 正式发布，develop／成员分支预览。网页运行时与构建依赖单独管理，不能成为桌面依赖。
 - 成员：YHT、ZQO、ZRS、ZC、LQ。文档只用缩写，不写全名和学号。

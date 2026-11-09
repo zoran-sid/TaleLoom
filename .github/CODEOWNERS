@@ -38,6 +38,7 @@
 /taleloom/replay.py                 @tomq98
 /web/storage/                       @tomq98
 /stories/deep_space/                @tomq98
+/stories/film/deep_space_film/      @tomq98
 /tests/lq/                          @tomq98
 
 # 共享接口：改动需要相关负责人都知道（contract PR）
