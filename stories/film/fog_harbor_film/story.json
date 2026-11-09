@@ -262,7 +262,7 @@
     {
       "id": "gu_first",
       "title": "盘问·顾先生",
-      "art": "portrait",
+      "art": "portrait_gu_lobby",
       "text": "你在顾先生对面坐下。他把烟灰弹进茶碟，没抬头。\n“我一整晚都在房里看书，哪儿也没去。”\n他说话的时候，你注意到他的裤脚湿了一大截，鞋边还沾着灰白的泥。",
       "on_enter": [
         {
@@ -280,7 +280,7 @@
     {
       "id": "gu_bluff",
       "title": "逼问·顾先生",
-      "art": "portrait",
+      "art": "portrait_gu_cold_lobby",
       "text": "你走到藤椅前，指着顾先生：“人是你杀的吧？”\n顾先生愣了一下，随即冷笑：“证据呢？”他把烟按灭在茶碟里，“在警署的人来之前，我一个字也不会再跟你说。”",
       "on_enter": [
         {
@@ -453,7 +453,7 @@
     {
       "id": "gu_confront",
       "title": "质问·顾先生",
-      "art": "portrait",
+      "art": "portrait_gu_nervous_lobby",
       "text": "你把湿外套扔在顾先生面前。他的烟掉在了地上。\n“……好吧。我坐船从码头过来，翻窗进的账房，只想把那页欠条撕了。可我进去的时候，他已经趴在桌上不动了！我吓坏了，撕了账页就原路跑了。”\n“那是几点？”“十一点二十，最多二十五。我听见钟敲过十一下。”",
       "on_enter": [
         {
@@ -476,7 +476,7 @@
     {
       "id": "gu_silent",
       "title": "质问·顾先生",
-      "art": "portrait",
+      "art": "portrait_gu_cold_lobby",
       "text": "你把湿外套扔在顾先生面前。他只看了一眼，就把脸转向窗外。\n“等警署的人来。”之后，他再没说一句话。",
       "choices": [
         {
@@ -525,7 +525,7 @@
     {
       "id": "zhou_gap",
       "title": "追问·周文",
-      "art": "portrait",
+      "art": "portrait_zhou_nervous_kitchen",
       "text": "你把残页背面那几行小字摊在灶台上。\n“那是……那是掌柜让我另记的流水，跟总账本来就分开。”周文的声音越来越低，额头上渗出一层细汗。",
       "choices": [
         {
@@ -543,7 +543,7 @@
     {
       "id": "zhou_bluff",
       "title": "逼问·周文",
-      "art": "portrait",
+      "art": "portrait_zhou_cold_kitchen",
       "text": "“是不是你干的？”你盯着周文。\n周文慢慢把眼镜戴好，语气冷了下来：“你算什么人，也来审我？要问，等警署的人来问。”",
       "on_enter": [
         {
@@ -567,7 +567,7 @@
     {
       "id": "zhou_room",
       "title": "周文的房间",
-      "art": "zhouroom",
+      "art": "zhouroom_open",
       "text": "周文的房间收拾得一丝不苟。床下有一块地板踩上去吱呀作响。\n你把它撬开：下面藏着一本小账本，记满了亏空。最后一页夹着一张便条，是陈掌柜的字。",
       "on_enter": [
         {
@@ -588,7 +588,7 @@
     {
       "id": "kitchen_ayun",
       "title": "后厨·阿芸",
-      "art": "portrait",
+      "art": "portrait_ayun_nervous_kitchen",
       "text": "阿芸的手指绞着围裙。“我……我和周先生一直在后厨，十一点就回阁楼睡了。”\n她说完，飞快地朝后门看了一眼。",
       "choices": [
         {
@@ -611,7 +611,7 @@
     {
       "id": "ayun_bluff",
       "title": "逼问·阿芸",
-      "art": "portrait",
+      "art": "portrait_ayun_tears_kitchen",
       "text": "“你在撒谎！”你的声音在后厨里炸开。\n阿芸的眼泪一下子涌了出来。她推开你，跑上阁楼，把门从里面闩上了。",
       "on_enter": [
         {
@@ -755,7 +755,7 @@
     {
       "id": "zhou_weight",
       "title": "出示镇纸·周文",
-      "art": "portrait",
+      "art": "portrait_zhou_nervous_kitchen",
       "text": "你把湿漉漉的铜镇纸放到灶台上。\n周文脱口而出：“不可能，我明明擦干净了——”话说到一半，他自己先愣住了。",
       "on_enter": [
         {
@@ -802,7 +802,7 @@
     {
       "id": "zhou_guarded",
       "title": "出示镇纸·周文",
-      "art": "portrait",
+      "art": "portrait_zhou_cold_kitchen",
       "text": "你把湿漉漉的铜镇纸放到灶台上。\n周文只是冷冷地看着它：“一块铜疙瘩，能说明什么？”他早有防备，这一次什么也没漏。",
       "choices": [
         {
@@ -862,7 +862,7 @@
     {
       "id": "ayun_truth",
       "title": "阿芸的实话",
-      "art": "portrait",
+      "art": "portrait_ayun_tears_kitchen",
       "text": "阿芸的脸一下子红了，又一下子白了。\n“求你别告诉别人……钟敲十一下，我就从后门溜去码头见阿水了。我走的时候，周先生还一个人在后厨。”",
       "on_enter": [
         {
@@ -880,7 +880,7 @@
     {
       "id": "ayun_silent",
       "title": "阁楼门外",
-      "art": "attic",
+      "art": "attic_closed",
       "text": "阁楼的门还闩着。你敲了很久，里面只有压低的哭声。\n“我什么都不知道……你走吧。”",
       "choices": [
         {
@@ -893,7 +893,7 @@
     {
       "id": "gathering",
       "title": "大堂·对质",
-      "art": "lobby",
+      "art": "lobby_gathering",
       "checkpoint": "对质之前",
       "text": "炉火噼啪作响，三个人被叫到大堂。顾先生捏着一根没点着的烟，周文把眼镜擦了又擦，阿芸缩在柱子后面。\n现在，说出你的结论：凶手是谁，为什么，怎么做的，凭什么。",
       "on_enter": [

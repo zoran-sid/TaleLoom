@@ -1,10 +1,11 @@
-// ZC：影像模式样片的冒烟测试。?fast=1 跳过逐字字幕与转场等待，剧情仍由真实引擎驱动。
+// ZC：影像模式的冒烟测试。?fast=1 跳过逐字字幕与转场等待，剧情仍由真实引擎驱动。
+// 这些用例走旧样片 fog_harbor_film（?story= 指定）；《未结的账》的用例在 cinematic-ledger.spec.js。
 import { test, expect } from '@playwright/test';
 
 test('影像版：每个选择都进入下一段，线索进笔记，一路走到结局', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/cinematic.html?fast=1');
+  await page.goto('/cinematic.html?fast=1&story=fog_harbor_film');
   await page.locator('#begin').click();
   const choices = page.locator('#choices');
   const pick = (name) => choices.getByRole('button', { name }).click();
@@ -37,7 +38,7 @@ test('影像版：每个选择都进入下一段，线索进笔记，一路走�
 test('影像版：冒险选择中途失败，可以退回上一个选择，机会会减少', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/cinematic.html?fast=1');
+  await page.goto('/cinematic.html?fast=1&story=fog_harbor_film');
   await page.locator('#begin').click();
   const choices = page.locator('#choices');
   const pick = (name) => choices.getByRole('button', { name }).click();
@@ -66,7 +67,7 @@ test('影像版：冒险选择中途失败，可以退回上一个选择，机�
 });
 
 test('影像版：没有证据就逼问，嫌疑人起戒心并记在笔记里', async ({ page }) => {
-  await page.goto('/cinematic.html?fast=1');
+  await page.goto('/cinematic.html?fast=1&story=fog_harbor_film');
   await page.locator('#begin').click();
   const choices = page.locator('#choices');
   await choices.getByRole('button', { name: /直接指着顾先生/ }).click();
@@ -79,7 +80,7 @@ test('影像版：没有证据就逼问，嫌疑人起戒心并记在笔记里',
 });
 
 test('影像版：关键节点自动存档，可以从笔记回到存档点，刷新后可以继续', async ({ page }) => {
-  await page.goto('/cinematic.html?fast=1');
+  await page.goto('/cinematic.html?fast=1&story=fog_harbor_film');
   await page.locator('#begin').click();
   const choices = page.locator('#choices');
   const pick = (name) => choices.getByRole('button', { name }).click();
@@ -105,7 +106,7 @@ test('影像版：关键节点自动存档，可以从笔记回到存档点，�
 });
 
 test('影像版：较差的结局可以回到最近的存档点重新推理', async ({ page }) => {
-  await page.goto('/cinematic.html?fast=1');
+  await page.goto('/cinematic.html?fast=1&story=fog_harbor_film');
   await page.locator('#begin').click();
   const choices = page.locator('#choices');
   const pick = (name) => choices.getByRole('button', { name }).click();
@@ -171,7 +172,7 @@ test('探索版（?story=fog_harbor）：大堂 → 账房获得线索 → 回�
 
 test('影像模式：手机宽度下选项在画面下方，没有横向溢出', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/cinematic.html?fast=1');
+  await page.goto('/cinematic.html?fast=1&story=fog_harbor_film');
   await page.locator('#begin').click();
   const first = page.locator('#choices').getByRole('button', { name: /推开账房的门/ });
   await expect(first).toBeVisible({ timeout: 90_000 });
@@ -183,7 +184,7 @@ test('影像模式：手机宽度下选项在画面下方，没有横向溢出',
 
 test('影像模式：横屏手机画面占满可用高度，选项在画面内且不溢出', async ({ page }) => {
   await page.setViewportSize({ width: 844, height: 390 });
-  await page.goto('/cinematic.html?fast=1');
+  await page.goto('/cinematic.html?fast=1&story=fog_harbor_film');
   await page.locator('#begin').click();
   const first = page.locator('#choices').getByRole('button', { name: /推开账房的门/ });
   await expect(first).toBeVisible({ timeout: 90_000 });

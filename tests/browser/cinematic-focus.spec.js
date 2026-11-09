@@ -1,9 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-// 已知缺陷：影像模式的选项焦点与静息态完全一致（边框/背景/阴影/轮廓全同），
-// 键盘用户看不到焦点在哪。已开 issue 给 ZC；修好后把 test.fixme 改成 test。
-// 证据：web/cinematic/cinematic.css 的 .choice:focus-visible 用了 outline: none，
-// 且边框色与 .choice:hover 相同，而 --line 在深色主题下与 --amber 视觉接近。
+// ZRS 发现的问题（已由 ZC 修复）：选项的键盘焦点曾与静息态完全一致。
+// 现在 .choice:focus-visible 有一圈琥珀色轮廓，与鼠标悬停区分开。
 
 async function toFirstChoice(page) {
   await page.setViewportSize({ width: 1024, height: 768 });
@@ -20,7 +18,7 @@ async function toFirstChoice(page) {
   throw new Error('没有等到第一个选择');
 }
 
-test.fixme('影像模式：选项焦点必须与静息态可分辨', async ({ page }) => {
+test('影像模式：选项焦点必须与静息态可分辨', async ({ page }) => {
   await toFirstChoice(page);
   await page.evaluate(() => document.activeElement?.blur());
   const readStyle = () => page.evaluate(() => {
@@ -39,16 +37,21 @@ test.fixme('影像模式：选项焦点必须与静息态可分辨', async ({ pa
     `选项焦点与静息态完全相同：${JSON.stringify({ rest, focus })}`).toBe(true);
 });
 
-// fast=1 时转场卡不消失、字幕被跳过：已开 issue 给 ZC。
-test.fixme('影像模式：fast=1 时转场卡应退场', async ({ page }) => {
+// ZRS 发现的问题（已由 ZC 修复）：fast=1 时转场卡应退场，字幕仍然逐句出现（只是不等待）。
+test('影像模式：fast=1 时转场卡应退场', async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 768 });
+  await page.addInitScript(() => {
+    window.__subs = [];
+    document.addEventListener('DOMContentLoaded', () => {
+      const box = document.getElementById('subtitle');
+      new MutationObserver(() => { if (box.textContent) window.__subs.push(box.textContent); })
+        .observe(box, { childList: true, subtree: true, characterData: true });
+    });
+  });
   await page.goto('/cinematic.html?fast=1');
   await page.locator('#begin').click();
-  await page.waitForTimeout(8000);
-  const state = await page.evaluate(() => ({
-    card: document.querySelector('#card').hidden,
-    subtitle: document.querySelector('#subtitle').textContent.trim().length,
-  }));
+  await page.waitForFunction(() => window.__cinematic?.ready(), null, { timeout: 90_000 });
+  const state = await page.evaluate(() => ({ card: document.querySelector('#card').hidden, shown: window.__subs.length }));
   expect(state.card, '转场卡应已退场').toBe(true);
-  expect(state.subtitle, '应至少显示过一句字幕').toBeGreaterThan(0);
+  expect(state.shown, '应至少显示过一句字幕').toBeGreaterThan(0);
 });
