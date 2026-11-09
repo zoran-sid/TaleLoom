@@ -542,7 +542,8 @@ function office(ctx, s, o, st) {
   poly(ctx, [-300, 700, 70, 700, 260, 960, -300, 960], `rgba(${AMBER},${0.1 * f})`);
   ctx.fillStyle = '#040506';
   ctx.fillRect(40, 160, 34, 560);
-  // 书桌、账本与伏在桌上的掌柜（只画剪影）
+  // 书桌、账本与伏在桌上的掌柜（只画剪影）；alive 为饭后的账房，人还没出事
+  if (!o.alive) {
   ctx.beginPath();
   ctx.rect(600, 360, 70, 170);
   ctx.moveTo(596, 520);
@@ -557,6 +558,7 @@ function office(ctx, s, o, st) {
   ctx.fillStyle = INK;
   ctx.fill();
   poly(ctx, [756, 466, 900, 466, 914, 474, 744, 474], 'rgba(205,205,192,0.32)');
+  }
   ctx.fillStyle = '#05070a';
   ctx.fillRect(470, 472, 540, 30);
   ctx.fillRect(492, 500, 496, 140);
@@ -564,6 +566,8 @@ function office(ctx, s, o, st) {
   ctx.fillRect(962, 630, 18, 130);
   ctx.fillStyle = 'rgba(150,170,190,0.28)';
   ctx.fillRect(470, 470, 540, 2);
+  if (o.alive) officeAlive(ctx, s);
+  if (!o.alive) {
   ctx.strokeStyle = 'rgba(160,180,200,0.42)';
   ctx.lineWidth = 3;
   ctx.beginPath();
@@ -600,6 +604,7 @@ function office(ctx, s, o, st) {
     ctx.fillStyle = 'rgba(190,196,200,0.18)';
     ctx.fillRect(-40, -26, 80, 52);
     ctx.restore();
+  }
   }
   plume(ctx, st.cool, s, { x: 1080, y: 380, count: 34, life: 11, rise: -6, drift: -58, spread: 60, ySpread: 300, size: 120, alpha: 0.09, seed: 9 });
   motes(ctx, s, 55, (u, v) => [1180 - 640 * u + (v - 0.5) * 260 * (0.4 + u), 260 + 640 * u], COOL, 51);
@@ -1570,6 +1575,259 @@ function space(ctx, s, o, st) {
   shade(ctx, 800, 450, 1300, 0.4);
 }
 
+/** 饭后的账房：桌上的交割清单与铜镇纸，墙上的旧合影，掌柜站在桌边。 */
+function officeAlive(ctx, s) {
+  const f = flicker(s, 0.8);
+  glow(ctx, 640, 420, 360, AMBER, 0.32 * f);
+  poly(ctx, [600, 462, 700, 456, 712, 470, 606, 474], 'rgba(222,212,190,0.5)');
+  ctx.fillStyle = '#6a4a22';
+  ctx.fillRect(670, 446, 34, 16);
+  glow(ctx, 688, 450, 26, '255,210,140', 0.5);
+  ctx.fillStyle = '#0b0e11';
+  ctx.fillRect(250, 250, 150, 110);
+  ctx.strokeStyle = 'rgba(200,170,120,0.35)';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(250, 250, 150, 110);
+  for (let i = 0; i < 5; i += 1) {
+    ctx.fillStyle = 'rgba(190,180,160,0.22)';
+    ctx.beginPath();
+    ctx.ellipse(276 + i * 25, 300, 8, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.beginPath();
+  standing(ctx, 'zhou', 880, 760, s);
+  ctx.fillStyle = INK;
+  ctx.fill();
+}
+
+function seatedFigure(ctx, x, base, k, t, bun = false) {
+  const sway = Math.sin(t * 0.8 + x) * 1.5;
+  ctx.beginPath();
+  ellipsePath(ctx, x + sway, base - 200 * k, 22 * k, 27 * k);
+  if (bun) ellipsePath(ctx, x - 16 * k + sway, base - 218 * k, 12 * k, 11 * k);
+  ctx.moveTo(x - 12 * k, base - 174 * k);
+  ctx.bezierCurveTo(x + 58 * k, base - 166 * k, x + 64 * k, base - 90 * k, x + 70 * k, base);
+  ctx.lineTo(x - 70 * k, base);
+  ctx.bezierCurveTo(x - 64 * k, base - 90 * k, x - 58 * k, base - 166 * k, x - 12 * k, base - 174 * k);
+  ctx.fillStyle = INK;
+  ctx.fill();
+}
+
+/** 饭桌：吊灯、热汤与围坐的人；dawn 为天亮前的对质，掌柜的座位空着。 */
+function dinner(ctx, s, o, st) {
+  const dawn = o.dawn ? 1 : 0;
+  vfill(ctx, -300, -300, W + 600, 1060, [[0, mix('#130d08', '#1c2128', dawn)], [1, mix('#2a1c11', '#2d3036', dawn)]]);
+  vfill(ctx, -300, 740, W + 600, 480, [[0, mix('#1b130c', '#22262b', dawn)], [1, '#050403']]);
+  // 窗与雾
+  ctx.fillStyle = '#06070a';
+  ctx.fillRect(120, 170, 250, 330);
+  vfill(ctx, 138, 188, 214, 294, [[0, mix('#39434d', '#9aa3a8', dawn)], [1, mix('#222a32', '#6f787e', dawn)]]);
+  st.fog.draw(ctx, s * 2, st.cool, { alpha: 2.4, top: 180, bottom: 500, drift: 0.8 });
+  ctx.fillStyle = '#06070a';
+  ctx.fillRect(240, 188, 8, 294);
+  ctx.fillRect(138, 330, 214, 8);
+  glow(ctx, 250, 340, 420, COOL, 0.08 + 0.18 * dawn);
+  // 吊灯
+  const f = flicker(s) * (1 - 0.45 * dawn);
+  ctx.strokeStyle = '#0a0806';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(800, -40);
+  ctx.lineTo(800, 150);
+  ctx.stroke();
+  poly(ctx, [742, 150, 858, 150, 884, 196, 716, 196], '#100b07');
+  glow(ctx, 800, 200, 700, AMBER, 0.34 * f);
+  glow(ctx, 800, 198, 90, '255,226,170', 0.8 * f);
+  // 围坐的人（左：顾，右：周与阿芸，里侧：掌柜的位子）
+  const chen = !o.dawn;
+  if (chen) seatedFigure(ctx, 800, 600, 1.0, s);
+  else {
+    ctx.fillStyle = '#0b0806';
+    ctx.fillRect(744, 410, 112, 190);
+    glow(ctx, 800, 470, 120, COOL, 0.12);
+  }
+  seatedFigure(ctx, 470, 690, 1.25, s);
+  seatedFigure(ctx, 1110, 690, 1.25, s);
+  seatedFigure(ctx, 1320, 720, 1.2, s, true);
+  // 桌面
+  ctx.fillStyle = mix('#3b2614', '#3a3a38', dawn);
+  ctx.beginPath();
+  ctx.ellipse(800, 650, 470, 120, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = mix('#5e3e20', '#5a5a55', dawn);
+  ctx.beginPath();
+  ctx.ellipse(800, 640, 452, 108, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#0c0805';
+  ctx.fillRect(560, 690, 26, 230);
+  ctx.fillRect(1014, 690, 26, 230);
+  for (const [x, y, empty] of [[620, 640, 0], [760, 616, 0], [900, 622, 0], [1010, 650, 0], [800, 668, o.dawn ? 1 : 0]]) {
+    ctx.fillStyle = 'rgba(232,226,210,0.75)';
+    ctx.beginPath();
+    ctx.ellipse(x, y, 40, 13, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = empty ? 'rgba(40,30,20,0.6)' : 'rgba(150,90,40,0.7)';
+    ctx.beginPath();
+    ctx.ellipse(x, y - 2, 30, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (!o.dawn) {
+    plume(ctx, st.warm, s, { x: 800, y: 660, count: 14, life: 4, rise: 40, spread: 26, size: 22, alpha: 0.16, seed: 41 });
+    plume(ctx, st.warm, s, { x: 900, y: 616, count: 10, life: 4.5, rise: 36, spread: 20, size: 18, alpha: 0.12, seed: 43 });
+  }
+  glow(ctx, 800, 640, 520, AMBER, 0.16 * f);
+  motes(ctx, s, 30, (u, v) => [560 + 480 * v, 210 + 400 * u], AMBER, 61);
+  shade(ctx, 800, 520, 1150, 0.7);
+}
+
+/** 值房：电话、绿罩台灯、收信簿与邮袋；窗外是码头的雾。 */
+function dutyroom(ctx, s, o, st) {
+  vfill(ctx, -300, -300, W + 600, 1040, [[0, '#0c0f0e'], [1, '#18201c']]);
+  vfill(ctx, -300, 760, W + 600, 460, [[0, '#121612'], [1, '#040504']]);
+  ctx.fillStyle = '#050706';
+  ctx.fillRect(1060, 160, 360, 380);
+  vfill(ctx, 1080, 180, 320, 340, [[0, '#4a5862'], [1, '#2a343c']]);
+  st.fog.draw(ctx, s * 2.2, st.cool, { alpha: 3, top: 170, bottom: 530, drift: -1 });
+  glow(ctx, 1330, 300, 40, AMBER, 0.6 * flicker(s, 0.4));
+  ctx.fillStyle = '#050706';
+  ctx.fillRect(1236, 180, 8, 340);
+  ctx.fillRect(1080, 344, 320, 8);
+  // 墙上的挂钟
+  ctx.fillStyle = '#0a0c0b';
+  ctx.beginPath();
+  ctx.arc(640, 220, 54, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(200,190,160,0.4)';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(640, 220, 46, 0, Math.PI * 2);
+  ctx.moveTo(640, 220);
+  ctx.lineTo(640 + 30 * Math.sin(s * 0.05), 220 - 30 * Math.cos(s * 0.05));
+  ctx.moveTo(640, 220);
+  ctx.lineTo(616, 238);
+  ctx.stroke();
+  // 桌子、台灯与收信簿
+  ctx.fillStyle = '#100c08';
+  ctx.fillRect(300, 560, 760, 34);
+  ctx.fillRect(330, 594, 26, 300);
+  ctx.fillRect(1004, 594, 26, 300);
+  const f = flicker(s, 0.7);
+  poly(ctx, [430, 470, 530, 470, 560, 520, 400, 520], '#1d4a32');
+  ctx.fillStyle = '#0b0b0a';
+  ctx.fillRect(474, 520, 12, 40);
+  glow(ctx, 480, 560, 420, '214,226,170', 0.3 * f);
+  glow(ctx, 480, 526, 70, '255,240,200', 0.7 * f);
+  poly(ctx, [560, 556, 760, 548, 770, 560, 566, 566], 'rgba(226,220,200,0.6)');
+  ctx.strokeStyle = 'rgba(60,50,40,0.5)';
+  ctx.lineWidth = 1.5;
+  for (let i = 0; i < 4; i += 1) {
+    ctx.beginPath();
+    ctx.moveTo(580, 555 - i * 0.6 + 2);
+    ctx.lineTo(740, 549 - i * 0.6 + 2);
+    ctx.stroke();
+  }
+  // 电话
+  ctx.fillStyle = '#060606';
+  ctx.fillRect(820, 500, 90, 60);
+  ctx.beginPath();
+  ctx.ellipse(865, 492, 58, 14, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // 秤砣压着的一捆信与邮袋
+  ctx.fillStyle = 'rgba(200,190,170,0.4)';
+  ctx.fillRect(940, 534, 80, 22);
+  ctx.fillStyle = '#0b0b0b';
+  ctx.beginPath();
+  ctx.arc(980, 528, 16, 0, Math.PI * 2);
+  ctx.fill();
+  poly(ctx, [120, 900, 150, 680, 260, 660, 300, 900], '#2a2318');
+  // 老许坐在桌后，窗边站着一个人
+  seatedFigure(ctx, 700, 560, 1.05, s);
+  ctx.beginPath();
+  standing(ctx, 'zhou', 1180, 820, s * 0.6);
+  ctx.fillStyle = 'rgba(4,5,5,0.92)';
+  ctx.fill();
+  motes(ctx, s, 26, (u, v) => [400 + 200 * v, 480 + 100 * u], '214,226,170', 67);
+  shade(ctx, 720, 520, 1150, 0.72);
+}
+
+/** 账桌特写：摊开的凭据簿、撕边、信封与算盘，灯从左上方照下来。 */
+function ledger(ctx, s, o, st) {
+  vfill(ctx, -300, -300, W + 600, H + 600, [[0, '#1d130b'], [1, '#0b0705']]);
+  const r = prng(31);
+  for (let i = 0; i < 40; i += 1) {
+    ctx.strokeStyle = `rgba(90,60,30,${0.08 + r() * 0.08})`;
+    ctx.lineWidth = 2 + r() * 4;
+    ctx.beginPath();
+    const y = r() * H;
+    ctx.moveTo(-300, y);
+    ctx.bezierCurveTo(400, y + r() * 30 - 15, 1100, y + r() * 30 - 15, W + 300, y + r() * 20 - 10);
+    ctx.stroke();
+  }
+  const f = flicker(s, 0.7);
+  glow(ctx, 360, 160, 900, AMBER, 0.32 * f);
+  // 摊开的簿子
+  ctx.save();
+  ctx.translate(780, 470);
+  ctx.rotate(-0.06);
+  ctx.fillStyle = '#0d0905';
+  ctx.fillRect(-470, -250, 940, 520);
+  ctx.fillStyle = '#d9cdb2';
+  ctx.fillRect(-450, -232, 440, 484);
+  ctx.beginPath();
+  ctx.moveTo(10, -232);
+  ctx.lineTo(450, -232);
+  ctx.lineTo(450, -40);
+  for (let y = -40; y <= 252; y += 18) ctx.lineTo(300 + 30 * Math.sin(y * 0.11) + (y > 80 && y < 130 ? -40 : 0), y);
+  ctx.lineTo(10, 252);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(120,40,30,0.35)';
+  ctx.lineWidth = 2;
+  for (let y = -190; y < 240; y += 34) {
+    ctx.beginPath();
+    ctx.moveTo(-430, y);
+    ctx.lineTo(-30, y);
+    ctx.moveTo(30, y);
+    ctx.lineTo(y < -40 ? 430 : 280, y);
+    ctx.stroke();
+  }
+  ctx.fillStyle = 'rgba(30,24,18,0.55)';
+  for (let i = 0; i < 26; i += 1) {
+    const x = -420 + r() * 380 + (i % 2 ? 460 : 0);
+    const y = -180 + Math.floor(r() * 12) * 34;
+    if (i % 2 && y > -40 && x > 260) continue;
+    ctx.fillRect(x, y - 14, 30 + r() * 90, 4);
+  }
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillRect(-12, -240, 24, 500);
+  ctx.restore();
+  // 信封与笔
+  ctx.save();
+  ctx.translate(1300, 720);
+  ctx.rotate(0.22);
+  ctx.fillStyle = '#c9b996';
+  ctx.fillRect(-130, -70, 260, 140);
+  poly(ctx, [-130, -70, 0, 10, 130, -70], 'rgba(120,100,70,0.5)');
+  ctx.restore();
+  ctx.strokeStyle = '#0a0705';
+  ctx.lineWidth = 10;
+  ctx.beginPath();
+  ctx.moveTo(240, 800);
+  ctx.lineTo(470, 700);
+  ctx.stroke();
+  // 算盘一角
+  ctx.fillStyle = '#100b07';
+  ctx.fillRect(1180, 120, 420, 150);
+  for (let i = 0; i < 9; i += 1) {
+    ctx.fillStyle = 'rgba(160,110,60,0.5)';
+    ctx.beginPath();
+    ctx.ellipse(1220 + i * 40, 170 + (i % 3) * 30, 16, 11, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  motes(ctx, s, 46, (u, v) => [200 + 900 * v, 100 + 700 * u], AMBER, 37);
+  shade(ctx, 760, 470, 1100, 0.62);
+}
+
 const SCENES = {
   black: { draw(ctx) { ctx.fillStyle = '#000'; ctx.fillRect(-300, -300, W + 600, H + 600); }, camera: () => [1, 0, 0] },
   harbor: { focus: [430, 470], draw: harbor, camera: (s) => [1 + 0.14 * ease(s / 18), -110 * ease(s / 18), 20 * ease(s / 18)] },
@@ -1585,6 +1843,9 @@ const SCENES = {
   attic: { focus: [820, 500], draw: attic, camera: (s) => [1.06 + 0.04 * ease(s / 18), 30 * Math.sin(s * 0.12), 10] },
   doorway: { focus: [1050, 520], draw: doorway, camera: (s) => [1 + 0.12 * ease(s / 6), 120 * ease(s / 6), 0] },
   storeroom: { focus: [800, 500], draw: storeroom, camera: (s) => [1.05 + 0.06 * ease(s / 10), 0, 0] },
+  dinner: { focus: [800, 560], draw: dinner, camera: (s) => [1.03 + 0.05 * ease(s / 20), -30 + 60 * ease(s / 22), Math.sin(s * 0.2) * 4] },
+  dutyroom: { focus: [760, 480], draw: dutyroom, camera: (s) => [1.04 + 0.04 * ease(s / 20), 40 * Math.sin(s * 0.1), 0] },
+  ledger: { focus: [780, 470], draw: ledger, camera: (s) => [1.02 + 0.06 * ease(s / 24), -40 + 80 * ease(s / 26), 10 * Math.sin(s * 0.15)] },
   bay: { focus: [700, 480], draw: bay, camera: (s) => [1.04 + 0.05 * ease(s / 20), 60 * Math.sin(s * 0.12), 0] },
   corridor: { focus: [800, 430], draw: corridor, camera: (s) => [1 + 0.1 * ease(s / 24), Math.sin(s * 0.2) * 20, Math.sin(s * 0.9) * 3] },
   toolroom: { focus: [760, 460], draw: toolroom, camera: (s) => [1.04 + 0.04 * ease(s / 20), -60 + 140 * ease(s / 22), 0] },

@@ -29,6 +29,8 @@
 | ZRS | 书架和桌面加入“影像模式”入口；桌面 GUI 接入失败回退与关键节点存档（Tkinter 用文字或静态画面呈现）；影像模式的键盘操作、减少动态效果与字幕可读性检查；与 ZC 一起解决 #15 | 桌面全程点击可走到失败与回退；窗口测试在 CI 中实际运行 |
 | LQ | 《深空回声 · 影像版》`stories/film/deep_space_film/`：线性分支，氧气、电量耗尽即任务失败，关键节点存档点，全部结局有通关脚本；关键节点自动存档接入 `web/storage/` 与桌面存储，取代影像页面临时使用的 localStorage；随机探索覆盖影像版剧本 | 两部影像版各至少 5 个结局（含失败结局）且全部覆盖；刷新和跨端都能从存档点继续 |
 
+《雾港旧案：未结的账》（`fog_harbor_ledger`）是 ZC 新增的完整调查剧本：选错的代价体现在人物戒备、材料缺失及五种正式结局，不设中途失败；关键节点仍可回退。该规则只适用于本剧。上表旧雾港样片与深空影像版的失败结局验收继续保留。新增剧本与分支条件见 [剧本说明](../stories/film/fog_harbor_ledger/README.md)。
+
 ### 0.2 当前的临时约定（第二轮改为正式字段）
 
 | 约定 | 现在的写法 | 第二轮正式化 |
@@ -46,7 +48,7 @@
 | 1 | YHT | 剧本格式、加载与静态校验；展示数据类型 | `model.py` `loader.py` `validator.py` `walk.py`；`ui_contract.py` 中的展示类型 | `tests/yht/` |
 | 2 | ZQO | 运行时核心与插件接口；正式会话与展示快照 | `state.py` `rules.py` `engine.py` `mechanics/base.py`；`session.py` `presentation.py`（新建） | `tests/zqo/` |
 | 3 | ZRS | 命令行与桌面／网页界面；道具谜题插件 | `parser.py` `cli.py` `mechanics/puzzle.py`；`gui/`（新建）；`web/ui/` `web/styles/`（新建） | `tests/zrs/` |
-| 4 | ZC | 推理插件、剧本 A《雾港旧案》、影像模式、整合与发布 | `mechanics/mystery.py` `session_factory.py` `legacy_session.py`（临时）；`main.py`、`.vscode/launch.json`、`stories/fog_harbor/`、`stories/film/fog_harbor_film/`；`cinematic.html`、`web/cinematic/`；`web/runtime/`、`web/preview/storage.js`（临时）、`tools/`、CI 与 Cloudflare 配置 | `tests/zc/`、`tests/integration/`、`tests/browser/` |
+| 4 | ZC | 推理插件、剧本 A《雾港旧案》、影像模式、整合与发布 | `mechanics/mystery.py` `session_factory.py` `legacy_session.py`（临时）；`main.py`、`.vscode/launch.json`、`stories/fog_harbor/`、`stories/film/fog_harbor_film/`、`stories/film/fog_harbor_ledger/`；`cinematic.html`、`web/cinematic/`；`web/runtime/`、`web/preview/storage.js`（临时）、`tools/`、CI 与 Cloudflare 配置 | `tests/zc/`、`tests/integration/`、`tests/browser/` |
 | 5 | LQ | 存档与存储、回放与探索测试、剧本 B《深空回声》 | `save.py` `storage.py` `replay.py`；`gui/storage.py`（兼容导入）；`web/storage/`；`stories/deep_space/`、`stories/film/deep_space_film/`（第二轮） | `tests/lq/` |
 
 - 共享接口 `taleloom/ui_contract.py` 与测试替身 `tests/ui_fakes.py` 的改动走 contract PR（[接口约定](contracts.md) 第 5 节）。

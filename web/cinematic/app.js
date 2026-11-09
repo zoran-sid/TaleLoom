@@ -1,106 +1,100 @@
 /**
- * 影像模式样片（《雾港旧案》）。负责人：ZC。
+ * 影像模式播放器。负责人：ZC。
  *
  * 剧情、选项与判定全部来自浏览器里运行的同一个 Python 引擎（GameClient →
  * Pyodide Worker → session_factory 会话）；本页只把快照与反馈演成画面：
- * 场景转场、逐字字幕、审问特写、线索卡片和画面上的选项。不新增剧情文字。
+ * 场景转场、逐字字幕、线索卡片、调查台和画面上的选项。不新增剧情文字。
  *
- * 默认播放影像版专用剧本 stories/film/fog_harbor_film（线性分支，不上书架）；
- * ?story=<id> 可以换成其他剧本，例如探索版 fog_harbor。
+ * 默认播放《雾港旧案：未结的账》（stories/film/fog_harbor_ledger，线性分支，不上书架）；
+ * ?story=<id> 可以换成其他剧本，例如旧样片 fog_harbor_film、深空影像版 deep_space_film。
  *
- * 失败惩罚：每次选择前用会话的标准存档记一个检查点；到达 id 以 fail_ 开头的
- * 结局时，可以退回上一个选择重来，整局共 CHANCES 次机会，每次退回记一次失误。
- *
- * 关键节点自动存档：开场，以及剧情里“【存档点】名称”提示出现时，导出标准存档
- * 保存在本机（localStorage）。笔记里可以随时回到任一存档点；失败或较差的结局
- * 也可以回到最近的存档点（不消耗机会，但之后的进度作废）。刷新页面后可从存档点继续。
+ * 画面读快照的 art（例如 portrait_zhou_cold：人物特写、周文、冷淡）；结局类型读
+ * ending_kind。失败结局可以用会话的“回到上一个选择”（整局机会数由会话给出）；
+ * 会话在进入带 checkpoint 的场景时记下存档点，本页把它们导出成标准存档，存进
+ * web/storage/cinematic.js（LQ），刷新后可以从存档点继续；笔记里可以回到任一存档点。
  */
 import './cinematic.css';
 import { GameClient } from '../runtime/client.js';
+import { CinematicSaveStore } from '../storage/cinematic.js';
 import { Stage, hasScene } from './stage.js';
 import { Sound } from './sound.js';
+import { Desk, unitFrom } from './units.js';
 
-const STORY_ID = new URLSearchParams(location.search).get('story') || 'fog_harbor_film';
-const CHANCES = 3;
-const CHECKPOINT = '【存档点】';
-const AUTOSAVE_KEY = `taleloom:cinematic:${STORY_ID}:autosaves`;
-const FAST = new URLSearchParams(location.search).get('fast') === '1';
+const params = new URLSearchParams(location.search);
+const STORY_ID = params.get('story') || 'fog_harbor_ledger';
+const FAST = params.get('fast') === '1';
+const UNIT_ACTIONS = new Set(['mystery:inspect', 'mystery:solve', 'mystery:hint']);
 // rushing：演出途中要回到存档点时，把剩下的字幕与转场快速播完。
 let rushing = false;
 const T = (ms) => (FAST || rushing ? Math.min(ms, 40) : ms);
-// 场景 → 画面：[画面名, 选项]。审问类节点用人物特写，speaker 作为字幕上的说话人。
-const ART = {
-  lobby: ['lobby'], ebb: ['lobby'], gathering: ['lobby', { gathering: true }],
-  office: ['office'], office_ledger: ['office'], office_window: ['office'],
-  kitchen: ['kitchen'], kitchen_zhou: ['kitchen'], vat: ['kitchen'],
-  dock: ['harbor'], backyard: ['backyard'], guest_room: ['guestroom'],
-  zhou_room: ['zhouroom', { open: true }], attic: ['attic'],
-  gu_first: ['portrait', { suspect: 'gu', place: 'lobby', speaker: '顾先生' }],
-  gu_confront: ['portrait', { suspect: 'gu', place: 'lobby', speaker: '顾先生', mood: 'nervous' }],
-  gu_bluff: ['portrait', { suspect: 'gu', place: 'lobby', speaker: '顾先生', mood: 'cold' }],
-  gu_silent: ['portrait', { suspect: 'gu', place: 'lobby', speaker: '顾先生', mood: 'cold' }],
-  zhou_gap: ['portrait', { suspect: 'zhou', place: 'kitchen', speaker: '周文', mood: 'nervous' }],
-  zhou_weight: ['portrait', { suspect: 'zhou', place: 'kitchen', speaker: '周文', mood: 'nervous' }],
-  zhou_bluff: ['portrait', { suspect: 'zhou', place: 'kitchen', speaker: '周文', mood: 'cold' }],
-  zhou_guarded: ['portrait', { suspect: 'zhou', place: 'kitchen', speaker: '周文', mood: 'cold' }],
-  kitchen_ayun: ['portrait', { suspect: 'ayun', place: 'kitchen', speaker: '阿芸', mood: 'nervous' }],
-  ayun_truth: ['portrait', { suspect: 'ayun', place: 'kitchen', speaker: '阿芸', mood: 'tears' }],
-  ayun_bluff: ['portrait', { suspect: 'ayun', place: 'kitchen', speaker: '阿芸', mood: 'tears' }],
-  ayun_silent: ['attic', { closed: true, speaker: '阿芸' }],
+
+// 主题：雾港（旅馆）与深空（飞船）各有片名、开场与结局画面。
+const SHIP = STORY_ID.startsWith('deep_space');
+const THEMES = {
+  ship: {
+    title: '深空回声', place: '“回声号” · 深空', firstAct: '', opening: ['space', {}], fallback: 'corridor', chances: true,
+    endings: {
+      escape: ['space', { pod: true }], truth: ['space', { pod: true, dawn: true }],
+      suffocate: ['bay', { dying: true }], blackout: ['corridor', { dark: true }],
+    },
+    failureEnding: ['bay', { dying: true }], defaultEnding: ['space', { pod: true }],
+  },
+  ledger: {
+    title: '雾港旧案', subtitle: '未结的账', place: '一九三一年深秋 · 雾港', firstAct: '序章 · 最后一晚的饭桌',
+    opening: ['harbor', {}], fallback: 'generic', chances: false,
+    failureEnding: ['harbor', { storm: true, focus: [760, 600] }], defaultEnding: ['harbor', {}],
+  },
+  fog: {
+    title: '雾港旧案', place: '一九三一年 · 雾港', firstAct: '第一幕 · 雾夜', opening: ['harbor', {}], fallback: 'generic', chances: true,
+    failureEnding: ['harbor', { storm: true, focus: [760, 600] }], defaultEnding: ['harbor', {}],
+  },
+};
+const THEME = SHIP ? THEMES.ship : STORY_ID === 'fog_harbor_ledger' ? THEMES.ledger : THEMES.fog;
+// 结局 → 画面：失败结局各有专门的画面，其余在港口（天亮或夜里有船离开）。
+THEME.endings ||= {
+  truth: ['harbor', { dawn: true, boat: 'arrive', focus: [980, 470] }],
+  dawn: ['harbor', { dawn: true, boat: 'arrive', focus: [980, 470] }],
+  scapegoat: ['harbor', { boat: 'leave', focus: [1000, 470] }],
+  wrong: ['harbor', { boat: 'leave', focus: [1000, 470] }],
+  insufficient: ['harbor', {}],
+  fail_tide: ['harbor', { storm: true, focus: [760, 600] }],
+  fail_caught: ['doorway', {}],
+  fail_attacked: ['storeroom', {}],
 };
 const AMBIENCE = {
   lobby: 'lobby', office: 'office', kitchen: 'kitchen', portrait: 'portrait', harbor: 'harbor',
   guestroom: 'rain', backyard: 'harbor', zhouroom: 'lobby', attic: 'attic',
-  doorway: 'tension', storeroom: 'tension',
-};
-// 主题：雾港（旅馆）与深空（飞船）各有片名、开场、画面与结局画面。
-const SHIP = STORY_ID.startsWith('deep_space');
-const SHIP_ART = {
-  cryo: ['bay'], corridor: ['corridor'], toolroom: ['toolroom'], airlock: ['airlock'],
-  energy: ['energy'], comms: ['comms'], observatory: ['observatory'],
-};
-const THEME = SHIP ? {
-  title: '深空回声', place: '“回声号” · 深空', firstAct: '', opening: ['space', {}], fallback: 'corridor',
-  scenes: SHIP_ART,
-  endings: {
-    escape: ['space', { pod: true }], truth: ['space', { pod: true, dawn: true }],
-    suffocate: ['bay', { dying: true }], blackout: ['corridor', { dark: true }],
-  },
-  failureEnding: ['bay', { dying: true }], defaultEnding: ['space', { pod: true }],
-} : {
-  title: '雾港旧案', place: '一九三一年 · 雾港', firstAct: '第一幕 · 雾夜', opening: ['harbor', {}], fallback: 'generic',
-  scenes: null, endings: null,
-  failureEnding: ['harbor', { storm: true, focus: [760, 600] }], defaultEnding: ['harbor', {}],
-};
-Object.assign(AMBIENCE, {
+  doorway: 'tension', storeroom: 'tension', dinner: 'dinner', dutyroom: 'dutyroom', ledger: 'ledger',
   bay: 'alarm', corridor: 'ship', toolroom: 'workshop', airlock: 'ship', energy: 'reactor',
   comms: 'ship', observatory: 'space', space: 'space',
-});
-
-const SUSPECTS = { 顾先生: 'gu', 周文: 'zhou', 阿芸: 'ayun' };
+};
+// 旧剧本里不是画面键开头的场景 id。
+const ALIAS = { cryo: 'bay' };
+const SUSPECTS = new Set(['gu', 'zhou', 'ayun']);
+const MOODS = new Set(['nervous', 'tears', 'cold']);
+const PLACES = new Set(['kitchen', 'lobby']);
 const VERBS = { 'mystery:ask': '审问', 'mystery:examine': '深入调查', 'puzzle:use': '使用' };
 
 const $ = (id) => document.getElementById(id);
 const stage = new Stage($('stage'));
 const sound = new Sound();
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, T(ms)));
+const desk = new Desk($('desk'), { send: sendUnit, sound, speed: T, onClose: () => { deskClosedFor = unitKey(view); showChoices(); } });
 
 let client = null;
 let sessionId = '';
 let booting = null;
 let view = null;
 let busy = false;
-let actTitle = '';
+let actTitle = THEME.firstAct;
 let poke = null;
 let paused = false;          // 打开笔记时暂停字幕与转场计时
 let seen = new Set();        // 已经播过描述的场景，回来时不再重播
 let notes = { clues: [], resources: [], sceneTitle: '', sceneText: '' };
-let checkpoint = null;       // 上一个选择之前的标准存档 { save, at }
-let chances = CHANCES;       // 剩余的“回到上一个选择”次数
-let mistakes = 0;            // 本局退回过几次
-let rollbacks = 0;           // 本局回到存档点几次
-let autosaves = loadAutosaves();
-let pendingRollback = null;   // 演出结束后要回到的存档点
+let saves = loadSaves();     // 关键节点的标准存档（LQ 的存储），刷新后可以继续
+let lastPoint = null;        // 最近一次记下的存档点 id，用来发现新到达的存档点
+let pendingRollback = null;  // 演出结束后要回到的存档点
+let deskClosedFor = '';      // 玩家暂离的调查单元：同一单元不再自动打开
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -118,12 +112,12 @@ function nudge() {
 }
 
 document.addEventListener('keydown', (event) => {
-  if (event.target.closest('select')) return;
+  if (event.target.closest('select, input')) return;
   if (event.key === 'Escape' && !$('notebook').hidden) {
     closeNotebook();
   } else if (event.key === 'n' || event.key === 'N') {
     toggleNotebook();
-  } else if (!$('notebook').hidden) {
+  } else if (!$('notebook').hidden || desk.open) {
     return;
   } else if (event.key === ' ' && !event.target.closest('button')) {
     event.preventDefault();
@@ -132,7 +126,9 @@ document.addEventListener('keydown', (event) => {
     $('choices').querySelectorAll('button.choice')[Number(event.key) - 1]?.click();
   }
 });
-$('frame').addEventListener('click', (event) => { if (!event.target.closest('button') && $('notebook').hidden) nudge(); });
+$('frame').addEventListener('click', (event) => {
+  if (!event.target.closest('button, .desk') && $('notebook').hidden) nudge();
+});
 $('skip').addEventListener('click', nudge);
 
 /** 等待 ms 毫秒或玩家点击；打开笔记期间不计时。 */
@@ -200,7 +196,7 @@ function chunks(text) {
   return out;
 }
 
-// ---------- 卡片 ----------
+// ---------- 卡片与声音说明 ----------
 
 function showCard(kicker, title, place) {
   const card = $('card');
@@ -243,13 +239,27 @@ async function clueCard(name, text) {
   card.hidden = true;
 }
 
+/** 重要声音的文字说明：静音或听不见时也知道发生了什么。 */
+let soundCaptions = [];
+sound.onCaption = (text) => {
+  const node = $('sound-caption');
+  // 同一镜头的环境声与配乐可能同时开始，两条说明都应可读。
+  if (node.hidden || text.startsWith('环境声：')) soundCaptions = [];
+  soundCaptions = [...soundCaptions.filter((line) => line !== text), text].slice(-3);
+  node.textContent = soundCaptions.map((line) => `〔${line}〕`).join(' ');
+  node.hidden = false;
+  clearTimeout(sound.captionTimer);
+  sound.captionTimer = setTimeout(() => { node.hidden = true; }, FAST ? 400 : 2600);
+};
+
 // ---------- 把会话反馈拆成“镜头” ----------
 
 function beatsFrom(messages) {
   const beats = [];
   for (const raw of messages) {
     const text = raw.trim();
-    if (!text) continue;
+    // 存档点由快照的 checkpoint 给出，旧剧本的“【存档点】”提示和核对标记不再单独播放。
+    if (!text || text.startsWith('【存档点】') || text.startsWith('【核对完成】')) continue;
     let m;
     if ((m = text.match(/^【戒备】(.+)$/))) {
       beats.push({ kind: 'warn', text: m[1] });
@@ -270,26 +280,48 @@ function beatsFrom(messages) {
   return beats;
 }
 
-/** 场景 → 画面：主题里的映射优先；否则场景 id 本身或其“_”前的部分是画面键时直接使用。 */
-function artFor(sceneId) {
-  const prefix = sceneId.split('_')[0];
-  const [name, options = {}] = THEME.scenes[sceneId]
-    || (hasScene(sceneId) ? [sceneId] : null)
-    || (hasScene(prefix) ? [prefix] : null)
-    || [THEME.fallback];
+/**
+ * 画面键 → 画面与选项：键以画面名开头，其后的词是选项。
+ * 例如 portrait_zhou_cold_kitchen → 人物特写（周文、冷淡、后厨的火光），harbor_dawn → 天亮的港口。
+ * 没有 art 的旧剧本用场景 id 推断；都认不出时用主题的通用画面。
+ */
+function artFor(current) {
+  const key = current.art || current.scene_id;
+  const [head, ...words] = key.split('_');
+  const name = ALIAS[head] || head;
+  if (!hasScene(name)) return { name: THEME.fallback, options: {} };
+  const options = {};
+  for (const word of words) {
+    if (SUSPECTS.has(word)) options.suspect = word;
+    else if (MOODS.has(word)) options.mood = word;
+    else if (PLACES.has(word)) options.place = word;
+    else options[word] = true;
+  }
+  if (name === 'harbor' && options.dawn) Object.assign(options, { boat: 'arrive', focus: [980, 470] });
   return { name, options };
 }
 
-function setArt(sceneId) {
-  const { name, options } = artFor(sceneId);
+/** 画面 → 配乐（雾港两部）：饭桌与大堂舒缓，账房与后厨紧张，账桌思索，冷淡或落泪的特写沉郁。 */
+function musicFor(name, options) {
+  if (SHIP) return null;
+  if (name === 'portrait') return options.mood === 'cold' || options.mood === 'tears' ? 'dark' : 'tense';
+  if (options.dawn) return 'dawn';
+  if (name === 'office') return options.alive ? 'calm' : 'tense';
+  return { harbor: 'calm', dinner: 'calm', lobby: 'calm', ledger: 'study', dutyroom: 'study', kitchen: 'tense', doorway: 'tense' }[name] || 'study';
+}
+
+function setArt(current) {
+  const { name, options } = artFor(current);
   stage.show(name, options);
   sound.setAmbience(AMBIENCE[name] || 'generic');
+  sound.setMusic(musicFor(name, options));
 }
 
 async function interrogate(beat) {
   clearSubtitle();
   await stage.fade(1, T(450));
-  stage.show('portrait', { suspect: SUSPECTS[beat.who] || 'zhou', place: view.scene_id });
+  const who = { 顾先生: 'gu', 周文: 'zhou', 阿芸: 'ayun' }[beat.who] || 'zhou';
+  stage.show('portrait', { suspect: who, place: view.scene_id });
   sound.setAmbience('portrait');
   $('caption').textContent = `审问 · ${beat.topic}`;
   $('caption').hidden = false;
@@ -298,7 +330,7 @@ async function interrogate(beat) {
   $('caption').hidden = true;
   clearSubtitle();
   await stage.fade(1, T(450));
-  setArt(view.scene_id);
+  setArt(view);
   await stage.fade(0, T(700));
 }
 
@@ -338,7 +370,7 @@ async function enterScene(next) {
   seen.add(next.scene_id);
   await stage.fade(1, T(revisit ? 450 : 700));
   if (!revisit) sound.thud();
-  setArt(next.scene_id);
+  setArt(next);
   if (revisit) {
     showCard('', next.scene_title, '');
     await stage.fade(0, T(700));
@@ -350,35 +382,19 @@ async function enterScene(next) {
   await hold(1800);
   hideCard();
   await stage.fade(0, T(1300));
-  const { speaker = '' } = artFor(next.scene_id).options;
-  for (const line of chunks(next.text)) await type(line, line.includes('“') ? speaker : '');
+  for (const line of chunks(next.text)) await type(line);
   clearSubtitle();
 }
 
 function isFailure(current) {
-  return Boolean(current.ending_id && current.ending_id.startsWith('fail_'));
+  return current.ending_kind === 'failure';
 }
 
-// 结局 → 画面：失败结局各有专门的画面，其余在港口（天亮或夜里有船离开）。
-const ENDING_ART = {
-  truth: ['harbor', { dawn: true, boat: 'arrive', focus: [980, 470] }],
-  dawn: ['harbor', { dawn: true, boat: 'arrive', focus: [980, 470] }],
-  scapegoat: ['harbor', { boat: 'leave', focus: [1000, 470] }],
-  wrong: ['harbor', { boat: 'leave', focus: [1000, 470] }],
-  insufficient: ['harbor', {}],
-  fail_tide: ['harbor', { storm: true, focus: [760, 600] }],
-  fail_caught: ['doorway', {}],
-  fail_attacked: ['storeroom', {}],
-};
-
-if (!SHIP) {
-  THEME.scenes = ART;
-  THEME.endings = ENDING_ART;
-}
-actTitle = THEME.firstAct;
-document.title = `${THEME.title} · 影像模式`;
+document.title = `${THEME.title}${THEME.subtitle ? `：${THEME.subtitle}` : ''} · 影像模式`;
 document.querySelector('#intro h1').textContent = THEME.title;
-document.querySelector('#intro .intro-sub').textContent = THEME.place;
+document.querySelector('#intro .intro-sub').textContent = THEME.subtitle ? `${THEME.subtitle} · ${THEME.place}` : THEME.place;
+$('chances').hidden = !THEME.chances;
+updateChances(null);
 
 // ---------- 画面内的数值资源（氧气、电量等）；0/1 的状态（如戒心）只放在笔记里 ----------
 
@@ -397,8 +413,8 @@ function renderMeters(resources) {
   lastMeters = Object.fromEntries(resources.map((r) => [r.id, r.value]));
 }
 
-function latestAutosave() {
-  return autosaves.reduce((best, entry) => (!best || entry.at > best.at ? entry : best), null);
+function latestSave() {
+  return saves.reduce((best, entry) => (!best || entry.at > best.at ? entry : best), null);
 }
 
 async function ending(next) {
@@ -408,23 +424,23 @@ async function ending(next) {
   const [art, options] = THEME.endings[next.ending_id] || (failed ? THEME.failureEnding : THEME.defaultEnding);
   stage.show(art, options);
   sound.setAmbience(options.storm ? 'storm' : art === 'harbor' ? 'ending' : failed ? 'tension' : AMBIENCE[art] || 'ending');
+  sound.setMusic(SHIP ? null : ['truth', 'dawn'].includes(next.ending_id) ? 'dawn' : 'dark');
   if (failed) stage.shake(900, 14);
   await stage.fade(0, T(1800));
   for (const line of chunks(next.text)) await type(line);
   clearSubtitle();
   const record = [`第 ${next.turn} 回合`];
-  if (mistakes) record.push(`失误 ${mistakes} 次`);
-  if (rollbacks) record.push(`回到存档点 ${rollbacks} 次`);
+  if (next.mistakes) record.push(`失误 ${next.mistakes} 次`);
+  if (next.rewinds) record.push(`回到存档点 ${next.rewinds} 次`);
+  const left = next.rewinds_remaining;
   if (failed) {
-    showCard('任务失败', next.ending_title || next.ending_id, chances > 0 ? `还剩 ${chances} 次机会` : '机会已经用完');
+    showCard('任务失败', next.ending_title || next.ending_id, left > 0 ? `还剩 ${left} 次机会` : '机会已经用完');
   } else {
     showCard('结局', next.ending_title || next.ending_id, record.join(' · '));
   }
   const items = [];
-  if (failed && chances > 0 && checkpoint) {
-    items.push({ label: `回到上一个选择（还剩 ${chances} 次机会）`, run: rewind });
-  }
-  const saved = latestAutosave();
+  if (failed && left > 0) items.push({ label: `回到上一个选择（还剩 ${left} 次机会）`, run: rewind });
+  const saved = latestSave();
   if (saved && next.ending_id !== 'truth') {
     items.push({ label: `回到存档点「${saved.label}」`, run: () => rollbackTo(saved) });
   }
@@ -433,18 +449,19 @@ async function ending(next) {
   showChoices(items);
 }
 
-/** 恢复一份标准存档并直接回到选项；kicker/place 用于转场卡片。 */
-async function restoreTo(save, kicker, place) {
-  const result = await call({ method: 'restore', payload: save });
-  if (result.error_code) throw new Error(result.messages.join(' ') || '存档无法恢复');
+/** 换上一份会话结果的画面并直接回到选项；kicker/place 用于转场卡片。 */
+async function arrive(result, kicker, place) {
   clearSubtitle();
   closeNotebook();
+  desk.reset();
+  deskClosedFor = '';
   await stage.fade(1, T(600));
   sound.thud();
   view = result.view;
   updateNotes(view);
+  updateChances(view);
   seen.add(view.scene_id);
-  setArt(view.scene_id);
+  setArt(view);
   showCard(kicker, view.scene_title, place);
   await stage.fade(0, T(900));
   await hold(1400);
@@ -452,19 +469,17 @@ async function restoreTo(save, kicker, place) {
   showChoices();
 }
 
-/** 退回上一个选择：扣一次机会、记一次失误；之后记下的存档点作废。 */
+/** 失败后回到上一个选择：会话扣一次机会、记一次失误；之后记下的存档点作废。 */
 async function rewind() {
-  if (busy || !checkpoint || chances <= 0) return;
+  if (busy) return;
   busy = true;
   hideChoices();
   hideCard();
   try {
-    chances -= 1;
-    mistakes += 1;
-    updateChances();
-    autosaves = autosaves.filter((entry) => entry.at < checkpoint.at);
-    saveAutosaves();
-    await restoreTo(checkpoint.save, '回到上一个选择', `还剩 ${chances} 次机会`);
+    const result = await call({ method: 'rewind', expected_revision: view.revision });
+    if (result.error_code) throw new Error(result.messages.join(' '));
+    await syncSaves(result.view);
+    await arrive(result, '回到上一个选择', `还剩 ${result.view.rewinds_remaining} 次机会`);
   } catch (error) {
     await type(`没能回到上一步：${error.message}`);
     clearSubtitle();
@@ -474,18 +489,23 @@ async function rewind() {
   }
 }
 
-/** 回到某个自动存档点：不消耗机会，但存档点之后的进度和存档作废。 */
-async function rollbackTo(entry, { counted = true } = {}) {
+/**
+ * 回到某个存档点：先用会话的 restore_checkpoint（计一次回退，之后的存档点作废）；
+ * 会话里没有这个存档点时（例如刚刷新、旧存档），读入那份标准存档。
+ */
+async function rollbackTo(entry, { resume = false } = {}) {
   if (busy) return;
   busy = true;
   hideChoices();
   hideCard();
   try {
-    if (counted) rollbacks += 1;
-    checkpoint = null;
-    autosaves = autosaves.filter((other) => other.at <= entry.at);
-    saveAutosaves();
-    await restoreTo(entry.save, counted ? '回到存档点' : '从存档点继续', entry.label);
+    let result = resume ? null : await call({
+      method: 'restore_checkpoint', checkpoint_id: entry.save.state.scene, expected_revision: view.revision,
+    });
+    if (!result || result.error_code === 'invalid_checkpoint') result = await call({ method: 'restore', payload: entry.save });
+    if (result.error_code) throw new Error(result.messages.join(' ') || '存档无法恢复');
+    await syncSaves(result.view);
+    await arrive(result, resume ? '从存档点继续' : '回到存档点', entry.label);
   } catch (error) {
     await type(`没能回到存档点：${error.message}`);
     clearSubtitle();
@@ -495,32 +515,52 @@ async function rollbackTo(entry, { counted = true } = {}) {
   }
 }
 
-// ---------- 关键节点自动存档（本机 localStorage，读写失败时只在本页保留） ----------
+// ---------- 关键节点自动存档（LQ 的影像存档存储；读写失败时只在本页保留） ----------
 
-function loadAutosaves() {
+function store() {
+  return new CinematicSaveStore(STORY_ID);
+}
+
+function loadSaves() {
   try {
-    const data = JSON.parse(localStorage.getItem(AUTOSAVE_KEY) || '[]');
-    return Array.isArray(data) ? data.filter((e) => e && typeof e.label === 'string' && e.save && typeof e.at === 'number') : [];
+    return store().readEntries();
   } catch {
     return [];
   }
 }
 
-function saveAutosaves() {
+function writeSaves() {
   try {
-    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(autosaves));
+    store().writeEntries(saves);
   } catch {
     /* 隐私模式或空间不足：自动存档只在本页有效 */
   }
   if (!$('notebook').hidden) renderNotebook();
 }
 
-async function recordAutosave(label, current) {
-  const save = await call({ method: 'export' });
-  autosaves = autosaves.filter((entry) => entry.label !== label);
-  autosaves.push({ label, scene: current.scene_title, turn: current.turn, at: Date.now(), save });
-  saveAutosaves();
-  toast(`已自动存档 · ${label}`);
+/**
+ * 与会话的存档点对齐：到达新的存档点时导出标准存档记下；会话作废的存档点同时删掉。
+ */
+async function syncSaves(current) {
+  const point = current.checkpoint;
+  const points = (await call({ method: 'checkpoints' })).checkpoints;
+  const alive = new Set(points.map((p) => p.id));
+  const before = saves.length;
+  let added = false;
+  saves = saves.filter((entry) => alive.has(entry.save.state.scene));
+  if (point && point.id !== lastPoint && !current.ended && !saves.some((e) => e.save.state.scene === point.id
+      && e.save.state.turn === point.turn)) {
+    const save = await call({ method: 'export' });
+    // 只在刚进入存档点时记下（会话在进入场景时拍下这一刻）。
+    if (save.state.scene === point.id && save.state.turn === point.turn) {
+      saves = saves.filter((entry) => entry.label !== point.label);
+      saves.push({ label: point.label, scene: current.scene_title, turn: point.turn, at: Date.now(), save });
+      added = true;
+      toast(`已自动存档 · ${point.label}`);
+    }
+  }
+  lastPoint = point ? point.id : null;
+  if (added || saves.length !== before) writeSaves();
 }
 
 function toast(text) {
@@ -534,15 +574,18 @@ function toast(text) {
   toast.timer = setTimeout(() => { node.classList.remove('show'); node.hidden = true; }, FAST ? 300 : 2600);
 }
 
-function updateChances() {
-  $('chances').textContent = `机会 ${'●'.repeat(chances)}${'○'.repeat(CHANCES - chances)}`;
-  $('chances').title = `还可以退回上一个选择 ${chances} 次`;
+function updateChances(current) {
+  const limit = current?.rewind_limit ?? 3;
+  const left = current?.rewinds_remaining ?? limit;
+  $('chances').textContent = `机会 ${'●'.repeat(left)}${'○'.repeat(Math.max(0, limit - left))}`;
+  $('chances').title = `还可以退回上一个选择 ${left} 次`;
 }
 
 /** 先在原场景演完反馈，再转场；结束时进入结局画面。 */
 async function present(result, previous) {
   const next = result.view;
   updateNotes(next);
+  updateChances(next);
   if (result.error_code) {
     view = next;
     await type(result.messages.join(' ') || '这一步没能完成。');
@@ -564,12 +607,20 @@ async function present(result, previous) {
   return showChoices();
 }
 
-// ---------- 画面上的选项 ----------
+// ---------- 画面上的选项与调查台 ----------
+
+function unitKey(current) {
+  const unit = current && unitFrom(current);
+  return unit ? `${current.scene_id}/${unit.id}` : '';
+}
 
 function optionsFor(current) {
-  const items = current.choices.filter((c) => c.enabled).map((c) => ({ label: c.label, run: () => act(c.id, {}) }));
+  const items = [];
+  const unit = unitFrom(current);
+  if (unit) items.push({ id: 'desk', label: `${unit.solvable ? '核对' : '细看'}：${unit.name}`, note: unit.tries, primary: true, run: openDesk });
+  items.push(...current.choices.filter((c) => c.enabled).map((c) => ({ id: c.id, label: c.label, run: () => act(c.id, {}) })));
   for (const action of current.actions) {
-    if (!action.enabled) continue;
+    if (!action.enabled || UNIT_ACTIONS.has(action.id)) continue;
     const [only] = action.parameters;
     if (action.parameters.length === 1 && only.kind === 'select') {
       for (const option of only.options) {
@@ -586,19 +637,32 @@ function optionsFor(current) {
   return items;
 }
 
-function showChoices(items = optionsFor(view)) {
-  const box = $('choices');
-  box.replaceChildren(el('p', 'prompt', '你要怎么做？'));
+function openDesk() {
+  if (busy || !view) return;
+  deskClosedFor = '';
+  hideChoices();
+  desk.show(view);
+}
+
+function showChoices(items) {
+  if (!items && view && !view.ended && unitKey(view) && unitKey(view) !== deskClosedFor) {
+    // 场景里有尚未完成的调查：直接打开调查台（暂离后改为选项里的入口）。
+    hideChoices();
+    desk.show(view);
+    return;
+  }
   const list = el('div', 'choice-list');
-  items.forEach((item, index) => {
-    const button = el('button', 'choice');
+  (items || optionsFor(view)).forEach((item, index) => {
+    const button = el('button', `choice${item.primary ? ' primary' : ''}`);
     button.type = 'button';
+    if (item.id) button.dataset.action = item.id;
     button.append(el('span', 'num', String(index + 1)), el('span', 'label', item.label));
     if (item.note) button.append(el('span', 'note', item.note));
     button.addEventListener('click', item.run);
     list.append(button);
   });
-  box.append(list);
+  const box = $('choices');
+  box.replaceChildren(el('p', 'prompt', '你要怎么做？'), list);
   box.hidden = false;
   requestAnimationFrame(() => box.classList.add('show'));
   list.querySelector('button')?.focus({ preventScroll: true });
@@ -641,6 +705,32 @@ function openForm(action) {
     act(action.id, Object.fromEntries(Object.entries(fields).map(([key, select]) => [key, select.value])));
   });
   box.append(form);
+}
+
+/**
+ * 调查台的操作：查看、核对、提示。结果先由会话判定；核对通过或剧情换场时，
+ * 先播落章动画，再按普通结果演出反馈；其余情况把结果交回调查台显示。
+ */
+async function sendUnit(actionId, values) {
+  if (busy) return null;
+  const previous = view;
+  const result = await call({ method: 'action', action: { action_id: actionId, expected_revision: view.revision, values } });
+  updateNotes(result.view);
+  if (!result.error_code) await syncSaves(result.view);
+  view = result.view;
+  const solved = !result.error_code && result.messages.some((m) => m.startsWith('【核对完成】'));
+  const moved = result.view.scene_id !== previous.scene_id || result.view.ended;
+  if (!solved && !moved) return result;
+  busy = true;
+  try {
+    if (solved) await desk.celebrate();
+    else desk.close(true);
+    await present(result, previous);
+  } finally {
+    busy = false;
+    runPendingRollback();
+  }
+  return null;
 }
 
 // ---------- 随身笔记：随时查看线索与当前场景，不推进剧情 ----------
@@ -691,11 +781,11 @@ function renderNotebook() {
     people.append(meters);
     body.append(people);
   }
-  if (autosaves.length) {
-    const saves = el('section', 'nb-section');
-    saves.append(el('h3', 'nb-heading', '自动存档（回到存档点不消耗机会，之后的进度会作废）'));
+  if (saves.length) {
+    const section = el('section', 'nb-section');
+    section.append(el('h3', 'nb-heading', '自动存档（回到存档点不消耗机会，之后的进度会作废）'));
     const list = el('ul', 'nb-saves');
-    for (const entry of [...autosaves].sort((a, b) => b.at - a.at)) {
+    for (const entry of [...saves].sort((a, b) => b.at - a.at)) {
       const item = el('li', 'nb-save');
       const info = el('span', 'nb-save-info');
       info.append(el('strong', '', entry.label), el('span', '', ` ${entry.scene} · 第 ${entry.turn} 回合`));
@@ -716,13 +806,14 @@ function renderNotebook() {
           toast(`正在回到存档点 · ${entry.label}`);
           return;
         }
+        closeNotebook();
         rollbackTo(entry);
       });
       item.append(info, go);
       list.append(item);
     }
-    saves.append(list);
-    body.append(saves);
+    section.append(list);
+    body.append(section);
   }
   body.append(scene);
 }
@@ -786,16 +877,8 @@ async function act(actionId, values) {
   hideCard();
   try {
     const previous = view;
-    const save = await call({ method: 'export' });
-    const at = Date.now();
     const result = await call({ method: 'action', action: { action_id: actionId, expected_revision: view.revision, values } });
-    if (!result.error_code) {
-      checkpoint = { save, at };
-      for (const mark of result.messages.filter((m) => m.startsWith(CHECKPOINT))) {
-        await recordAutosave(mark.slice(CHECKPOINT.length), result.view);
-      }
-      result.messages = result.messages.filter((m) => !m.startsWith(CHECKPOINT));
-    }
+    if (!result.error_code) await syncSaves(result.view);
     await present(result, previous);
   } catch (error) {
     await type(`出了点问题：${error.message}`);
@@ -808,24 +891,22 @@ async function act(actionId, values) {
 }
 
 async function restart() {
-  if (busy) return;
+  if (busy || desk.busy) return;
   busy = true;
   hideChoices();
   hideCard();
+  desk.reset();
   actTitle = THEME.firstAct;
   seen = new Set();
-  checkpoint = null;
-  chances = CHANCES;
-  mistakes = 0;
-  rollbacks = 0;
-  autosaves = [];
-  saveAutosaves();
-  updateChances();
+  saves = [];
+  lastPoint = null;
+  deskClosedFor = '';
+  writeSaves();
   closeNotebook();
   try {
     booting = null;
     const result = await boot();
-    await recordAutosave('开场', result.view);
+    await syncSaves(result.view);
     await present(result, null);
   } finally {
     busy = false;
@@ -835,9 +916,10 @@ async function restart() {
 async function opening() {
   stage.show(...THEME.opening);
   sound.setAmbience(AMBIENCE[THEME.opening[0]] || 'harbor');
+  sound.setMusic(musicFor(...THEME.opening));
   await stage.fade(0, T(2200));
   setTimeout(() => (SHIP ? sound.beep() : sound.foghorn()), T(600));
-  showCard('TaleLoom 织境 · 影像模式', THEME.title, THEME.place);
+  showCard('TaleLoom 织境 · 影像模式', THEME.title, THEME.subtitle ? `${THEME.subtitle} · ${THEME.place}` : THEME.place);
   await hold(4200);
   hideCard();
   await sleep(1400);
@@ -848,15 +930,15 @@ async function begin(resume = null) {
   $('resume').disabled = true;
   await sound.start();
   $('intro').classList.add('gone');
-  busy = true;
   try {
     if (resume) {
-      await boot();
-      busy = false;
-      return await rollbackTo(resume, { counted: false });
+      const result = await boot();
+      view = result.view;
+      return await rollbackTo(resume, { resume: true });
     }
-    autosaves = [];
-    saveAutosaves();
+    busy = true;
+    saves = [];
+    writeSaves();
     const intro = opening();
     let result;
     try {
@@ -870,7 +952,7 @@ async function begin(resume = null) {
       return;
     }
     await intro;
-    await recordAutosave('开场', result.view);
+    await syncSaves(result.view);
     await present(result, null);
   } finally {
     busy = false;
@@ -879,19 +961,44 @@ async function begin(resume = null) {
 
 $('begin').addEventListener('click', () => begin());
 (() => {
-  const saved = latestAutosave();
+  const saved = latestSave();
   if (!saved) return;
   $('resume').hidden = false;
   $('resume').textContent = `从存档点继续：${saved.label}`;
   $('resume').addEventListener('click', () => begin(saved));
 })();
 $('restart').addEventListener('click', restart);
+
+// ---------- 声音：静音与音量（只记在本机，读不到时用默认值） ----------
+
+function remember(key, value) {
+  try { localStorage.setItem(`taleloom:cinematic:${key}`, value); } catch { /* 本页有效 */ }
+}
+function recall(key) {
+  try { return localStorage.getItem(`taleloom:cinematic:${key}`); } catch { return null; }
+}
+function showMute() {
+  $('mute').textContent = sound.muted ? '声音：关' : '声音：开';
+  $('mute').setAttribute('aria-pressed', String(sound.muted));
+}
 $('mute').addEventListener('click', () => {
-  const muted = !sound.muted;
-  sound.setMuted(muted);
-  $('mute').textContent = muted ? '声音：关' : '声音：开';
-  $('mute').setAttribute('aria-pressed', String(muted));
+  sound.setMuted(!sound.muted);
+  remember('muted', sound.muted ? '1' : '0');
+  showMute();
 });
+$('volume').addEventListener('input', () => {
+  sound.setVolume(Number($('volume').value) / 100);
+  remember('volume', $('volume').value);
+});
+(() => {
+  const volume = Number(recall('volume'));
+  if (recall('volume') !== null && Number.isFinite(volume)) {
+    $('volume').value = String(volume);
+    sound.setVolume(volume / 100);
+  }
+  sound.setMuted(recall('muted') === '1');
+  showMute();
+})();
 
 // 胶片颗粒：生成一次噪声贴图（CSP 允许 data: 图片）。
 (() => {
@@ -910,6 +1017,12 @@ $('mute').addEventListener('click', () => {
   g.putImageData(img, 0, 0);
   $('grain').style.backgroundImage = `url(${c.toDataURL()})`;
 })();
+
+// 浏览器测试用的只读状态：是否在等待玩家操作（不影响游戏）。
+window.__cinematic = {
+  ready: () => Boolean(view) && !busy && !desk.busy && (desk.open || !$('choices').hidden),
+  sound,
+};
 
 // 提前下载运行环境，开场动画期间完成加载。
 boot().catch(() => {});

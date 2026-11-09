@@ -1,0 +1,85 @@
+# 根据秘密外出与私信指认阿芸；周整理过材料，原件在见证下找回。
+# expect: wrong
+问从旅馆到值房怎么走
+看交割通知
+提着公文袋去旅馆
+细看 tags/tag_a
+细看 tags/tag_b
+细看 tags/book
+核对 tags mine row12 theirs
+收好行李签，去饭厅
+核对工钱册
+饭后随陈掌柜去账房
+回房，等十一点后来取材料
+细看 scene_a01/wound
+细看 scene_a01/cloth
+细看 scene_a01/weight
+保持原位，记下所见再喊人
+提议两人见证，一起记录现场
+细看 lamp/front
+细看 lamp/back
+细看 lamp/letter
+核对 lamp debt supply gone
+去看后窗
+细看 window/latch
+细看 window/sill
+细看 window/wall
+假说：顾可能为欠据进了账房。下一步核实行踪
+请顾亲手展开纸片，对照账页撕边
+细看 paper/face
+细看 paper/flip
+细看 paper/stub
+核对 paper iou middle
+收好拼合的纸，去后厨
+核对 claims until claim
+请阿芸到廊下单独说
+你愿意重新说一遍行踪吗？
+去值房
+细看 duty/book
+细看 duty/xu
+细看 duty/fares
+核对 duty gu wall ferry
+带着短渡记录去找顾
+你在账房还看见什么？
+把记录分成三列
+核对 timeline tea letter towel ferry window found
+下一步查背面账目和周说不清的时段
+细看 batch/confirm
+细看 batch/trace
+核对 batch s584 c200 batch
+把差额留在空栏，去看交割材料
+“你承认今年有差额？”
+请他自己决定，给不给你看
+继续核对其余材料
+细看 roster/ledger
+细看 roster/roster
+细看 roster/family
+核对 roster cleared repair
+把旧款记下，回到账桌
+核对 sums gu_debt zhou_new relief_old new_old
+去找失踪的镇纸
+细看 vat/lid
+细看 vat/rim
+细看 vat/floor
+核对 vat witness lid lamp pole
+把缸底的东西取上来
+细看 weight/bottom
+细看 weight/corner
+核对 weight gull repair
+翻开最早的现场记录，请周在见证下展开左袖
+细看 sleeve/cuff
+细看 sleeve/record
+核对 sleeve edge stitch
+不再追问，先把东西收好
+让周整理，自己转身去问话
+在见证下查看旧票箱
+核对 box witness move liner
+把找回的确认函放回清单
+核对 seal new old evid_a evid_b
+封好袋口，等天亮
+指认阿芸
+核对 q_ayun letter
+核对 q_ayun letter
+把记录交给众人核对
+完整登记旧救济款，另交索问记录
+签下：指认阿芸
