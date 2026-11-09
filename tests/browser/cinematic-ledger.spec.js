@@ -113,7 +113,7 @@ test('灯下残页：进场不给细节，查看后才记入；答错可重试�
   await expect(desk.locator('.desk-feedback')).toHaveText('两面标题不同，先核对它们分别属于哪笔账。');
   await expect(desk).toBeVisible();
   await expect(desk.locator('.desk-tries')).toHaveText('已尝试 1 次');
-  await expect(page.locator('#choices button[data-action="window"]')).toHaveCount(0);
+  await expect(page.locator('#choices button[data-action="choice:window"]')).toHaveCount(0);
 
   // 分层提示：从“看哪里”开始。
   await desk.locator('.desk-hint').click();
@@ -125,7 +125,7 @@ test('灯下残页：进场不给细节，查看后才记入；答错可重试�
   await desk.locator('input[name="slot-front"][value="debt"]').check({ force: true });
   await desk.locator('.desk-submit').evaluate((button) => { button.click(); button.click(); });
   await ready(page);
-  await expect(page.locator('#choices button[data-action="window"]')).toBeVisible();
+  await expect(page.locator('#choices button[data-action="choice:window"]')).toBeVisible();
   expect(await notes(page)).toBe(count + 1);
 });
 
@@ -146,7 +146,7 @@ test('后厨水缸：观察痕迹，错误的取物步骤给出反馈，正确�
   await solve(page, { unit: 'vat', s1: 'witness', s2: 'lid', s3: 'lamp', s4: 'pole' });
   await ready(page);
   await closeDesk(page);
-  await page.locator('#choices button[data-action="lift"]').click();
+  await page.locator('#choices button[data-action="choice:lift"]').click();
   await ready(page);
   await expect(desk.locator('.desk-title')).toHaveText('镇纸认物');
   for (const spot of ['bottom', 'corner']) {
@@ -158,7 +158,7 @@ test('后厨水缸：观察痕迹，错误的取物步骤给出反馈，正确�
   await expect(desk.locator('.desk-feedback')).toContainText('只有它才有的记号');
   await solve(page, { unit: 'weight', mark1: 'gull', mark2: 'repair' });
   await ready(page);
-  await expect(page.locator('#choices button[data-action="sleeve"]')).toBeVisible();
+  await expect(page.locator('#choices button[data-action="choice:sleeve"]')).toBeVisible();
   await page.getByRole('button', { name: /线索笔记/ }).click();
   await expect(page.locator('#notebook')).toContainText('水缸里的镇纸');
 });
@@ -174,7 +174,7 @@ test('存档点：刷新后继续，回到更早的存档点，后面的存档�
   await back.click();
   await ready(page);
   await closeDesk(page);
-  await expect(page.locator('#choices button[data-action="still"]')).toBeVisible();
+  await expect(page.locator('#choices button[data-action="choice:still"]')).toBeVisible();
   const kept = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).entries.map((e) => e.label), KEY);
   expect(kept).toEqual(['一 · 夜深取账']);
 
@@ -183,11 +183,11 @@ test('存档点：刷新后继续，回到更早的存档点，后面的存档�
   await page.locator('#resume').click();
   await ready(page);
   await closeDesk(page);
-  await expect(page.locator('#choices button[data-action="still"]')).toBeVisible();
+  await expect(page.locator('#choices button[data-action="choice:still"]')).toBeVisible();
 
   await page.locator('#restart').click();
   await ready(page);
-  await expect(page.locator('#choices button[data-action="route"]')).toBeVisible();
+  await expect(page.locator('#choices button[data-action="choice:route"]')).toBeVisible();
   const fresh = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).entries.map((e) => e.label), KEY);
   expect(fresh).toEqual(['开场']);
 });
@@ -198,7 +198,7 @@ for (const [walkthrough, ending, choice] of [
 ]) {
   test(`结局：${ending}`, async ({ page }) => {
     await resumeAt(page, walkthrough, [['e04_sign', '测试 · 最后签字']]);
-    await page.locator(`#choices button[data-action="${choice}"]`).click();
+    await page.locator(`#choices button[data-action="choice:${choice}"]`).click();
     await expect(page.locator('#card')).toContainText(ending);
     await expect(page.locator('#choices').getByRole('button', { name: /回到存档点「测试 · 最后签字」|重新开始/ }).first()).toBeVisible();
   });
@@ -214,7 +214,7 @@ test('手机竖屏：调查台排在画面下方，可以完整作答，没有�
   for (const box of await page.locator('#desk .tile').all()) expect((await box.boundingBox()).height).toBeGreaterThanOrEqual(36);
   await solve(page, VECTORS.truth.actions.find((a) => a.values.unit === 'timeline' && a.values.p1 === 'tea').values);
   await ready(page);
-  await expect(page.locator('#choices button[data-action="next_zhou"]')).toBeVisible();
+  await expect(page.locator('#choices button[data-action="choice:next_zhou"]')).toBeVisible();
 });
 
 test('手机横屏：调查台在画面里滚动，按钮都能点到', async ({ page }) => {
@@ -225,7 +225,7 @@ test('手机横屏：调查台在画面里滚动，按钮都能点到', async ({
   expect(box.y + box.height).toBeLessThanOrEqual(390 + 1);
   await solve(page, { unit: 'sums', m300: 'gu_debt', m384: 'zhou_new', m340: 'relief_old', merge: 'new_old' });
   await ready(page);
-  await expect(page.locator('#choices button[data-action="kitchen"]')).toBeVisible();
+  await expect(page.locator('#choices button[data-action="choice:kitchen"]')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
@@ -256,7 +256,7 @@ test('减少动态效果：调查台照常核对，结果不依赖动画', async
   await resumeAt(page, 'truth', [['b02_kitchen', '测试 · 两句话']]);
   await solve(page, { unit: 'claims', sentence: 'until', record: 'claim' });
   await ready(page);
-  await expect(page.locator('#choices button[data-action="private"]')).toBeVisible();
+  await expect(page.locator('#choices button[data-action="choice:private"]')).toBeVisible();
 });
 
 test('声音：静音与音量会记住；转入后台时暂停，回来不叠加；重要声音有文字说明', async ({ page }) => {
