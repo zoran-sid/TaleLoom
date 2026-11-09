@@ -24,7 +24,7 @@
 | ZQO | — | 先接受仓库邀请；`taleloom/session.py` 实现 `GameSession`，以及文本插值与可复现随机（[#16](https://github.com/zoran-sid/TaleLoom/issues/16)） | `taleloom/session_factory.py` 改一行，桌面和网页同时切换 |
 | ZRS | 桌面 GUI、网页正式界面、道具“用在某处”（PR #9） | 真实剧本测试迁到集成测试（[#14](https://github.com/zoran-sid/TaleLoom/issues/14)）、窗口测试在 CI 运行（[#15](https://github.com/zoran-sid/TaleLoom/issues/15)）、与 LQ 商定桌面存档归属（[#13](https://github.com/zoran-sid/TaleLoom/issues/13)） | — |
 | ZC | 共享契约、网页运行时与部署（PR #3–#6）、启动入口；推理插件、剧本 A 扩写、打包脚本（PR #10） | CI 虚拟显示器（[#15](https://github.com/zoran-sid/TaleLoom/issues/15)）；Cloudflare 非生产分支预览；整合各成员 PR | — |
-| LQ | 工作计划与存档问题核对（PR #8） | 优先：剧本 B 声明氧气资源（[#11](https://github.com/zoran-sid/TaleLoom/issues/11)）；存档编码与校验（[#12](https://github.com/zoran-sid/TaleLoom/issues/12)）、桌面存档归属（[#13](https://github.com/zoran-sid/TaleLoom/issues/13)）；之后 `web/storage/`、随机探索、剧本 B 扩写 | `taleloom/legacy_session.py` 的 `export_save`／`_decode` 改用 LQ 的编码器；`web/preview/storage.js` 由 `web/storage/` 替换 |
+| LQ | 工作计划与存档核对（PR #8）；存档、正式存储、探索与剧本 B 已实现并本地验证（[PR #22](https://github.com/zoran-sid/TaleLoom/pull/22)，待审阅/合并） | 氧气修复 [#21](https://github.com/zoran-sid/TaleLoom/pull/21)；按 #19/#20 → #22 顺序审阅整合，详见 PR 验证与对接说明 | 统一编码器已接兼容/正式会话；唯一 FileSaveStore 位于 `storage.py`；正式网页存储 `web/storage/`；最终材料仍在功能冻结后完成 |
 
 ## 1 分工总览
 
