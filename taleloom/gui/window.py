@@ -138,10 +138,13 @@ class TaleLoomWindow:
             row=1, column=0, sticky="w", pady=(4, 18))
         self.catalog_problem = ttk.Label(self.library, style="Muted.TLabel", wraplength=760)
         self.catalog_problem.grid(row=2, column=0, sticky="w")
+        self.open_error = ttk.Label(self.library, style="Muted.TLabel", wraplength=760, foreground="#8a3324")
+        self.open_error.grid(row=3, column=0, sticky="w", pady=(0, 8))
+        self.open_error.grid_remove()
         self.shelf = ttk.Frame(self.library)
-        self.shelf.grid(row=3, column=0, sticky="nsew")
+        self.shelf.grid(row=4, column=0, sticky="nsew")
         self.shelf.columnconfigure(0, weight=1)
-        self.library.rowconfigure(3, weight=1)
+        self.library.rowconfigure(4, weight=1)
 
     def _fill_shelf(self) -> None:
         for child in self.shelf.winfo_children():
@@ -170,6 +173,7 @@ class TaleLoomWindow:
         self.controller.home()
         self.controller.load_catalog()
         self._fill_shelf()
+        self.open_error.grid_remove()
         self.game.grid_remove()
         self.library.grid()
         self._set_busy(False)
@@ -262,8 +266,20 @@ class TaleLoomWindow:
     def _start(self, story_id: str, resume: bool) -> None:
         if self.controller.start(story_id, resume):
             self._show_game()
-        else:
-            self.show_library()
+            return
+        # 失败时留在书架并显示原因；show_library 会清掉 controller.error。
+        failed = self.controller.error or "无法打开这个剧本。"
+        self.controller.home()
+        self.controller.load_catalog()
+        self._fill_shelf()
+        self.game.grid_remove()
+        self.library.grid()
+        self._set_busy(False)
+        self.open_error.configure(text=failed)
+        self.open_error.grid()
+        first = next(iter(self._story_buttons.values()), None)
+        if first is not None:
+            first.focus_set()
 
     def _show_game(self) -> None:
         self.library.grid_remove()
@@ -328,34 +344,43 @@ class TaleLoomWindow:
             self.actions.columnconfigure(index, weight=1)
 
     def _render_action_form(self, action: ActionSpec, row: int) -> None:
+        """每个参数一行：标签在上、控件占满整行，递交按钮单独一行。
+
+        指认需要四个参数；横排会让表单比窗口还宽，递交按钮被挤出可视区域，
+        所以这里按纵向排布，任何窗口宽度下都能完整操作。
+        """
         card = ttk.Frame(self.actions, style="Card.TFrame", padding=(14, 12))
         card.grid(row=row, column=0, sticky="ew", pady=(0, 8))
         card.columnconfigure(0, weight=1)
         ttk.Label(card, text=action.label, style="Card.TLabel").grid(row=0, column=0, sticky="w")
         if action.disabled_reason:
             ttk.Label(card, text=action.disabled_reason, style="CardMuted.TLabel").grid(
-                row=0, column=1, sticky="e")
-        fields = ttk.Frame(card, style="Card.TFrame")
-        fields.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(8, 0))
+                row=1, column=0, sticky="w", pady=(4, 0))
         variables = {}
-        for column, parameter in enumerate(action.parameters):
-            ttk.Label(fields, text=parameter.label, style="CardMuted.TLabel").grid(
-                row=0, column=column, sticky="w", padx=(0, 10))
+        next_row = 2
+        for parameter in action.parameters:
+            ttk.Label(card, text=parameter.label, style="CardMuted.TLabel").grid(
+                row=next_row, column=0, sticky="w", pady=(8, 2))
             if parameter.kind == "text":
                 var = tk.StringVar()
-                entry = ttk.Entry(fields, textvariable=var, width=18)
+                control = ttk.Entry(card, textvariable=var)
             else:
                 labels = [option.label for option in parameter.options]
                 var = tk.StringVar(value=labels[0] if labels else "")
                 if parameter.key == "second" and len(labels) > 1:
                     var.set(labels[1])
-                entry = ttk.Combobox(fields, textvariable=var, values=labels, state="readonly", width=18)
-            entry.grid(row=1, column=column, sticky="w", padx=(0, 10))
+                control = ttk.Combobox(
+                    card, textvariable=var, values=labels,
+                    state="disabled" if not action.enabled else "readonly")
+            if action.enabled and parameter.kind == "text":
+                control.configure(state="normal")
+            control.grid(row=next_row + 1, column=0, sticky="ew")
             variables[parameter.key] = (var, parameter)
-        submit = ttk.Button(
-            fields, text=action.label, state="disabled" if (self._busy or not action.enabled) else "normal",
-            command=lambda spec=action, vars_=variables: self._submit_parameters(spec, vars_))
-        submit.grid(row=1, column=len(action.parameters), sticky="e", padx=(6, 0))
+            next_row += 2
+        ttk.Button(
+            card, text=action.label, state="disabled" if (self._busy or not action.enabled) else "normal",
+            command=lambda spec=action, vars_=variables: self._submit_parameters(spec, vars_),
+        ).grid(row=next_row, column=0, sticky="ew", pady=(10, 0))
 
     def _submit_parameters(self, action: ActionSpec, variables: dict) -> None:
         values = {}

@@ -93,5 +93,6 @@ test('测试替身：手机宽度无横向溢出', async ({ page }) => {
   await open(page);
   await act(page, 'choice:take');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await expect(page.locator('#actions form')).toBeVisible();
+  await expect(page.locator('form[data-action="puzzle:use"]')).toBeVisible();
+  await expect(page.locator('form[data-action="mystery:accuse"]')).toBeVisible();
 });

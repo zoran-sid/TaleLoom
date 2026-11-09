@@ -2,12 +2,11 @@
 
 不导入 Tkinter：只处理「选剧本 → 开始／继续 → 提交动作 → 存读档」的流程，
 窗口只负责把 self.view 画出来。开发和测试时注入 tests.ui_fakes 的会话与
-存储；正式运行时由 taleloom.session_factory.create_session 与 FileSaveStore 提供。
+存储；正式运行时由 taleloom.session_factory.create_session 与 gui.storage.FileSaveStore 提供。
 """
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Protocol
@@ -15,10 +14,11 @@ from typing import Callable, Protocol
 from ..loader import StoryFormatError, load_story
 from ..model import Story
 from ..ui_contract import (
-    ActionRequest, GameSession, JsonObject, SaveStore, SessionResult,
-    StorageError, ViewSnapshot,
+    ActionRequest, GameSession, SaveStore, SessionResult, StorageError, ViewSnapshot,
 )
 from ..validator import errors, validate
+# 桌面文件存储暂时放在本包；LQ 交付正式实现后只改这一行（issue #13）。
+from .storage import FileSaveStore
 
 QUICK_SLOT = "quick"
 
@@ -35,56 +35,6 @@ class StoryEntry:
 
 class SessionFactory(Protocol):
     def __call__(self, story: Story) -> GameSession: ...
-
-
-class FileSaveStore:
-    """桌面文件存档：每个槽一个 JSON 文件，写入成功前保留旧档。
-
-    槽名只允许字母、数字、下划线和短横线；写入先写临时文件再替换。
-    读写失败统一转换为 StorageError，界面只展示 message，不崩溃。
-    """
-
-    def __init__(self, folder: str | Path):
-        self.folder = Path(folder)
-
-    def list_slots(self) -> list[str]:
-        if not self.folder.is_dir():
-            return []
-        return sorted(path.stem for path in self.folder.glob("*.json") if valid_slot(path.stem))
-
-    def read(self, slot: str) -> JsonObject:
-        path = self._path(slot)
-        if not path.is_file():
-            raise StorageError(f"没有找到存档“{slot}”。先保存一次进度再读取。")
-        try:
-            payload = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise StorageError(f"存档“{slot}”无法读取：{exc}") from exc
-        if not isinstance(payload, dict):
-            raise StorageError(f"存档“{slot}”内容无效。")
-        return payload
-
-    def write(self, slot: str, payload: JsonObject) -> None:
-        path = self._path(slot)
-        tmp = path.with_suffix(".json.tmp")
-        try:
-            self.folder.mkdir(parents=True, exist_ok=True)
-            tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-            tmp.replace(path)
-        except (OSError, TypeError, ValueError) as exc:
-            tmp.unlink(missing_ok=True)
-            raise StorageError(f"无法保存到 {self.folder}：{exc}") from exc
-
-    def _path(self, slot: str) -> Path:
-        if not valid_slot(slot):
-            raise StorageError(f"存档名称无效：{slot!r}")
-        return self.folder / f"{slot}.json"
-
-
-def valid_slot(slot: str) -> bool:
-    """槽名直接变成文件名，因此限制字符与长度，避免路径穿越。"""
-    return (isinstance(slot, str) and 0 < len(slot) <= 60
-            and slot.replace("_", "").replace("-", "").isalnum())
 
 
 def load_catalog(stories_dir: str | Path) -> tuple[list[StoryEntry], list[str]]:
