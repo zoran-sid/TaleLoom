@@ -10,7 +10,7 @@ from __future__ import annotations
 from copy import deepcopy
 
 from taleloom.ui_contract import (
-    ActionParameter, ActionRequest, ActionSpec, DisplayItem, JsonObject,
+    CheckpointView, ActionParameter, ActionRequest, ActionSpec, DisplayItem, JsonObject,
     ResourceView, SessionResult, StorageError, ViewSnapshot,
 )
 
@@ -22,6 +22,7 @@ class FakeGameSession:
         self._started = False
         self._step = 0
         self._revision = 0
+        self._rewinds = 0
 
     def start(self) -> SessionResult:
         """幂等开始，不重复增加回合。"""
@@ -43,6 +44,8 @@ class FakeGameSession:
             clues=[DisplayItem("note", "门边便条", "钥匙可以开门。")],
             ended=ended, ending_id="out" if ended else None,
             ending_title="出门" if ended else None,
+            ending_kind="normal" if ended else None,
+            checkpoint=CheckpointView("hall", "开场", "hall", 0), rewinds=self._rewinds,
         )
         if self._step >= 1:
             view.inventory = [DisplayItem("key", "钥匙", "一把铜钥匙。")]
@@ -73,17 +76,39 @@ class FakeGameSession:
     def export_save(self) -> JsonObject:
         """导出测试专用格式，禁止作为正式游戏存档使用。"""
         self.snapshot()
-        return {"fixture": "ui_demo", "step": self._step}
+        return {"fixture": "ui_demo", "step": self._step, "rewinds": self._rewinds}
 
     def restore(self, payload: JsonObject) -> SessionResult:
         """恢复测试进度并递增会话版本，拒绝损坏的测试数据。"""
         view = self.snapshot()
         if (not isinstance(payload, dict) or payload.get("fixture") != "ui_demo"
-                or type(payload.get("step")) is not int or payload["step"] not in (0, 1, 2)):
+                or type(payload.get("step")) is not int or payload["step"] not in (0, 1, 2)
+                or type(payload.get("rewinds", 0)) is not int or payload.get("rewinds", 0) < 0):
             return SessionResult(view, ["测试存档无效。"], "invalid_save")
         self._step = payload["step"]
+        self._rewinds = payload.get("rewinds", 0)
         self._revision += 1
         return SessionResult(self.snapshot(), ["已恢复测试进度。"])
+
+    def list_checkpoints(self):
+        """固定样例只有开场节点，不模拟真实剧本的自动存档。"""
+        self.snapshot()
+        return [CheckpointView('hall', '开场', 'hall', 0)]
+
+    def restore_checkpoint(self, checkpoint_id, expected_revision):
+        """演示免费回开场；失败分支由真实会话约定测试覆盖。"""
+        view = self.snapshot()
+        if type(expected_revision) is not int or expected_revision != self._revision:
+            return SessionResult(view, ['画面已更新。'], 'stale_revision')
+        if checkpoint_id != 'hall':
+            return SessionResult(view, ['存档点不存在。'], 'invalid_checkpoint')
+        return self.restore({'fixture': 'ui_demo', 'step': 0, 'rewinds': self._rewinds + 1})
+
+    def rewind(self, expected_revision):
+        """固定样例没有失败结局，因此没有可重试选择。"""
+        view = self.snapshot()
+        code = 'rewind_unavailable' if type(expected_revision) is int and expected_revision == self._revision else 'stale_revision'
+        return SessionResult(view, ['当前没有可回退的失败选择。'], code)
 
 
 class MemorySaveStore:

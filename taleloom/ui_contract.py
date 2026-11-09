@@ -56,6 +56,16 @@ class ResourceView:
 
 
 @dataclass
+class CheckpointView:
+    """已到达存档点的可见摘要；不向界面暴露保存的隐藏游戏状态。"""
+
+    id: str
+    label: str
+    scene_id: str
+    turn: int
+
+
+@dataclass
 class ViewSnapshot:
     """完整显示快照；仅含玩家可见数据，读取和修改返回值不能改变游戏。"""
 
@@ -76,6 +86,15 @@ class ViewSnapshot:
     ending_id: str | None = None
     ending_title: str | None = None
     protocol_version: int = PROTOCOL_VERSION
+
+    # 影像模式扩展：旧展示端可忽略；缺少素材时继续显示文字。
+    art: str | None = None
+    ending_kind: Literal["normal", "failure"] | None = None
+    checkpoint: CheckpointView | None = None
+    mistakes: int = 0
+    rewinds: int = 0
+    rewind_limit: int = 3
+    rewinds_remaining: int = 3
 
     def to_dict(self) -> JsonObject:
         """导出独立的 JSON 可序列化数据，供浏览器消息传递。"""
@@ -142,6 +161,18 @@ class GameSession(Protocol):
 
     def restore(self, payload: JsonObject) -> SessionResult:
         """验证后恢复当前剧本的存档；失败保留当前会话，成功使旧动作失效。"""
+        ...
+
+    def list_checkpoints(self) -> list[CheckpointView]:
+        """按到达顺序返回独立摘要；不泄漏未到达节点，也不改变状态。"""
+        ...
+
+    def restore_checkpoint(self, checkpoint_id: str, expected_revision: int) -> SessionResult:
+        """免费回到已到达节点，丢弃之后的存档点，累计一次 rewinds。"""
+        ...
+
+    def rewind(self, expected_revision: int) -> SessionResult:
+        """失败后回到上一个选择；成功消耗一次机会并累计一次 mistakes。"""
         ...
 
 

@@ -444,11 +444,54 @@ class TaleLoomWindow:
             self.ending.grid_remove()
             return
         self.ending.grid(row=8, column=0, sticky="ew", pady=(18, 0))
-        ttk.Label(self.ending, text="这一页，已写下结局。", style="Card.TLabel").pack(anchor="w")
+        failed = self.controller.failed
+        title = "这一页，任务失败。" if failed else "这一页，已写下结局。"
+        ttk.Label(self.ending, text=title, style="Card.TLabel").pack(anchor="w")
+        if failed:
+            ttk.Label(self.ending, style="CardMuted.TLabel",
+                      text=f"还剩 {self.controller.chances_left} 次机会回到上一个选择；"
+                           f"回到存档点不消耗机会。").pack(anchor="w", pady=(6, 0))
         buttons = ttk.Frame(self.ending, style="Card.TFrame")
         buttons.pack(anchor="w", pady=(10, 0))
-        ttk.Button(buttons, text="再读一遍", style="Primary.TButton", command=self._restart).pack(side="left")
+        if self.controller.can_rewind:
+            ttk.Button(buttons, text=f"回到上一个选择（还剩 {self.controller.chances_left} 次）",
+                       style="Primary.TButton", command=self._rewind).pack(side="left")
+        ttk.Button(buttons, text="再读一遍", style="Primary.TButton", command=self._restart).pack(
+            side="left", padx=(8, 0))
         ttk.Button(buttons, text="返回书架", command=self._go_home).pack(side="left", padx=(8, 0))
+        self._render_checkpoints(failed)
+
+    def _render_checkpoints(self, failed: bool) -> None:
+        """结局页列出关键节点自动存档；失败时可直接回到任一存档点。"""
+        rows = self.controller.checkpoints
+        if not rows:
+            return
+        box = ttk.Frame(self.ending, style="Card.TFrame")
+        box.pack(anchor="w", fill="x", pady=(14, 0))
+        ttk.Label(box, text="关键节点自动存档", style="CardMuted.TLabel").pack(anchor="w")
+        for row in rows:
+            line = ttk.Frame(box, style="Card.TFrame")
+            line.pack(anchor="w", fill="x", pady=(4, 0))
+            ttk.Label(line, style="CardMuted.TLabel",
+                      text=f"{row['label']} · 回合 {row['turn']}").pack(side="left")
+            ttk.Button(line, text="回到这里", command=lambda slot=row["slot"]: self._rollback(slot)).pack(
+                side="left", padx=(10, 0))
+
+    def _rewind(self) -> None:
+        if not messagebox.askyesno(
+                "回到上一个选择",
+                f"回到上一个选择会消耗 1 次机会（还剩 {self.controller.chances_left} 次），继续吗？",
+                parent=self.root):
+            return
+        if self.controller.rewind():
+            self.render()
+
+    def _rollback(self, slot: str) -> None:
+        if not messagebox.askyesno(
+                "回到存档点", "回到存档点后，这个存档点之后的进度会作废。继续吗？", parent=self.root):
+            return
+        if self.controller.rollback_to(slot):
+            self.render()
 
     # ---------- 操作 ----------
     def _status(self, message: str) -> None:

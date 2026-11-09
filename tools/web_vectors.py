@@ -18,10 +18,12 @@ from taleloom.mechanics.puzzle import resolve_item, resolve_target
 from taleloom.session_factory import create_session
 
 
-def build_vectors() -> list:
+def build_vectors(story_files=None) -> list:
     """返回真实脚本的结构化动作、逐步状态与预期结局。"""
     vectors = []
-    for story_file in sorted((ROOT / 'stories').glob('*/story.json')):
+    if story_files is None:
+        story_files = (ROOT / 'stories').glob('*/story.json')
+    for story_file in sorted(story_files):
         story = load_story(story_file)
         for file in sorted((story_file.parent / 'walkthroughs').glob('*.txt')):
             walkthrough = load_walkthrough(file)
@@ -67,7 +69,10 @@ def build_vectors() -> list:
                 output = native.handle(cmd)
                 result = session.dispatch(ActionRequest(action_id, session.snapshot().revision, values))
                 assert result.ok, (file, text, result.messages)
-                assert session.export_save()['state'] == native.state.to_dict(), (file, text)
+                actual_state = session.export_save()['state']
+                # 会话独有的回退元数据不属于 CLI 剧情状态；其余字段逐项相等。
+                actual_state['ext'].pop('session', None)
+                assert actual_state == native.state.to_dict(), (file, text)
                 actions.append({'action_id': action_id, 'values': values})
             assert session.snapshot().ending_id == walkthrough.expect, file
             vectors.append({'story_id': story.id, 'name': walkthrough.name,
