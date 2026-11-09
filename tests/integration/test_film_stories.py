@@ -50,6 +50,39 @@ class FilmStoriesTest(unittest.TestCase):
             all_endings, covered = replay.ending_coverage(story, results)
             self.assertEqual(all_endings - covered, set(), d.name)
 
+    def test_session_walkthroughs_match_native_states_and_preserve_rewind_saves(self):
+        """全部影像脚本逐步对照正式会话与 CLI，结局存档也能恢复。"""
+        from tools.web_vectors import build_vectors
+        vectors = build_vectors(d / 'story.json' for d in FILM_DIRS)
+        self.assertTrue(vectors)
+        stories = {load_story(d).id: load_story(d) for d in FILM_DIRS}
+        for vector in vectors:
+            with self.subTest(story=vector['story_id'], walkthrough=vector['name']):
+                session = create_session(stories[vector['story_id']])
+                session.start()
+                restored = session.restore(vector['save'])
+                self.assertTrue(restored.ok, restored.messages)
+                self.assertEqual(session.export_save(), vector['save'])
+                self.assertEqual(restored.view.ending_id, vector['ending'])
+                if restored.view.ending_kind == 'failure':
+                    self.assertTrue(session.rewind(restored.view.revision).ok)
+                    self.assertFalse(session.snapshot().ended)
+
+    def test_packaged_session_imports_without_workspace_modules(self):
+        """网页 ZIP 必须含正式会话的全部依赖，不能借用工作区模块。"""
+        import subprocess
+        import sys
+        import tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as directory:
+            archive = Path(directory) / 'game.zip'
+            archive.write_bytes(build_web.make_archive(ROOT, []))
+            result = subprocess.run(
+                [sys.executable, '-B', '-I', '-c',
+                 f"import sys; sys.path.insert(0, {str(archive)!r}); from taleloom.session import GameSession"],
+                cwd=directory, text=True, capture_output=True, timeout=15)
+            self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_every_choice_moves_forward_without_loops(self):
         for d in FILM_DIRS:
             story = load_story(d)

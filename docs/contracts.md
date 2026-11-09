@@ -105,6 +105,9 @@ class GameSession(Protocol):
     def dispatch(self, request: ActionRequest) -> SessionResult: ...
     def export_save(self) -> dict: ...
     def restore(self, payload: dict) -> SessionResult: ...
+    def list_checkpoints(self) -> list[CheckpointView]: ...
+    def restore_checkpoint(self, checkpoint_id: str, expected_revision: int) -> SessionResult: ...
+    def rewind(self, expected_revision: int) -> SessionResult: ...
 
 class SaveStore(Protocol):
     def list_slots(self) -> list[str]: ...
@@ -123,6 +126,36 @@ class SaveStore(Protocol):
 - `SaveStore` 只存取数据，预期失败抛 `StorageError`，不泄漏可变引用。文件端保留原子写入；浏览器端通过 JS 桥接异步完成等价操作，不要求 Python 同步等待浏览器消息。首版不承诺跨设备同步。
 - `assets` 为展示角色到剧本相对路径的映射，例如 background／portrait；由 YHT 在素材字段实现时补齐校验，缺失时文字仍可通关。
 
+### 影像模式与回退扩展（ZQO，第二轮 contract）
+
+新增字段均有默认值，`protocol_version` 保持 1，旧前端可忽略：
+
+| 字段 | 含义 |
+| --- | --- |
+| `art: str | None` | 当前场景的画面键；缺少时为 null，由展示端决定文字／默认画面 |
+| `ending_kind: normal | failure | None` | 未结束为 null，普通结局默认 normal |
+| `checkpoint: CheckpointView | None` | 当前分支最近的存档点摘要，不一定是当前场景 |
+| `mistakes` | 成功“回到上一个选择”的次数；与现有影像页计数一致 |
+| `rewinds` | 成功“回到存档点”的次数；不消耗上一步机会 |
+| `rewind_limit / rewinds_remaining` | 本局上一步机会总数／剩余数，默认 3 |
+
+`CheckpointView(id, label, scene_id, turn)` 只含玩家已知摘要，不暴露保存的隐藏状态。
+`create_session(story, seed=None, rewind_limit=3)` 接受非负整数上限（含 0，不接受 bool）。
+正式场景属性 `art/checkpoint` 与 `ending.kind` 由 YHT 解析、校验；本实现用属性读取接入，
+不接管加载器。迁移期间仅在正式属性缺失时兼容 `fail_` 与 `on_enter` 的 `【存档点】` 提示。
+画面键缺失时不复制网页 ART 映射表。
+
+- `start()` 在进入效果完成后保存开场；进入命名节点后自动保存，读取快照不会建立存档点。
+- `list_checkpoints()` 按到达顺序返回独立摘要，只含当前分支已到达节点；重访同一节点时替换旧记录并截去后续分支。
+- `restore_checkpoint(id, expected_revision)` 可在游戏中或结局使用；免费恢复节点，累计 `rewinds`，保留当前 `mistakes` 和机会数；清除节点之后的记录及上一步目标。
+- `rewind(expected_revision)` 仅在 failure 结局且有最近一次成功选择时可用；恢复该选择前的剧情状态和节点列表，成功才增加 `mistakes`、减少机会。普通结局使用存档点返回。
+- 两种回退成功均递增 revision，恢复原 turn、seed、线索、道具、触发器及一次性选择；不再次执行 `on_enter`、不抽新种子。重复旧请求返回 `stale_revision`。
+- 未知／作废节点返回 `invalid_checkpoint`；无失败选择返回 `rewind_unavailable`；机会耗尽返回 `rewind_exhausted`。拒绝操作保留状态、计数和版本。
+- 完整记录以 `state.ext.session` 写入现有 v1 存档：`version=1, rewind_limit, mistakes, rewinds, checkpoints, previous_choice`。节点保存独立 GameState 字典，移除 `ext.session`，避免递归膨胀；只保留一个选择前的状态及当时的节点列表。
+- 标准 `encode_save/decode_save` 与 SaveStore 原样携带 ext；会话恢复时额外校验所有节点、计数、种子和时间顺序，再原子替换。恢复整个存档沿用存档中的计数和上限，不按新会话参数重置。
+- 不含该扩展的旧档仍能读取，计数从 0 开始、沿用构造时上限；仅把读档所在的非结局位置作为可用节点，不捏造过去的选择或节点。
+- ZC 后续在 Worker／`web/cinematic` 暴露并调用上述会话方法；ZRS 接桌面按钮，LQ 接自动持久化。本 PR 保留现有前端流程，用浏览器回归保证它能忽略新字段。
+
 ### 展示端如何取得会话、桌面如何启动
 
 所有展示端只通过一个入口创建会话，不直接实例化具体类：
@@ -135,7 +168,7 @@ session = create_session(load_story("stories/fog_harbor"))   # GameSession
 result = session.start()
 ```
 
-- `taleloom/session_factory.py`（ZC）当前返回 v0 兼容会话 `taleloom/legacy_session.py`。ZQO 的 `taleloom/session.py` 通过本节约定与真实剧本回放后，在这里改一行，桌面、网页和 `tools/web_vectors.py` 同时切换。
+- `taleloom/session_factory.py`（ZC）已统一返回正式会话 `taleloom/session.py`；桌面、网页和 `tools/web_vectors.py` 共用该入口。
 - 桌面 GUI（ZRS）以包 `taleloom.gui` 交付，提供 `run(stories_dir: Path, saves_dir: Path) -> int`（返回进程退出码）。`python main.py` 无参数时调用它；包不存在或当前 Python 没有 Tkinter 时，`main.py` 提示后回退命令行，见 `tests/zc/test_main_entry.py`。
 - GUI 内部只依赖 `GameSession` 与 `SaveStore`，开发阶段用 `tests/ui_fakes.py` 的替身，不 import `engine.py`。
 
