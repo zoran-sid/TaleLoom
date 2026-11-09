@@ -17,7 +17,7 @@
  */
 import './cinematic.css';
 import { GameClient } from '../runtime/client.js';
-import { Stage } from './stage.js';
+import { Stage, hasScene } from './stage.js';
 import { Sound } from './sound.js';
 
 const STORY_ID = new URLSearchParams(location.search).get('story') || 'fog_harbor_film';
@@ -53,6 +53,30 @@ const AMBIENCE = {
   guestroom: 'rain', backyard: 'harbor', zhouroom: 'lobby', attic: 'attic',
   doorway: 'tension', storeroom: 'tension',
 };
+// 主题：雾港（旅馆）与深空（飞船）各有片名、开场、画面与结局画面。
+const SHIP = STORY_ID.startsWith('deep_space');
+const SHIP_ART = {
+  cryo: ['bay'], corridor: ['corridor'], toolroom: ['toolroom'], airlock: ['airlock'],
+  energy: ['energy'], comms: ['comms'], observatory: ['observatory'],
+};
+const THEME = SHIP ? {
+  title: '深空回声', place: '“回声号” · 深空', firstAct: '', opening: ['space', {}], fallback: 'corridor',
+  scenes: SHIP_ART,
+  endings: {
+    escape: ['space', { pod: true }], truth: ['space', { pod: true, dawn: true }],
+    suffocate: ['bay', { dying: true }], blackout: ['corridor', { dark: true }],
+  },
+  failureEnding: ['bay', { dying: true }], defaultEnding: ['space', { pod: true }],
+} : {
+  title: '雾港旧案', place: '一九三一年 · 雾港', firstAct: '第一幕 · 雾夜', opening: ['harbor', {}], fallback: 'generic',
+  scenes: null, endings: null,
+  failureEnding: ['harbor', { storm: true, focus: [760, 600] }], defaultEnding: ['harbor', {}],
+};
+Object.assign(AMBIENCE, {
+  bay: 'alarm', corridor: 'ship', toolroom: 'workshop', airlock: 'ship', energy: 'reactor',
+  comms: 'ship', observatory: 'space', space: 'space',
+});
+
 const SUSPECTS = { 顾先生: 'gu', 周文: 'zhou', 阿芸: 'ayun' };
 const VERBS = { 'mystery:ask': '审问', 'mystery:examine': '深入调查', 'puzzle:use': '使用' };
 
@@ -66,7 +90,7 @@ let sessionId = '';
 let booting = null;
 let view = null;
 let busy = false;
-let actTitle = '第一幕 · 雾夜';
+let actTitle = '';
 let poke = null;
 let paused = false;          // 打开笔记时暂停字幕与转场计时
 let seen = new Set();        // 已经播过描述的场景，回来时不再重播
@@ -246,8 +270,13 @@ function beatsFrom(messages) {
   return beats;
 }
 
+/** 场景 → 画面：主题里的映射优先；否则场景 id 本身或其“_”前的部分是画面键时直接使用。 */
 function artFor(sceneId) {
-  const [name, options = {}] = ART[sceneId] || ['generic'];
+  const prefix = sceneId.split('_')[0];
+  const [name, options = {}] = THEME.scenes[sceneId]
+    || (hasScene(sceneId) ? [sceneId] : null)
+    || (hasScene(prefix) ? [prefix] : null)
+    || [THEME.fallback];
   return { name, options };
 }
 
@@ -317,7 +346,7 @@ async function enterScene(next) {
     hideCard();
     return;
   }
-  showCard(actTitle, next.scene_title, '一九三一年 · 雾港');
+  showCard(actTitle, next.scene_title, THEME.place);
   await hold(1800);
   hideCard();
   await stage.fade(0, T(1300));
@@ -332,15 +361,41 @@ function isFailure(current) {
 
 // 结局 → 画面：失败结局各有专门的画面，其余在港口（天亮或夜里有船离开）。
 const ENDING_ART = {
-  truth: ['harbor', { dawn: true, boat: 'arrive' }],
-  dawn: ['harbor', { dawn: true, boat: 'arrive' }],
-  scapegoat: ['harbor', { boat: 'leave' }],
-  wrong: ['harbor', { boat: 'leave' }],
+  truth: ['harbor', { dawn: true, boat: 'arrive', focus: [980, 470] }],
+  dawn: ['harbor', { dawn: true, boat: 'arrive', focus: [980, 470] }],
+  scapegoat: ['harbor', { boat: 'leave', focus: [1000, 470] }],
+  wrong: ['harbor', { boat: 'leave', focus: [1000, 470] }],
   insufficient: ['harbor', {}],
-  fail_tide: ['harbor', { storm: true }],
+  fail_tide: ['harbor', { storm: true, focus: [760, 600] }],
   fail_caught: ['doorway', {}],
   fail_attacked: ['storeroom', {}],
 };
+
+if (!SHIP) {
+  THEME.scenes = ART;
+  THEME.endings = ENDING_ART;
+}
+actTitle = THEME.firstAct;
+document.title = `${THEME.title} · 影像模式`;
+document.querySelector('#intro h1').textContent = THEME.title;
+document.querySelector('#intro .intro-sub').textContent = THEME.place;
+
+// ---------- 画面内的数值资源（氧气、电量等）；0/1 的状态（如戒心）只放在笔记里 ----------
+
+let lastMeters = {};
+function renderMeters(resources) {
+  const box = $('meters');
+  const shown = resources.filter((r) => r.maximum === null || r.maximum === undefined || r.maximum > 1);
+  box.hidden = !shown.length;
+  box.replaceChildren();
+  for (const r of shown) {
+    const chip = el('span', 'meter', `${r.label} ${r.value}${r.maximum ? `/${r.maximum}` : ''}`);
+    if (r.value <= 3 || (r.maximum && r.value / r.maximum <= 0.25)) chip.classList.add('low');
+    if (lastMeters[r.id] !== undefined && r.value < lastMeters[r.id]) chip.classList.add('drop');
+    box.append(chip);
+  }
+  lastMeters = Object.fromEntries(resources.map((r) => [r.id, r.value]));
+}
 
 function latestAutosave() {
   return autosaves.reduce((best, entry) => (!best || entry.at > best.at ? entry : best), null);
@@ -350,9 +405,9 @@ async function ending(next) {
   clearSubtitle();
   const failed = isFailure(next);
   await stage.fade(1, T(1200));
-  const [art, options] = ENDING_ART[next.ending_id] || ['harbor', { dawn: ['truth', 'dawn'].includes(next.ending_id) }];
+  const [art, options] = THEME.endings[next.ending_id] || (failed ? THEME.failureEnding : THEME.defaultEnding);
   stage.show(art, options);
-  sound.setAmbience(art === 'harbor' ? (options.storm ? 'storm' : 'ending') : 'tension');
+  sound.setAmbience(options.storm ? 'storm' : art === 'harbor' ? 'ending' : failed ? 'tension' : AMBIENCE[art] || 'ending');
   if (failed) stage.shake(900, 14);
   await stage.fade(0, T(1800));
   for (const line of chunks(next.text)) await type(line);
@@ -593,6 +648,7 @@ function openForm(action) {
 function updateNotes(next) {
   const before = notes.clues.length;
   notes = { clues: next.clues, resources: next.resources, sceneTitle: next.scene_title, sceneText: next.text };
+  renderMeters(next.resources);
   $('notes-count').textContent = String(notes.clues.length);
   if (notes.clues.length > before) {
     for (const id of ['notes-toggle', 'notes-btn']) {
@@ -756,7 +812,7 @@ async function restart() {
   busy = true;
   hideChoices();
   hideCard();
-  actTitle = '第一幕 · 雾夜';
+  actTitle = THEME.firstAct;
   seen = new Set();
   checkpoint = null;
   chances = CHANCES;
@@ -777,11 +833,11 @@ async function restart() {
 }
 
 async function opening() {
-  stage.show('harbor');
-  sound.setAmbience('harbor');
+  stage.show(...THEME.opening);
+  sound.setAmbience(AMBIENCE[THEME.opening[0]] || 'harbor');
   await stage.fade(0, T(2200));
-  setTimeout(() => sound.foghorn(), T(600));
-  showCard('TaleLoom 织境 · 影像模式', '雾港旧案', '一九三一年 · 雾港');
+  setTimeout(() => (SHIP ? sound.beep() : sound.foghorn()), T(600));
+  showCard('TaleLoom 织境 · 影像模式', THEME.title, THEME.place);
   await hold(4200);
   hideCard();
   await sleep(1400);

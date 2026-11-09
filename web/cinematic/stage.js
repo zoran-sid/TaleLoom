@@ -1189,22 +1189,416 @@ function storeroom(ctx, s, o, st) {
   shade(ctx, 800, 600, 1100, 0.78);
 }
 
+// ---------- 飞船（《深空回声》） ----------
+
+const RED = '255,64,52';
+const CYAN = '90,200,224';
+
+function stars(ctx, t, seed, count, area) {
+  const r = prng(seed);
+  for (let i = 0; i < count; i += 1) {
+    const x = area[0] + r() * area[2];
+    const y = area[1] + r() * area[3];
+    const tw = 0.35 + 0.65 * Math.abs(Math.sin(t * (0.4 + r()) + i));
+    ctx.fillStyle = `rgba(230,236,255,${(0.25 + r() * 0.6) * tw})`;
+    const size = r() < 0.08 ? 2.4 : 1.4;
+    ctx.fillRect(x, y, size, size);
+  }
+}
+
+function panels(ctx, top, bottom, light) {
+  vfill(ctx, -300, top, W + 600, bottom - top, [[0, '#0b1014'], [1, '#182128']]);
+  ctx.strokeStyle = `rgba(${light},0.07)`;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let x = -280; x < W + 300; x += 160) { ctx.moveTo(x, top); ctx.lineTo(x, bottom); }
+  for (let y = top + 90; y < bottom; y += 140) { ctx.moveTo(-300, y); ctx.lineTo(W + 300, y); }
+  ctx.stroke();
+}
+
+/** 旋转的红色警报灯：光束扫过，整间舱室随之泛红。 */
+function alarm(ctx, x, y, t, strength) {
+  if (strength <= 0) return;
+  const a = t * 2.4;
+  for (const angle of [a, a + Math.PI]) {
+    const c = Math.cos(angle);
+    const g = ctx.createLinearGradient(x, y, x + 900 * c, y + 400);
+    g.addColorStop(0, `rgba(${RED},${0.32 * strength * Math.abs(c)})`);
+    g.addColorStop(1, `rgba(${RED},0)`);
+    poly(ctx, [x, y, x + 900 * c - 160, y + 520, x + 900 * c + 160, y + 520], g);
+  }
+  glow(ctx, x, y, 60, RED, 0.9 * strength);
+  ctx.fillStyle = `rgba(${RED},${0.08 * strength * (0.6 + 0.4 * Math.sin(t * 4.8))})`;
+  ctx.fillRect(-300, -300, W + 600, H + 600);
+}
+
+function bay(ctx, s, o, st) {
+  const power = o.dying ? 1 - ease(s / 9) : 1;
+  panels(ctx, -300, 760, CYAN);
+  vfill(ctx, -300, 760, W + 600, 460, [[0, '#10161b'], [1, '#040506']]);
+  ctx.fillStyle = '#070a0c';
+  ctx.fillRect(-300, 40, W + 600, 26);
+  ctx.fillRect(-300, 90, W + 600, 14);
+  for (let i = 0; i < 4; i += 1) {
+    const x = 160 + i * 360;
+    const open = i === 1;
+    ctx.fillStyle = '#0a0e11';
+    ctx.beginPath();
+    ctx.roundRect(x, 260, 240, 470, 110);
+    ctx.fill();
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(x + 36, 300, 168, 300, 80);
+    ctx.clip();
+    vfill(ctx, x + 36, 300, 168, 300, [[0, `rgba(${CYAN},${(open ? 0.08 : 0.32) * power})`], [1, `rgba(${CYAN},${(open ? 0.03 : 0.14) * power})`]]);
+    if (!open) {
+      ctx.fillStyle = 'rgba(4,6,8,0.85)';
+      ctx.beginPath();
+      ctx.ellipse(x + 120, 380, 34, 42, 0, 0, Math.PI * 2);
+      ctx.ellipse(x + 120, 520, 60, 110, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+    if (open) {
+      ctx.save();
+      ctx.translate(x + 204, 300);
+      ctx.rotate(0.5);
+      ctx.fillStyle = 'rgba(120,170,190,0.18)';
+      ctx.beginPath();
+      ctx.roundRect(0, 0, 168, 300, 80);
+      ctx.fill();
+      ctx.restore();
+    }
+    glow(ctx, x + 120, 740, 120, CYAN, 0.12 * power);
+    ctx.fillStyle = `rgba(${i === 1 ? RED : CYAN},${0.8 * power * (0.5 + 0.5 * Math.sin(s * 3 + i))})`;
+    ctx.fillRect(x + 110, 640, 20, 8);
+  }
+  motes(ctx, s, 50, (u, v) => [260 + 1100 * v, 280 + 440 * u], CYAN, 91);
+  alarm(ctx, 800, 70, s, power);
+  shade(ctx, 800, 440, 1150, 0.62 + 0.3 * (1 - power));
+}
+
+function corridor(ctx, s, o, st) {
+  const vx = 800;
+  const vy = 430;
+  const lit = o.dark ? 0.12 : 1;
+  vfill(ctx, -300, -300, W + 600, H + 600, [[0, '#06090b'], [1, '#0d1317']]);
+  poly(ctx, [-300, -300, W + 300, -300, vx + 90, vy - 70, vx - 90, vy - 70], '#0a0e11');
+  poly(ctx, [-300, H + 300, W + 300, H + 300, vx + 90, vy + 70, vx - 90, vy + 70], '#0c1013');
+  poly(ctx, [-300, -300, vx - 90, vy - 70, vx - 90, vy + 70, -300, H + 300], '#0e1418');
+  poly(ctx, [W + 300, -300, vx + 90, vy - 70, vx + 90, vy + 70, W + 300, H + 300], '#0e1418');
+  const ribs = 9;
+  const head = Math.floor(s * 5) % (ribs + 4);
+  for (let i = 0; i < ribs; i += 1) {
+    const k = 1 - i / ribs;
+    const d = k ** 1.8;
+    const hw = 90 + 1000 * d;
+    const hh = 70 + 760 * d;
+    ctx.strokeStyle = 'rgba(30,40,48,0.9)';
+    ctx.lineWidth = 6 + 18 * d;
+    ctx.strokeRect(vx - hw, vy - hh, hw * 2, hh * 2);
+    const on = (i === head || i === head - 1 ? 1 : 0.25) * lit;
+    glow(ctx, vx, vy - hh + 6, 60 + 220 * d, RED, 0.45 * on);
+    ctx.fillStyle = `rgba(${RED},${0.9 * on})`;
+    ctx.fillRect(vx - 30 * (0.3 + d), vy - hh, 60 * (0.3 + d), 6 + 6 * d);
+  }
+  if (!o.dark) {
+    const signs = [['工具间', -1, 0.55], ['能源舱', 1, 0.55], ['通信室', -1, 0.3], ['气闸', 1, 0.3]];
+    ctx.textAlign = 'center';
+    for (const [label, side, d] of signs) {
+      const x = vx + side * (90 + 1000 * d * d * 0.9);
+      const y = vy - 30;
+      ctx.font = `600 ${Math.round(14 + 30 * d)}px "PingFang SC","Noto Sans CJK SC",sans-serif`;
+      ctx.fillStyle = `rgba(${CYAN},${0.55 + 0.2 * Math.sin(s * 2 + d * 10)})`;
+      ctx.fillText(label, x, y);
+    }
+  }
+  motes(ctx, s, 40, (u, v) => [vx - 500 + 1000 * v, vy - 300 + 600 * u], CYAN, 93);
+  shade(ctx, vx, vy, 1150, 0.55 + 0.35 * (1 - lit));
+}
+
+function toolroom(ctx, s, o, st) {
+  const f = flicker(s, 2.2) * (Math.sin(s * 0.7) > 0.93 ? 0.35 : 1);
+  panels(ctx, -300, 740, CYAN);
+  vfill(ctx, -300, 740, W + 600, 460, [[0, '#121518'], [1, '#040506']]);
+  ctx.fillStyle = '#0c1013';
+  ctx.fillRect(120, 140, 760, 420);
+  ctx.fillStyle = 'rgba(90,110,120,0.18)';
+  for (let x = 150; x < 860; x += 30) for (let y = 170; y < 540; y += 30) ctx.fillRect(x, y, 3, 3);
+  ctx.fillStyle = '#05070a';
+  ctx.save(); ctx.translate(240, 220); ctx.rotate(0.3); ctx.fillRect(-8, 0, 16, 200); ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  ctx.fillRect(400, 200, 22, 220); ctx.fillRect(360, 190, 100, 40);
+  ctx.save(); ctx.translate(640, 230); ctx.rotate(-0.4); ctx.fillRect(-10, 0, 20, 230); ctx.restore();
+  ctx.fillStyle = '#0a0d10';
+  ctx.fillRect(80, 600, 900, 40);
+  ctx.fillRect(110, 640, 30, 120);
+  ctx.fillRect(920, 640, 30, 120);
+  ctx.fillStyle = '#10181d';
+  ctx.beginPath();
+  ctx.roundRect(1100, 360, 150, 400, 70);
+  ctx.fill();
+  ctx.fillStyle = `rgba(${CYAN},0.55)`;
+  ctx.fillRect(1120, 520, 110, 40);
+  ctx.fillStyle = 'rgba(4,8,10,0.9)';
+  ctx.font = '600 22px "PingFang SC",sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('O₂', 1175, 548);
+  glow(ctx, 1175, 540, 160, CYAN, 0.15);
+  // 断裂的配电板：时不时迸出火花
+  ctx.fillStyle = '#070909';
+  ctx.fillRect(1340, 220, 180, 240);
+  const burst = (s % 2.7) < 0.5;
+  if (burst) {
+    glow(ctx, 1430, 300, 140, '255,200,120', 0.6);
+    const r = prng(Math.floor(s / 2.7) + 7);
+    for (let i = 0; i < 16; i += 1) {
+      const age = (s % 2.7) / 0.5;
+      const vxp = (r() - 0.5) * 300;
+      const vyp = -r() * 160;
+      ctx.fillStyle = `rgba(255,220,140,${1 - age})`;
+      ctx.fillRect(1430 + vxp * age, 300 + vyp * age + 400 * age * age, 3, 3);
+    }
+  }
+  glow(ctx, 800, 60, 700, '200,220,230', 0.16 * f);
+  shade(ctx, 800, 420, 1150, 0.62);
+}
+
+function airlock(ctx, s, o, st) {
+  panels(ctx, -300, 780, CYAN);
+  vfill(ctx, -300, 780, W + 600, 420, [[0, '#101418'], [1, '#040506']]);
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(470, 120, 660, 660);
+  ctx.clip();
+  for (let i = -12; i < 20; i += 1) {
+    poly(ctx, [470 + i * 60, 120, 500 + i * 60, 120, 500 + i * 60 - 660, 780, 470 + i * 60 - 660, 780], i % 2 ? 'rgba(210,170,40,0.5)' : 'rgba(10,10,10,0.8)');
+  }
+  ctx.restore();
+  ctx.fillStyle = '#0d1216';
+  ctx.beginPath();
+  ctx.arc(800, 450, 290, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(120,140,150,0.35)';
+  for (const [r, w] of [[290, 10], [230, 6], [150, 4]]) {
+    ctx.lineWidth = w;
+    ctx.beginPath();
+    ctx.arc(800, 450, r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  for (let i = 0; i < 12; i += 1) {
+    const a = (i / 12) * Math.PI * 2;
+    ctx.fillStyle = 'rgba(150,165,175,0.5)';
+    ctx.beginPath();
+    ctx.arc(800 + Math.cos(a) * 262, 450 + Math.sin(a) * 262, 8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(800, 450, 100, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.fillStyle = '#020306';
+  ctx.fillRect(700, 350, 200, 200);
+  stars(ctx, s, 101, 60, [700, 350, 200, 200]);
+  ctx.restore();
+  // 松脱的控制面板：轻轻晃动，指示灯红闪
+  ctx.save();
+  ctx.translate(1240, 360);
+  ctx.rotate(0.06 + Math.sin(s * 2.2) * 0.03);
+  ctx.fillStyle = '#0a0e11';
+  ctx.fillRect(0, 0, 200, 300);
+  ctx.strokeStyle = 'rgba(120,140,150,0.3)';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(0, 0, 200, 300);
+  ctx.restore();
+  glow(ctx, 1300, 420, 30, RED, 0.9 * (Math.sin(s * 5) > 0 ? 1 : 0.2));
+  glow(ctx, 1380, 420, 24, '80,255,140', 0.15);
+  alarm(ctx, 800, 90, s * 0.6, 0.45);
+  shade(ctx, 800, 450, 1100, 0.62);
+}
+
+function energy(ctx, s, o, st) {
+  panels(ctx, -300, 780, CYAN);
+  vfill(ctx, -300, 780, W + 600, 420, [[0, '#0f1418'], [1, '#040506']]);
+  ctx.strokeStyle = '#0a0f12';
+  ctx.lineWidth = 34;
+  ctx.beginPath();
+  ctx.moveTo(-300, 200); ctx.lineTo(600, 200); ctx.quadraticCurveTo(660, 200, 660, 260);
+  ctx.moveTo(W + 300, 300); ctx.lineTo(1000, 300); ctx.quadraticCurveTo(940, 300, 940, 360);
+  ctx.stroke();
+  ctx.fillStyle = '#0b1013';
+  ctx.fillRect(640, 120, 320, 680);
+  const pulse = 0.35 + 0.25 * Math.sin(s * 0.9);
+  for (let i = 0; i < 6; i += 1) {
+    const y = 180 + i * 100;
+    ctx.fillStyle = `rgba(${CYAN},${pulse * (0.5 + 0.5 * Math.sin(s * 1.5 - i * 0.6))})`;
+    ctx.fillRect(650, y, 300, 14);
+  }
+  glow(ctx, 800, 460, 520, CYAN, 0.18 * pulse);
+  plume(ctx, st.cool, s, { x: 560, y: 760, count: 14, life: 3.5, rise: 80, spread: 60, size: 50, alpha: 0.14, seed: 111 });
+  for (let i = 0; i < 6; i += 1) {
+    const x = 1080 + (i % 3) * 120;
+    const y = 470 + Math.floor(i / 3) * 160;
+    ctx.fillStyle = '#0a0d10';
+    ctx.fillRect(x, y, 90, 130);
+    const charge = i === 4 ? 0.9 : 0.15;
+    ctx.fillStyle = `rgba(${i === 4 ? '90,255,150' : RED},${0.6 + 0.3 * Math.sin(s * 2 + i)})`;
+    ctx.fillRect(x + 12, y + 110 - 90 * charge, 66, 90 * charge);
+  }
+  shade(ctx, 800, 460, 1150, 0.6);
+}
+
+function comms(ctx, s, o, st) {
+  panels(ctx, -300, 760, CYAN);
+  vfill(ctx, -300, 760, W + 600, 460, [[0, '#101418'], [1, '#040506']]);
+  // 观察窗外，观测室的记录灯在闪
+  ctx.fillStyle = '#020306';
+  ctx.fillRect(1100, 140, 380, 260);
+  stars(ctx, s, 121, 50, [1100, 140, 380, 260]);
+  glow(ctx, 1380, 330, 24, RED, Math.sin(s * 3) > 0.2 ? 0.9 : 0.1);
+  ctx.strokeStyle = '#0c1115';
+  ctx.lineWidth = 14;
+  ctx.strokeRect(1100, 140, 380, 260);
+  ctx.fillStyle = '#0a0d10';
+  ctx.fillRect(160, 560, 900, 60);
+  ctx.fillRect(200, 620, 30, 140);
+  ctx.fillRect(990, 620, 30, 140);
+  const screens = [[200, 'wave'], [480, 'dark'], [760, 'text']];
+  for (const [x, kind] of screens) {
+    ctx.fillStyle = '#05080a';
+    ctx.fillRect(x, 330, 250, 190);
+    if (kind === 'wave') {
+      ctx.strokeStyle = `rgba(${CYAN},0.8)`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i <= 230; i += 4) {
+        const y = 425 + Math.sin(i * 0.08 + s * 4) * 30 * Math.sin(i * 0.02 + s);
+        if (i === 0) ctx.moveTo(x + 10 + i, y); else ctx.lineTo(x + 10 + i, y);
+      }
+      ctx.stroke();
+      glow(ctx, x + 125, 425, 160, CYAN, 0.12);
+    } else if (kind === 'text') {
+      for (let i = 0; i < 6; i += 1) {
+        ctx.fillStyle = `rgba(${CYAN},${0.35 + 0.2 * (i % 2)})`;
+        ctx.fillRect(x + 20, 350 + i * 24, 80 + ((i * 53) % 120), 6);
+      }
+      if (Math.sin(s * 6) > 0) { ctx.fillStyle = `rgba(${CYAN},0.9)`; ctx.fillRect(x + 20, 350 + 6 * 24, 12, 14); }
+    }
+  }
+  poly(ctx, [520, 540, 600, 536, 604, 556, 524, 560], 'rgba(230,225,200,0.45)');
+  shade(ctx, 700, 450, 1150, 0.6);
+}
+
+function observatory(ctx, s, o, st) {
+  vfill(ctx, -300, -300, W + 600, H + 600, [[0, '#010205'], [1, '#05080e']]);
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(160, 80, 1280, 640, 60);
+  ctx.clip();
+  ctx.fillStyle = '#010206';
+  ctx.fillRect(160, 80, 1280, 640);
+  stars(ctx, s, 131, 220, [160, 80, 1280, 640]);
+  const g = ctx.createRadialGradient(1100, 1500, 700, 1100, 1500, 960);
+  g.addColorStop(0, '#0d2033');
+  g.addColorStop(0.92, '#1d4a6a');
+  g.addColorStop(1, 'rgba(120,190,255,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(160, 80, 1280, 640);
+  const frost = ctx.createRadialGradient(800, 400, 380, 800, 400, 800);
+  frost.addColorStop(0, 'rgba(220,235,255,0)');
+  frost.addColorStop(1, 'rgba(220,235,255,0.35)');
+  ctx.fillStyle = frost;
+  ctx.fillRect(160, 80, 1280, 640);
+  ctx.restore();
+  ctx.strokeStyle = '#0b1014';
+  ctx.lineWidth = 26;
+  ctx.beginPath();
+  ctx.roundRect(160, 80, 1280, 640, 60);
+  ctx.moveTo(800, 80); ctx.lineTo(800, 720);
+  ctx.stroke();
+  vfill(ctx, -300, 740, W + 600, 460, [[0, '#0e1317'], [1, '#030405']]);
+  ctx.fillStyle = '#0a0d10';
+  ctx.fillRect(1180, 640, 180, 120);
+  glow(ctx, 1220, 670, 26, RED, (s * 1.7) % 1 < 0.5 ? 0.9 : 0.15);
+  shade(ctx, 800, 420, 1200, 0.5);
+}
+
+/** 飞船外景：o.pod 为逃生舱离开（o.dawn 时星球边缘泛起晨光）；开场只显示漂流的“回声号”。 */
+function space(ctx, s, o, st) {
+  vfill(ctx, -300, -300, W + 600, H + 600, [[0, '#010204'], [1, '#04070d']]);
+  stars(ctx, s, 141, 260, [-300, -300, W + 600, H + 600]);
+  const dawn = o.dawn ? ease(s / 10) : 0;
+  const g = ctx.createRadialGradient(900, 2200, 1300, 900, 2200, 1560);
+  g.addColorStop(0, mix('#071322', '#1a2f4a', dawn));
+  g.addColorStop(0.9, mix('#16365a', '#f0b77a', dawn));
+  g.addColorStop(1, 'rgba(255,200,140,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(-300, 300, W + 600, H + 300);
+  if (dawn) glow(ctx, 1300, 760, 700, '255,190,120', 0.35 * dawn);
+  // “回声号”：舰体剪影与逐盏熄灭的灯
+  ctx.save();
+  ctx.translate(520 + Math.sin(s * 0.2) * 10, 360);
+  ctx.rotate(-0.12 + Math.sin(s * 0.15) * 0.02);
+  poly(ctx, [-520, -40, 260, -60, 380, 0, 260, 60, -520, 40], '#0a0e12');
+  ctx.fillStyle = '#0a0e12';
+  ctx.fillRect(-420, -110, 120, 220);
+  ctx.fillRect(-120, -90, 80, 180);
+  for (let i = 0; i < 10; i += 1) {
+    const alive = !o.pod || i / 10 > clamp01(s / 12);
+    ctx.fillStyle = `rgba(255,210,140,${alive ? 0.7 : 0.05})`;
+    ctx.fillRect(-460 + i * 70, -6, 10, 6);
+  }
+  ctx.restore();
+  if (o.pod) {
+    const t = ease(s / 14);
+    const x = 900 + 600 * t;
+    const y = 420 - 160 * t;
+    const k = 1 - 0.6 * t;
+    glow(ctx, x - 50 * k, y + 10 * k, 120 * k, '120,200,255', 0.6);
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(k, k);
+    ctx.fillStyle = '#1a2229';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 60, 34, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(160,220,255,0.5)';
+    ctx.beginPath();
+    ctx.ellipse(18, -6, 14, 10, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  shade(ctx, 800, 450, 1300, 0.4);
+}
+
 const SCENES = {
   black: { draw(ctx) { ctx.fillStyle = '#000'; ctx.fillRect(-300, -300, W + 600, H + 600); }, camera: () => [1, 0, 0] },
-  harbor: { draw: harbor, camera: (s) => [1 + 0.14 * ease(s / 18), -110 * ease(s / 18), 20 * ease(s / 18)] },
-  ending: { draw: (ctx, s, o, st) => harbor(ctx, s, { ...o, dawn: o.dawn }, st), camera: (s) => [1.12 - 0.1 * ease(s / 16), -60 + 40 * ease(s / 16), 0] },
-  lobby: { draw: lobby, camera: (s) => [1.02 + 0.06 * ease(s / 22), -50 * ease(s / 22) + Math.sin(s * 0.3) * 6, Math.sin(s * 0.23) * 4] },
-  office: { draw: office, camera: (s) => [1.06, -110 + 220 * ease(s / 24), Math.sin(s * 0.2) * 5] },
-  kitchen: { draw: kitchen, camera: (s) => [1.04 + 0.03 * Math.sin(s * 0.12), -40 + Math.sin(s * 0.18) * 30, 0] },
-  portrait: { draw: portrait, camera: (s) => [1 + 0.08 * ease(s / 12), 30 * ease(s / 12), -20 * ease(s / 12)] },
-  generic: { draw: generic, camera: (s) => [1.03 + 0.03 * ease(s / 20), Math.sin(s * 0.15) * 30, 0] },
-  guestroom: { draw: guestroom, camera: (s) => [1.04 + 0.05 * ease(s / 20), 70 * ease(s / 20), 0] },
-  backyard: { draw: backyard, camera: (s) => [1.05, -70 + 170 * ease(s / 22), Math.sin(s * 0.2) * 6] },
-  zhouroom: { draw: zhouroom, camera: (s) => [1.05 + 0.04 * ease(s / 18), -40 + Math.sin(s * 0.16) * 30, 0] },
-  attic: { draw: attic, camera: (s) => [1.06 + 0.04 * ease(s / 18), 30 * Math.sin(s * 0.12), 10] },
-  doorway: { draw: doorway, camera: (s) => [1 + 0.12 * ease(s / 6), 120 * ease(s / 6), 0] },
-  storeroom: { draw: storeroom, camera: (s) => [1.05 + 0.06 * ease(s / 10), 0, 0] },
+  harbor: { focus: [430, 470], draw: harbor, camera: (s) => [1 + 0.14 * ease(s / 18), -110 * ease(s / 18), 20 * ease(s / 18)] },
+  ending: { focus: [700, 470], draw: (ctx, s, o, st) => harbor(ctx, s, { ...o, dawn: o.dawn }, st), camera: (s) => [1.12 - 0.1 * ease(s / 16), -60 + 40 * ease(s / 16), 0] },
+  lobby: { focus: [560, 470], draw: lobby, camera: (s) => [1.02 + 0.06 * ease(s / 22), -50 * ease(s / 22) + Math.sin(s * 0.3) * 6, Math.sin(s * 0.23) * 4] },
+  office: { focus: [880, 470], draw: office, camera: (s) => [1.06, -110 + 220 * ease(s / 24), Math.sin(s * 0.2) * 5] },
+  kitchen: { focus: [720, 520], draw: kitchen, camera: (s) => [1.04 + 0.03 * Math.sin(s * 0.12), -40 + Math.sin(s * 0.18) * 30, 0] },
+  portrait: { focus: [660, 480], draw: portrait, camera: (s) => [1 + 0.08 * ease(s / 12), 30 * ease(s / 12), -20 * ease(s / 12)] },
+  generic: { focus: [800, 450], draw: generic, camera: (s) => [1.03 + 0.03 * ease(s / 20), Math.sin(s * 0.15) * 30, 0] },
+  guestroom: { focus: [930, 520], draw: guestroom, camera: (s) => [1.04 + 0.05 * ease(s / 20), 70 * ease(s / 20), 0] },
+  backyard: { focus: [640, 560], draw: backyard, camera: (s) => [1.05, -70 + 170 * ease(s / 22), Math.sin(s * 0.2) * 6] },
+  zhouroom: { focus: [860, 600], draw: zhouroom, camera: (s) => [1.05 + 0.04 * ease(s / 18), -40 + Math.sin(s * 0.16) * 30, 0] },
+  attic: { focus: [820, 500], draw: attic, camera: (s) => [1.06 + 0.04 * ease(s / 18), 30 * Math.sin(s * 0.12), 10] },
+  doorway: { focus: [1050, 520], draw: doorway, camera: (s) => [1 + 0.12 * ease(s / 6), 120 * ease(s / 6), 0] },
+  storeroom: { focus: [800, 500], draw: storeroom, camera: (s) => [1.05 + 0.06 * ease(s / 10), 0, 0] },
+  bay: { focus: [700, 480], draw: bay, camera: (s) => [1.04 + 0.05 * ease(s / 20), 60 * Math.sin(s * 0.12), 0] },
+  corridor: { focus: [800, 430], draw: corridor, camera: (s) => [1 + 0.1 * ease(s / 24), Math.sin(s * 0.2) * 20, Math.sin(s * 0.9) * 3] },
+  toolroom: { focus: [760, 460], draw: toolroom, camera: (s) => [1.04 + 0.04 * ease(s / 20), -60 + 140 * ease(s / 22), 0] },
+  airlock: { focus: [880, 450], draw: airlock, camera: (s) => [1.03 + 0.07 * ease(s / 18), 30 * ease(s / 18), 0] },
+  energy: { focus: [820, 460], draw: energy, camera: (s) => [1.04 + 0.04 * ease(s / 20), Math.sin(s * 0.15) * 40, 0] },
+  comms: { focus: [640, 450], draw: comms, camera: (s) => [1.04 + 0.04 * ease(s / 20), -40 + 100 * ease(s / 22), 0] },
+  observatory: { focus: [800, 420], draw: observatory, camera: (s) => [1.02 + 0.06 * ease(s / 24), 0, Math.sin(s * 0.2) * 6] },
+  space: { focus: [700, 420], draw: space, camera: (s) => [1 + 0.08 * ease(s / 20), -40 * ease(s / 20), 0] },
 };
+
+/** 是否有这个画面键，播放器据此把“画面键开头”的场景 id 对应到画面。 */
+export function hasScene(name) {
+  return Object.prototype.hasOwnProperty.call(SCENES, name) && name !== 'black';
+}
 
 export class Stage {
   constructor(canvas) {
@@ -1276,28 +1670,38 @@ export class Stage {
   frame(now) {
     const { ctx, canvas } = this;
     const s = (now - this.sceneAt) / 1000;
+    // 填满画框：按较大的缩放比例铺满，窄屏（竖屏手机）或宽屏（横屏手机）时围绕画面重点裁切。
+    const cw = canvas.width;
+    const ch = canvas.height;
+    const k = Math.max(cw / W, ch / H);
+    const vw = cw / k;
+    const vh = ch / k;
+    const [fx, fy] = this.options.focus || this.scene.focus || [W / 2, H / 2];
+    const ox = vw >= W - 0.5 ? (W - vw) / 2 : Math.min(Math.max(fx - vw / 2, -240), W + 240 - vw);
+    const oy = vh >= H - 0.5 ? (H - vh) / 2 : Math.min(Math.max(fy - vh / 2, -150), H + 150 - vh);
     let [zoom, dx, dy] = REDUCED ? [1.02, 0, 0] : this.scene.camera(s);
     if (now < this.shakeUntil) {
       const left = (this.shakeUntil - now) / this.shakeMs;
       dx += (Math.random() - 0.5) * 2 * this.shakePower * left;
       dy += (Math.random() - 0.5) * 2 * this.shakePower * left;
     }
-    const k = canvas.width / W;
-    ctx.setTransform(k, 0, 0, k, 0, 0);
-    ctx.translate(W / 2, H / 2);
+    ctx.setTransform(k, 0, 0, k, -ox * k, -oy * k);
+    const cx = ox + vw / 2;
+    const cy = oy + vh / 2;
+    ctx.translate(cx, cy);
     ctx.scale(zoom, zoom);
-    ctx.translate(-W / 2 - dx, -H / 2 - dy);
+    ctx.translate(-cx - dx, -cy - dy);
     this.scene.draw(ctx, REDUCED ? s * 0.4 : s, this.options, this.res);
-    ctx.setTransform(k, 0, 0, k, 0, 0);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     const flash = Math.max(0, 1 - (now - this.flashAt) / 700);
     if (flash > 0) {
       ctx.fillStyle = `rgba(255,236,200,${0.16 * flash})`;
-      ctx.fillRect(0, 0, W, H);
+      ctx.fillRect(0, 0, cw, ch);
     }
     const dark = this.level(now);
     if (dark > 0) {
       ctx.fillStyle = `rgba(0,0,0,${dark})`;
-      ctx.fillRect(0, 0, W, H);
+      ctx.fillRect(0, 0, cw, ch);
     }
     requestAnimationFrame(this.frame);
   }

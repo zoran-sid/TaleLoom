@@ -180,3 +180,34 @@ test('影像模式：手机宽度下选项在画面下方，没有横向溢出',
   expect(box.y).toBeGreaterThanOrEqual(frame.y + frame.height);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+
+test('影像模式：横屏手机画面占满可用高度，选项在画面内且不溢出', async ({ page }) => {
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.goto('/cinematic.html?fast=1');
+  await page.locator('#begin').click();
+  const first = page.locator('#choices').getByRole('button', { name: /推开账房的门/ });
+  await expect(first).toBeVisible({ timeout: 90_000 });
+  const frame = await page.locator('#frame').boundingBox();
+  expect(frame.height).toBeGreaterThan(390 * 0.8);
+  const box = await first.boundingBox();
+  expect(box.y + box.height).toBeLessThanOrEqual(frame.y + frame.height);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('影像模式（?story=deep_space）：飞船主题、画面内的氧气与电量随回合下降', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto('/cinematic.html?fast=1&story=deep_space');
+  await expect(page.locator('#intro h1')).toHaveText('深空回声');
+  await page.locator('#begin').click();
+  const choices = page.locator('#choices');
+  await expect(choices.getByRole('button', { name: /前往走廊/ })).toBeVisible({ timeout: 90_000 });
+  const meters = page.locator('#meters .meter');
+  await expect(meters).toHaveText(['氧气 8', '电量 20']);
+  await choices.getByRole('button', { name: /前往走廊/ }).click();
+  await expect(choices.getByRole('button', { name: /去工具间/ })).toBeVisible();
+  // 深空剧本有 35% 概率的电量波动（随机种子每局不同），电量可能多掉一格。
+  await expect(meters.first()).toHaveText('氧气 7');
+  await expect(meters.nth(1)).toHaveText(/^电量 1[89]$/);
+  expect(errors).toEqual([]);
+});

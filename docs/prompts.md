@@ -1,90 +1,81 @@
-# 开工提示词
+# 开工提示词（第二轮：影像模式 + 失败惩罚）
 
-先看 [任务安排第 0 节](team-tasks.md#0-当前进度与每人下一步)：每人的“下一个 PR”和“接入点”都写在那里。网页部署基础与兼容实现（`taleloom/legacy_session.py`、临时存储 `web/preview/storage.js`）已可运行；继续各自正式模块，在接入点替换临时实现，替换在你自己的 PR 内完成。
-
-本轮目标是共享 Python 核心的桌面 GUI、网页试玩和 Cloudflare 自动部署。各成员把对应部分交给 AI；先区分已经提供的接口／测试替身与尚待实现的正式适配器。
+第二轮的分工、验收与临时约定见 [任务安排第 0 节](team-tasks.md#0-当前进度与第二轮任务)。下面的提示词直接交给各自的 AI；先贴“通用开头”，再贴自己的一段。
 
 ## 通用开头
 
 ```text
-我是 <缩写>，负责 TaleLoom 的 <模块>。请先读 AGENTS.md、docs/gui-web-plan.md、
-docs/team-tasks.md 第 0 节与我的部分、docs/contracts.md（尤其第 6 节）。
-运行 git status 和 git log，从最新 develop 创建 <缩写小写>/<主题> 分支，保留已有修改。
-查看 taleloom/ui_contract.py 和 tests/ui_fakes.py；先运行
-python -B -m unittest tests.integration.test_ui_contract -v。
-常规模块做实现、测试、剧本 JSON 和文档字符串；范围／接口变更同步必要指引，最终报告留到最后。
-先写失败测试，再实现；按文件归属工作。修改共享类型、协议或公开接口走 contract PR，
-同一个 PR 修好受影响调用和测试。引擎不依赖窗口、浏览器和 Cloudflare。
-用固定样例独立测试，随后再与真实模块集成；测试替身通过不能记为正式功能完成。
-完成后跑本模块、全部测试、剧本校验和回放，推送并开 PR 到 develop，写明真实验证结果和 AI 使用。
+我是 <缩写>，负责 TaleLoom 的 <模块>。第二轮主线是“影像模式 + 失败惩罚”。
+请先读 AGENTS.md、docs/team-tasks.md 第 0 节（0.1 我的任务、0.2 临时约定）、docs/contracts.md，
+以及 stories/film/fog_harbor_film/README.md；在 https://taleloom.zoranzhou.com/cinematic 实际玩一遍影像版。
+从最新 develop 开 <缩写小写>/<主题> 分支，保留已有修改。先写会失败的测试，再实现；只改自己负责的文件，
+改共享接口走 contract PR，同一个 PR 里修好受影响的代码和测试。
+提交前跑：本模块测试、python -B -m unittest discover -s tests -t .、python main.py validate、
+npm run build && npx playwright test。推送后到 <分支名>.taleloom.zoranzhou.com/cinematic 试玩预览，
+PR 写清改了什么、真实验证结果、对他人的影响和 AI 使用。
 ```
 
 ## YHT
 
 ```text
-保留已经提交的加载／校验／场景图工作，先检查其 PR 状态，避免重复实现。
-维护 ui_contract.py 的数据类型与 JSON 结构；与 ZQO 配合实现展示快照映射。
-为公开资源、可选素材和后续展示字段提供数据格式与校验，旧剧本应继续有效。
-字段未正式实现前，不把示例字段当作 loader 已支持能力。
-用内构迷你数据覆盖正常、缺失和错误字段；不修改真实剧本内容。
-完成公开资源字段后，删除 taleloom/legacy_session.py 中按剧本 ID 硬编码的 PUBLIC_RESOURCES，
-改为读取剧本字段，并请 LQ 在 deep_space 中声明氧气。
+任务：把影像版的临时约定改成剧本正式字段（与 ZQO 配合，走 contract PR）。
+1. 结局 ending.kind：normal（默认）或 failure，取代结局 id 的 fail_ 前缀；
+2. 场景 checkpoint：存档点名称，取代 on_enter 里的 {"say": "【存档点】名称"}；
+3. 场景 art：画面键（如 lobby、office），取代 web/cinematic/app.js 里的 ART 映射表。
+在 model.py／loader.py／validator.py 解析并校验：kind 只能取这两个值；存档点名称在剧本内唯一；
+failure 结局必须由选择进入；meta.linear 为 true 的剧本场景图无回路（把 tests/integration/test_film_stories.py
+的规则下沉到 validator）。旧剧本不改也要通过；每条规则用迷你剧本写通过例和失败例。
+同一个 PR 迁移 stories/film/fog_harbor_film/story.json，并请 ZC 审阅。
 ```
 
 ## ZQO
 
 ```text
-优先实现符合 GameSession 的真实适配器（计划 session.py / presentation.py），保留现有 Engine API。
-接口形状已经在 ui_contract.py，第 6 节约定 start/snapshot/dispatch/export_save/restore。
-先用迷你剧本和 SessionContractMixin 验证，再增加插件、随机、存档的行为测试。
-快照只读且返回独立数据；动作按 ID/参数提交，版本过期或输入失败不得留下状态变化。
-提供插件展示／动作描述接口，普通 UI 不直接读取 state.ext 或解析输出文字。
-随机结果在实际操作时产生，存档保存足够随机状态；刷新不得抽随机数。
-涉及 LQ 的存档数据函数时，在同一个契约 PR 给出最小兼容实现和测试。
-测试类继承 tests/integration/test_ui_contract.py 的 SessionContractMixin，实现 make_session。
-通过后在 taleloom/session_factory.py 改为返回你的会话，桌面与网页同时切换；
-跑 python -B -m unittest tests.integration.test_web_playthroughs 确认两个序章结果不变。
+任务：会话与快照支持新字段，并把“回退”做成会话能力，让桌面和网页共用。
+1. ViewSnapshot 增加可选字段：画面键、结局类型、当前存档点；旧前端忽略新字段也能运行；
+2. GameSession 提供存档点列表、回到存档点、回到上一个选择（整局机会数可设置，默认 3），
+   失误与回退次数随存档保存；快照读取仍不推进回合、不抽随机数；
+3. 先在 tests/integration/test_ui_contract.py 的约定测试里加用例，再实现。
+完成后由 ZC 把 web/cinematic 改用会话能力、ZRS 接桌面；用 tests/integration/test_film_stories.py
+和浏览器测试确认影像版行为不变。
 ```
 
 ## ZRS
 
 ```text
-优先做简洁 Tkinter + ttk 桌面 GUI：包 taleloom/gui/ 提供 run(stories_dir, saves_dir) -> int，
-python main.py 无参数会自动调用它（约定见 docs/contracts.md 第 6 节）。
-真实会话一律用 taleloom.session_factory.create_session(story) 取得，不直接 import engine。
-web/ui、web/styles 已由 ZRS 完成（PR #9），后续界面改动在这两个目录内进行。
-先注入 FakeGameSession 独立开发；统一使用快照、ActionRequest 和 SessionResult。
-覆盖剧本进入、场景正文、行动、背包／线索、资源、参数选择、存读档和结局。
-所有玩家核心操作可点击；渲染不消耗回合，操作串行，加载／错误可恢复。
-道具插件提供使用／组合动作与玩家已知候选；不在 UI 重新实现规则。
-网页通过 ZC 的运行时桥接调用同一协议；使用 LQ 的存储适配。
-保留原 CLI，终端颜色／补全／复杂自然句式降为可选，不阻塞 GUI 交付。
-```
-
-## ZC
-
-```text
-负责整体整合、推理展示、启动和网页运行时／部署。
-main.py 无参数启动 GUI 与 VS Code 启动配置已完成（taleloom.gui 不存在时回退命令行）；
-保持 validate/replay/graph 等命令可用。
-先用两个现有序章完成闭环；推理插件提供可见线索、人物、审问／指认参数和动作。
-web/runtime 使用 Pyodide 模块型 Web Worker 复用 Python 核心；消息带会话／请求 ID，
-校验外部 JSON，丢弃过期会话响应。不要在 JavaScript 重写游戏规则。
-锁定运行时，构建只打包所需核心、剧本与素材；验证 Pyodide 兼容及跨端状态一致。
-Cloudflare Workers Static Assets 托管，Workers Builds 原生连接本 GitHub 仓库。
-固定路线：推送触发检查／构建，成功后自动部署；main 正式，develop／成员分支预览。
-按当前官方文档实现 Cloudflare CLI 配置、构建与部署命令，首次账号连接单独完成；
-验证一次真实推送发布及失败保留旧版，未配置前不记录为已上线。
+任务：文字版与桌面接上影像模式和失败惩罚。
+1. 书架（web/ui/、index.html）加“影像模式”入口，链接 /cinematic，卡片标注“互动影像”；
+   顺带修手机竖屏时页眉右侧文字折行；
+2. 桌面 GUI：失败结局提供“回到上一个选择”和“回到存档点”，显示关键节点自动存档列表，
+   规则只经会话接口（ZQO 的能力合入前可先用影像页同样的标准存档导出／恢复实现）；
+3. 检查影像模式的键盘操作、减少动态效果、字幕可读性和手机布局，问题写 issue 给 ZC；
+4. 与 ZC 一起解决 #15：CI 用 xvfb 运行窗口测试，修好其中失败的用例。
 ```
 
 ## LQ
 
 ```text
-优先把 save.py 的数据编码／解码／版本校验与文件读写分开，保留旧调用和存档兼容。
-完成后让 taleloom/legacy_session.py 的 export_save／_decode 改用你的编码器，删除那里的重复校验。
-实现 SaveStore 的桌面文件适配及 web/storage 浏览器持久化与 JSON 导入导出。
-先用 MemorySaveStore 隔离依赖测试；测试替身不代表刷新后持久化。
-存储错误给出明确提示，失败保留原存档；坏存档不能覆盖当前会话。
-验证桌面／网页存档互通、刷新恢复，以及固定操作／随机状态下的跨端结果。
-继续随机探索与剧本 B 扩写；每个结局提供通关脚本。
+任务：《深空回声 · 影像版》，以及把自动存档接进正式存储。
+1. 新建 stories/film/deep_space_film/（目录名与 id 相同）：线性分支，每个选择都进入下一段剧情；
+   氧气、电量是公开资源，耗尽即任务失败（结局 id 以 fail_ 开头，YHT 的字段合入后改用 ending.kind）；
+   至少 5 个结局（含 2 个失败结局）、3 个存档点，每个结局一个通关脚本；
+   参照 stories/film/fog_harbor_film/README.md 写剧情结构说明；
+2. 场景 id 以影像模式已有的飞船画面键开头即可自动套用画面（如 airlock、airlock_jam）：
+   bay（休眠舱）、corridor、toolroom、airlock、energy、comms、observatory、space（舰外）；
+   用 /cinematic?story=deep_space_film 试玩，氧气、电量会显示在画面左上角；
+   需要新画面时开 issue 写清场景和想要的画面，交给 ZC；
+3. 关键节点自动存档改存进 web/storage/ 与桌面存储，取代影像页临时使用的 localStorage
+   （接口与 ZC 协调）；
+4. 随机探索覆盖 stories/film/ 下的剧本。
+```
+
+## ZC
+
+```text
+任务：影像模式播放器、画面与发布。
+1. 飞船场景画面与画面内资源条已完成（/cinematic?story=deep_space 可试玩）；按 LQ 的深空影像版补画面与失败结局；
+2. YHT／ZQO 的字段合入后，播放器改读 ending.kind、checkpoint、art，删除 ART 表、fail_ 前缀与
+   “【存档点】”提示的解析；改用会话的回退能力；
+3. 与 ZRS 解决 #15；
+4. develop 验收后开 develop → main 的发布 PR，Cloudflare 生产分支切换到 main。
 ```
