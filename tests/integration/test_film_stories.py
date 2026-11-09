@@ -99,12 +99,16 @@ class FilmStoriesTest(unittest.TestCase):
                 state[node] = "done"
 
             visit(story.start, [story.start])
+            units = story.data.get("units", {})
             for sid, scene in story.scenes.items():
                 with self.subTest(story=d.name, scene=sid):
                     if not scene.ending:
-                        self.assertTrue(scene.choices, "每个剧情节点都要有向前的选择")
-                        self.assertTrue(all(c.goto for c in scene.choices), "影像版的每个选择都进入下一段剧情")
-                        self.assertTrue(any(not c.when for c in scene.choices), "至少一个选择总是可用，避免卡住")
+                        self.assertTrue(any(c.goto for c in scene.choices), "每个剧情节点都要有向前的选择")
+                        # 场景内的搜证与追问（once、无 goto）只给反馈；其余选择都进入下一段剧情。
+                        self.assertTrue(all(c.goto or c.once for c in scene.choices), "影像版的每个选择都进入下一段剧情")
+                        here = [u for u in units.values() if sid in u.get("scenes", [])]
+                        self.assertTrue(any(not c.when for c in scene.choices) or here,
+                                        "至少一个选择总是可用，或本场景有调查单元可推进，避免卡住")
 
     def test_not_listed_on_shelf_desktop_or_cli(self):
         listed, films = build_web.catalogs(ROOT)
@@ -122,13 +126,19 @@ class FilmStoriesTest(unittest.TestCase):
         self.assertEqual(main.resolve(FILM_DIRS[0].name), FILM_DIRS[0])
 
     def test_failure_endings_are_reached_by_choices(self):
-        """中途失败的结局 id 以 fail_ 开头，并且由普通选择进入，影像模式才能退回上一个选择。"""
+        """中途失败的结局（ending.kind 为 failure 或旧的 fail_ 前缀）由普通选择进入，影像模式才能退回上一个选择。
+
+        《未结的账》按剧本不设中途失败：选错的代价是人物戒备、材料缺失和不同的结局。
+        """
+        with_failures = 0
         for d in FILM_DIRS:
             story = load_story(d)
-            fails = {sid for sid, s in story.scenes.items() if s.ending and s.ending["id"].startswith("fail_")}
-            self.assertTrue(fails, d.name)
+            fails = {sid for sid, s in story.scenes.items() if s.ending and (
+                s.ending.get("kind") == "failure" or s.ending["id"].startswith("fail_"))}
+            with_failures += bool(fails)
             reached = {c.goto for s in story.scenes.values() for c in s.choices}
-            self.assertLessEqual(fails, reached)
+            self.assertLessEqual(fails, reached, d.name)
+        self.assertGreaterEqual(with_failures, 2)
 
     def test_pressing_without_evidence_makes_suspect_wary(self):
         story = load_story(STORIES / "film" / "fog_harbor_film")

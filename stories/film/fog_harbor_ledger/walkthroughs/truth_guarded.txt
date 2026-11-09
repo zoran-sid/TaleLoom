@@ -1,0 +1,91 @@
+# 戒备后修复：未经同意搜顾的口袋（顾此后拒答）、当众念阿芸的信（阿芸只确认三件事）；周不交小册；让周整理材料，再在见证下查票箱找回原件。周拒绝作答，事实链仍完整。
+# expect: truth
+问从旅馆到值房怎么走
+看交割通知
+提着公文袋去旅馆
+细看 tags/tag_a
+细看 tags/tag_b
+细看 tags/book
+核对 tags mine row12 theirs
+收好行李签，去饭厅
+核对工钱册
+饭后随陈掌柜去账房
+回房，等十一点后来取材料
+细看 scene_a01/weight
+探他的呼吸，然后喊人
+请大家各自写下刚才的行踪
+细看 lamp/front
+细看 lamp/back
+细看 lamp/letter
+核对 lamp debt supply gone
+去看后窗
+细看 window/latch
+细看 window/sill
+细看 window/wall
+泥迹从水边来——一定是顾
+只能确认现场被改动过。保留未知
+不等他同意，伸手去搜他的口袋
+请阿芸进来作见证，一起查看
+细看 paper/face
+细看 paper/flip
+细看 paper/stub
+核对 paper supply middle
+核对 paper iou middle
+收好拼合的纸，去后厨
+核对 claims until claim
+当着大家问阿芸去了哪里，把她的信念出来
+去值房
+细看 duty/book
+细看 duty/xu
+细看 duty/fares
+核对 duty gu wall ferry
+带着短渡记录去找顾
+请阿芸看一眼值房的记录
+把记录分成三列
+核对 timeline tea letter towel ferry window found
+暂不下判断，先查镇纸去向和缺失的时段
+细看 batch/confirm
+细看 batch/trace
+核对 batch s584 c200 batch
+把差额留在空栏，去看交割材料
+“三百四十为什么也写到你头上？”
+细看 roster/ledger
+细看 roster/roster
+细看 roster/family
+核对 roster cleared repair
+再看周文自己的账
+要他当场把小册交出来
+把新款的去向记作未知
+核对 sums gu_debt zhou_new relief_old later
+核对 sums gu_debt zhou_new relief_old new_old
+去找失踪的镇纸
+细看 vat/lid
+细看 vat/rim
+细看 vat/floor
+核对 vat witness lid lamp pole
+把缸底的东西取上来
+细看 weight/bottom
+细看 weight/corner
+核对 weight gull repair
+翻开最早的现场记录，请周在见证下展开左袖
+细看 sleeve/cuff
+细看 sleeve/record
+核对 sleeve edge stitch
+不再追问，先把东西收好
+让周整理，自己转身去问话
+当众追问周
+在见证下查看旧票箱
+核对 box witness liner move
+核对 box witness move liner
+把找回的确认函放回清单
+核对 seal new old evid_b evid_a
+封好袋口，等天亮
+指认周文，逐条说明
+核对 q_time ayun_three duty_check
+核对 q_object weight_id missing
+核对 q_person intact first match
+核对 q_motive handover liability
+等周文答复
+把他的要求照原样记下
+只交命案材料，旧款列为待查
+签下：指认周文

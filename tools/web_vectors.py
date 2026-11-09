@@ -57,10 +57,10 @@ def build_vectors(story_files=None) -> list:
                     values = dict(zip(keys, ids))
                     cmd.args = ids
                     action_id = f'puzzle:{cmd.verb}'
-                elif cmd.verb in ('examine', 'ask', 'accuse'):
+                elif cmd.verb in ('examine', 'ask', 'accuse', 'inspect', 'solve', 'hint'):
                     values = mystery.action_values(story, native.state, native.registry, cmd)
                     assert values is not None, (file, text, '通关脚本中的推理命令无法对应到界面动作')
-                    # 动作参数顺序即命令参数顺序：suspect 在前，各理由按剧本声明的顺序。
+                    # 动作参数顺序即命令参数顺序：suspect／unit 在前，各理由、各栏位按剧本声明的顺序。
                     cmd.args = list(values.values())
                     action_id = f'mystery:{cmd.verb}'
                 else:
