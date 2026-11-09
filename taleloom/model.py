@@ -40,10 +40,15 @@ class Scene:
     text: str
     choices: list[Choice] = field(default_factory=list)
     on_enter: list[Effect] = field(default_factory=list)
-    # 结局场景：{"id": "true_end", "title": "真相大白"}；普通场景为 None
+    # 结局场景：{"id": "true_end", "title": "真相大白", "kind": "normal"}；
+    # kind 省略时按 normal 处理，普通场景为 None。
     ending: dict[str, str] | None = None
     # 条件文字列表：每项含 text、可选 when 与 mode（append/replace）；默认空列表。
     variants: list[dict[str, Any]] = field(default_factory=list)
+    # 影像模式：可回退的存档点名称；省略表示该场景不是存档点。
+    checkpoint: str | None = None
+    # 影像模式：画面键，由前端决定具体素材；省略表示只有文字。
+    art: str | None = None
 
 
 @dataclass

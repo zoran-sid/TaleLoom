@@ -80,6 +80,7 @@ def validate(story: Story) -> list[Issue]:
         else:
             issues += plugin_issues
     issues += _check_graph(story)
+    issues += _check_cinematic(story)
     issues += _check_structure(story)
     return issues
 
@@ -554,6 +555,85 @@ def _check_graph(story: Story) -> list[Issue]:
                     "从起始场景无法到达。建议：添加通往该场景的选项或全局跳转，或删除该场景。",
                 ))
     return issues
+
+
+def _check_cinematic(story: Story) -> list[Issue]:
+    """校验影像模式的正式字段：结局类型、存档点唯一性与线性无环。"""
+    issues: list[Issue] = []
+    checkpoints: dict[str, str] = {}
+
+    for sid, scene in story.scenes.items():
+        ending = scene.ending
+        if ending is not None:
+            kind = ending.get("kind", "normal")
+            if kind not in ("normal", "failure"):
+                issues.append(Issue(
+                    "error", f"scenes.{sid}.ending.kind",
+                    f"结局类型应为 normal 或 failure，实际为 {kind!r}。"
+                    "建议：把 kind 改成 normal（普通结局）或 failure（失败结局）。",
+                ))
+            elif kind == "failure" and not _entered_by_choice(story, sid):
+                issues.append(Issue(
+                    "error", f"scenes.{sid}.ending.kind",
+                    "失败结局必须由选择进入，不能只靠 on_enter 或全局跳转。"
+                    "建议：把进入该结局的跳转放进某个选项的 goto 或 effects 中。",
+                ))
+
+        checkpoint = scene.checkpoint
+        if checkpoint is not None and not isinstance(checkpoint, str):
+            issues.append(Issue(
+                "error", f"scenes.{sid}.checkpoint",
+                "存档点名称应为字符串。建议：填写一个方便玩家辨认的名称。",
+            ))
+        elif checkpoint is not None:
+            name = checkpoint.strip()
+            if not name:
+                issues.append(Issue(
+                    "error", f"scenes.{sid}.checkpoint",
+                    "存档点名称不能为空。建议：填写一个方便玩家辨认的名称。",
+                ))
+            elif name in checkpoints:
+                issues.append(Issue(
+                    "error", f"scenes.{sid}.checkpoint",
+                    f"存档点名称重复：{name}（已被 {checkpoints[name]} 使用）。"
+                    "建议：给每个存档点取不同的名称。",
+                ))
+            else:
+                checkpoints[name] = sid
+
+    linear = story.meta.get("linear")
+    if linear is not None and not isinstance(linear, bool):
+        issues.append(Issue(
+            "error", "meta.linear",
+            "meta.linear 应为布尔值 true 或 false。"
+            "建议：不要用字符串 \"true\" 代替 JSON 的 true。",
+        ))
+    elif linear is True:
+        edges = _scene_edges(story)
+        for component in _strong_components(edges):
+            has_cycle = len(component) > 1 or any(
+                sid in edges.get(sid, ()) for sid in component
+            )
+            if has_cycle:
+                names = "、".join(sorted(component))
+                issues.append(Issue(
+                    "error", "meta.linear",
+                    f"meta.linear 为 true，但场景 {names} 形成了回路。"
+                    "建议：删掉回跳选项，或去掉 meta.linear 改为可循环剧本。",
+                ))
+    return issues
+
+
+def _entered_by_choice(story: Story, target: str) -> bool:
+    """判断是否有选项可以进入 target（只看玩家选择，不看 on_enter）。"""
+    for scene in story.scenes.values():
+        for choice in scene.choices:
+            if choice.goto == target:
+                return True
+            for effect in choice.effects:
+                if isinstance(effect, dict) and effect.get("goto") == target:
+                    return True
+    return False
 
 
 def _check_structure(story: Story) -> list[Issue]:
