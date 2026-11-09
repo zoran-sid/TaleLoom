@@ -1,6 +1,8 @@
 # 剧本格式 v1（草案）
 
-维护：YHT。这是 v0 骨架实际支持的格式；YHT 在第 1–2 周补全字段说明与作者快速上手。完整例子见 `stories/fog_harbor/story.json` 与 `stories/deep_space/story.json`。
+格式由 YHT 的代码定义。这是 v0 骨架实际支持的格式；模块阶段新增的字段先写在代码文档字符串中，本文件在最终合并阶段统一补全。完整例子见 `stories/fog_harbor/story.json` 与 `stories/deep_space/story.json`。
+
+新增 GUI／网页展示与可选素材方向见 [实施要求](gui-web-plan.md)。当前正文仅描述已支持的剧本字段；素材和插件展示字段在相应接口实现 PR 中补充，保持旧剧本兼容。
 
 写完剧本先运行：
 
@@ -87,25 +89,60 @@ stories/<剧本id>/
 ### `mystery`（ZC）
 
 ```json
-"clues": {"torn_ledger": {"name": "被撕去的账页", "text": "..."}},
+"clues": {
+  "torn_ledger": {"name": "被撕去的账页", "text": "...",
+                  "examine": {"when": {}, "hint": "条件不满足时的提示", "text": "深入调查的发现",
+                              "effects": [{"add_clue": "ledger_gap"}]}}
+},
+"acts": [{"id": "fog", "title": "第一幕 · 雾夜"}, {"id": "ebb", "title": "第二幕 · 退潮", "text": "过场文字"}],
 "accusation": {
-  "when": {"visited": "office"},
-  "suspects": {"gu": {"name": "顾先生", "aliases": ["顾"]}},
-  "outcomes": [{"suspect": "gu", "when": {"has_clue": "torn_ledger"}, "goto": "end_truth"}],
+  "when": {"flag": "gathered"},
+  "suspects": {
+    "zhou": {"name": "周文", "aliases": ["周"], "scenes": ["kitchen", "gathering"],
+             "topics": [{"id": "night", "name": "案发时在做什么", "text": "回答", "effects": []},
+                        {"id": "weight", "clue": "vat_weight", "text": "出示线索后的回答"}]}
+  },
+  "reasons": [
+    {"id": "motive", "label": "动机", "options": [{"id": "debt", "name": "欠债", "when": {}}]},
+    {"id": "evidence", "label": "关键证据", "from": "clues"}
+  ],
+  "outcomes": [{"suspect": "zhou", "when": {}, "reasons": {"motive": "debt", "evidence": ["a", "b"]},
+                "min_correct": 2, "goto": "end_truth"}],
   "default": "end_wrong"
 }
 ```
 
-新增条件 `{"has_clue": id}`、效果 `{"add_clue": id}`；玩家命令“线索”“指认 X”。`outcomes` 从上到下取第一个匹配项，都不匹配时去 `default`。
+除 `clues` 的 `name`/`text` 与 `accusation` 的 `suspects`/`outcomes`/`default` 外都可以省略，旧剧本不用改。
+
+| 能力 | 写法 | 玩家命令 | 界面动作 |
+| --- | --- | --- | --- |
+| 线索 | 效果 `{"add_clue": id}`；条件 `{"has_clue": id}`、`{"clues_found": N}`（已获得线索数 ≥ N） | 线索 | 快照的 `clues` |
+| 深入搜证 | 线索的 `examine`：`when` 不满足时显示 `hint`，满足时显示 `text` 并执行 `effects`；每条线索只能深入一次 | 调查 被撕去的账页 | `mystery:examine`（`clue`） |
+| 审问 | 嫌疑人的 `topics`；`clue` 表示出示这条线索才能问，`when` 是额外条件；`scenes` 限定在哪些场景能审问此人（省略为任何场景）。第一次问执行 `effects` 并消耗回合，再问只重读回答 | 问 周文 案发时在做什么；问 周文 水缸里的镇纸 | `mystery:ask`（`topic`，值为 `嫌疑人id/话题id`） |
+| 分幕 | `acts` 按顺序列出；效果 `{"start_act": id}` 进入后面的幕并显示标题和过场文字（不会倒退）；条件 `{"act": id}` 表示已进入该幕或之后 | — | 过场文字出现在反馈中 |
+| 指认 | `reasons` 声明需要说明的理由；选项可写 `when`，`"from": "clues"` 表示从已获得的线索中选 | 指认 周文 欠债 镇纸 水缸里的镇纸（只输入“指认 周文”会列出需要的理由和候选） | `mystery:accuse`（`suspect` 与各理由 id） |
+
+`outcomes` 从上到下取第一个匹配项：嫌疑人相同、`when` 成立，且答对的理由数不少于 `min_correct`（省略时要求 `reasons` 中列出的全部答对；一项可接受多个正确答案时写成数组）；都不匹配时去 `default`。没有 `reasons` 的旧剧本只按嫌疑人与 `when` 判断。审问和深入搜证里的 `goto` 效果会计入可达性检查。
+
+只给命令行玩家看的操作提示写成单独一行“（输入……）”，图形界面会自动隐藏，改用按钮。
 
 ### `puzzle`（ZRS）
 
 ```json
 "combinations": [{"items": ["broken_wrench", "tape"], "result": "fixed_wrench", "message": "..."}],
-"uses": [{"item": "fixed_wrench", "scene": "airlock", "when": {}, "effects": [...], "message": "...", "consume": false}]
+"targets": [{"id": "panel", "name": "控制面板", "aliases": ["面板"], "scene": "airlock"}],
+"uses": [
+  {"item": "fixed_wrench", "target": "panel", "scene": "airlock", "when": {}, "effects": [...], "message": "...", "consume": false},
+  {"item": "tape", "scene": "cryo", "effects": [...], "consume": true}
+]
 ```
 
-玩家命令“组合 A B”“使用 A”。
+玩家命令“组合 A B”“使用 A”“把 A 用在 B 上”。
+
+`targets` 声明玩家可以互动的目标；`scene` 省略时该目标在所有场景可用。`uses` 里写 `target` 表示只对这一个目标使用，不写 `target` 则沿用按 `scene` 匹配的旧规则，旧剧本不用改。
+界面动作固定为 `puzzle:use`（参数 `item`）、`puzzle:use_on`（参数 `item` 与 `target`）、`puzzle:combine`（参数 `first` 与 `second`）；候选只含背包物品和当前场景声明的目标，不提示正确配方或使用结果。图形界面提交这些 ID，不拼中文命令。
+校验会报告不存在的物品、场景与目标，以及重复或空的目标 id。
+
 
 ## 7 通关脚本
 
@@ -119,3 +156,20 @@ stories/<剧本id>/
 ```
 
 优先写选项文字而不是编号：选项顺序变化时脚本仍然有效。
+
+## 可选场景文字扩展
+
+场景可以添加 `variants`，例如：
+
+```json
+"variants": [
+  {"when": {"has_item": "key"}, "mode": "append", "text": "你握着{item:key}。"},
+  {"when": {"var": ["oxygen", "<", 3]}, "mode": "replace", "text": "氧气只剩{vars.oxygen}。"}
+]
+```
+
+按顺序处理满足条件的变体。`append` 追加一行，`replace` 替换已形成的正文；省略 mode 使用 append。场景正文与选项文字支持变量和物品名占位符，未知名称显示提示。
+
+`{"chance": 30}` 表示 30% 条件。也可写 `{"chance": {"percent": 30, "id": "meteor"}}` 指定独立事件名称。不同选项/触发器/变体有独立位置；插件及同一嵌套条件中的等概率事件使用不同 id。相同种子、回合、场景和事件位置的结果稳定，刷新或读档不能重抽。新会话自动播种，测试可传 seed；种子保存在 GameState.random_seed，旧存档默认 0。
+
+教学插件 `example` 提供 `{"bell_rung": true}` 条件、`{"ring_bell": null}` 效果，以及 `摇铃`/`ring` 命令和同名按钮。它只修改自己的 `state.ext.example` 分区。

@@ -4,10 +4,19 @@ __pycache__/
 .venv/
 venv/
 .idea/
-.vscode/
+.vscode/*
+!.vscode/launch.json
 saves/
+# YHT 测试的临时目录（tests/yht/tmp.py）
+tests/yht/_tmp/
 *.tmp
 ~$*
 # 提交用的打包文件与视频在本地生成，不入库
 group*_project.zip
 *.mp4
+node_modules/
+.cloudflare/
+.web-public/
+dist/
+playwright-report/
+test-results/

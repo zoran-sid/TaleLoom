@@ -65,7 +65,7 @@ class Mechanic:
 
 以下改动会影响他人，必须单独开 PR，标题用 `feat(contract): ...` 或 `refactor(contract): ...`，加 `contract` 标签：
 
-- `model.py` 中任何类型的字段增删改；
+- `model.py` 或 `ui_contract.py` 中共享类型、Protocol 及 JSON 字段的增删改；
 - `Engine` 公开方法、`Mechanic` 基类、`Registry` 的签名；
 - 剧本格式中已有字段的含义变化（新增可选字段不算）。
 
@@ -74,6 +74,136 @@ class Mechanic:
 1. 在 PR 描述里写清楚：改了什么、为什么、哪些模块受影响、迁移办法。
 2. 同一个 PR 内修好仓库中所有受影响的调用和测试，保证 `checks` 全绿。不能留下“等别人来改”的破坏。
 3. @ 受影响模块的负责人；24 小时内无异议即可合并（异步协作，不要求所有人在线）。
-4. 合并后在交接记录里写一行。
+4. 合并后在群里发一句“已合入 + PR 链接”。
 
 只新增（不改变已有行为）的接口，例如插件新注册的条件，不需要走这个流程。
+
+## 6 桌面／网页共享接口 v1
+
+定义文件：`taleloom/ui_contract.py`。已提供可导入的数据类型、Protocol、固定测试替身和样例测试。网页部署基础采用独立 v0 兼容会话、桥接与单槽持久化；正式会话、GUI 和存储模块继续由对应成员实现，接入点见 [部署指南](cloudflare-deploy.md)。第 1–4 节现有接口不变。修改本节接口或 JSON 结构按第 5 节走 contract PR。
+
+### 数据约定
+
+| 类型 | 字段／作用 |
+| --- | --- |
+| `DisplayItem` | `id, label, description`：物品、线索和候选的可见数据 |
+| `ActionParameter` | `key, label, kind, options, required`：select 候选或 text 文字参数 |
+| `ActionSpec` | `id, label, parameters, enabled, disabled_reason`：稳定动作 ID，不使用选项序号 |
+| `ResourceView` | `id, label, value, maximum`：公开数值 |
+| `ViewSnapshot` | 场景、正文、revision、turn、choices、actions、inventory、clues、resources、assets、结局及 protocol_version |
+| `ActionRequest` | `action_id, expected_revision, values`：参数名映射到所选 ID 或文字 |
+| `SessionResult` | `view, messages, error_code`：完整快照、操作反馈与错误码 |
+
+快照、请求和结果的 `to_dict()` 返回独立的 JSON 可序列化对象。Python 的 `result.ok` 是便利属性，JSON 接收端以 `error_code` 是否为 null 判断成功。`protocol_version=1` 与存档版本独立。类型注解和 Protocol 不负责外部输入校验；浏览器桥接必须检查消息字段、类型和版本后再构造请求，不能执行来自输入的 Python 代码。
+
+### 调用与行为
+
+```python
+class GameSession(Protocol):
+    def start(self) -> SessionResult: ...
+    def snapshot(self) -> ViewSnapshot: ...
+    def dispatch(self, request: ActionRequest) -> SessionResult: ...
+    def export_save(self) -> dict: ...
+    def restore(self, payload: dict) -> SessionResult: ...
+    def list_checkpoints(self) -> list[CheckpointView]: ...
+    def restore_checkpoint(self, checkpoint_id: str, expected_revision: int) -> SessionResult: ...
+    def rewind(self, expected_revision: int) -> SessionResult: ...
+
+class SaveStore(Protocol):
+    def list_slots(self) -> list[str]: ...
+    def read(self, slot: str) -> dict: ...
+    def write(self, slot: str, payload: dict) -> None: ...
+```
+
+- 会话绑定一个已加载剧本。启动层负责选择／加载，重新开始或切换剧本时创建新实例。真实适配器构造参数由 ZQO 确定，界面仅依赖 `GameSession`。
+- 先调用 `start()`；重复调用幂等，不重复触发开场。未启动调用属于开发错误。
+- `snapshot()` 是纯读取，返回独立数据；查看、缩放和渲染不推进回合、不抽随机数。修改返回值不能修改游戏状态。
+- `revision` 是会话界面版本，`turn` 是游戏回合。成功改变状态或恢复存档时 revision 单调递增；读取或失败不递增。恢复旧存档也必须让旧动作失效。
+- `dispatch` 先检查版本与动作，再检查参数和规则。过期返回 `stale_revision`，无效动作返回 `invalid_action`，参数错误返回 `invalid_parameters`；失败保留原状态。
+- 动作 ID 示例为 `choice:take`、`puzzle:use`。适配器映射到现有 `Command`；UI 不拼接中文命令。参数候选只包含玩家已知内容，不提供正确配方或未发现线索。
+- `messages` 是本次反馈，不用于重建场景。每次结果包含完整快照；浏览器消息同时带会话标识与请求 ID，切换故事后丢弃旧会话响应，避免版本从零开始造成混淆。
+- 真实 `export_save/restore` 沿用 `save.py` 的存档版本、剧本 ID 与指纹规则，将编码／验证从文件读写中提取复用。恢复失败返回 `invalid_save`；成功不重复执行进入场景事件。
+- `SaveStore` 只存取数据，预期失败抛 `StorageError`，不泄漏可变引用。文件端保留原子写入；浏览器端通过 JS 桥接异步完成等价操作，不要求 Python 同步等待浏览器消息。首版不承诺跨设备同步。
+- `assets` 为展示角色到剧本相对路径的映射，例如 background／portrait；由 YHT 在素材字段实现时补齐校验，缺失时文字仍可通关。
+
+### 影像模式与回退扩展（ZQO，第二轮 contract）
+
+新增字段均有默认值，`protocol_version` 保持 1，旧前端可忽略：
+
+| 字段 | 含义 |
+| --- | --- |
+| `art: str | None` | 当前场景的画面键；缺少时为 null，由展示端决定文字／默认画面 |
+| `ending_kind: normal | failure | None` | 未结束为 null，普通结局默认 normal |
+| `checkpoint: CheckpointView | None` | 当前分支最近的存档点摘要，不一定是当前场景 |
+| `mistakes` | 成功“回到上一个选择”的次数；与现有影像页计数一致 |
+| `rewinds` | 成功“回到存档点”的次数；不消耗上一步机会 |
+| `rewind_limit / rewinds_remaining` | 本局上一步机会总数／剩余数，默认 3 |
+
+`CheckpointView(id, label, scene_id, turn)` 只含玩家已知摘要，不暴露保存的隐藏状态。
+`create_session(story, seed=None, rewind_limit=3)` 接受非负整数上限（含 0，不接受 bool）。
+正式场景属性 `art/checkpoint` 与 `ending.kind` 由 YHT 解析、校验；本实现用属性读取接入，
+不接管加载器。迁移期间仅在正式属性缺失时兼容 `fail_` 与 `on_enter` 的 `【存档点】` 提示。
+画面键缺失时不复制网页 ART 映射表。
+
+- `start()` 在进入效果完成后保存开场；进入命名节点后自动保存，读取快照不会建立存档点。
+- `list_checkpoints()` 按到达顺序返回独立摘要，只含当前分支已到达节点；重访同一节点时替换旧记录并截去后续分支。
+- `restore_checkpoint(id, expected_revision)` 可在游戏中或结局使用；免费恢复节点，累计 `rewinds`，保留当前 `mistakes` 和机会数；清除节点之后的记录及上一步目标。
+- `rewind(expected_revision)` 仅在 failure 结局且有最近一次成功选择时可用；恢复该选择前的剧情状态和节点列表，成功才增加 `mistakes`、减少机会。普通结局使用存档点返回。
+- 两种回退成功均递增 revision，恢复原 turn、seed、线索、道具、触发器及一次性选择；不再次执行 `on_enter`、不抽新种子。重复旧请求返回 `stale_revision`。
+- 未知／作废节点返回 `invalid_checkpoint`；无失败选择返回 `rewind_unavailable`；机会耗尽返回 `rewind_exhausted`。拒绝操作保留状态、计数和版本。
+- 完整记录以 `state.ext.session` 写入现有 v1 存档：`version=1, rewind_limit, mistakes, rewinds, checkpoints, previous_choice`。节点保存独立 GameState 字典，移除 `ext.session`，避免递归膨胀；只保留一个选择前的状态及当时的节点列表。
+- 标准 `encode_save/decode_save` 与 SaveStore 原样携带 ext；会话恢复时额外校验所有节点、计数、种子和时间顺序，再原子替换。恢复整个存档沿用存档中的计数和上限，不按新会话参数重置。
+- 不含该扩展的旧档仍能读取，计数从 0 开始、沿用构造时上限；仅把读档所在的非结局位置作为可用节点，不捏造过去的选择或节点。
+- ZC 后续在 Worker／`web/cinematic` 暴露并调用上述会话方法；ZRS 接桌面按钮，LQ 接自动持久化。本 PR 保留现有前端流程，用浏览器回归保证它能忽略新字段。
+
+### 展示端如何取得会话、桌面如何启动
+
+所有展示端只通过一个入口创建会话，不直接实例化具体类：
+
+```python
+from taleloom.loader import load_story
+from taleloom.session_factory import create_session
+
+session = create_session(load_story("stories/fog_harbor"))   # GameSession
+result = session.start()
+```
+
+- `taleloom/session_factory.py`（ZC）已统一返回正式会话 `taleloom/session.py`；桌面、网页和 `tools/web_vectors.py` 共用该入口。
+- 桌面 GUI（ZRS）以包 `taleloom.gui` 交付，提供 `run(stories_dir: Path, saves_dir: Path) -> int`（返回进程退出码）。`python main.py` 无参数时调用它；包不存在或当前 Python 没有 Tkinter 时，`main.py` 提示后回退命令行，见 `tests/zc/test_main_entry.py`。
+- GUI 内部只依赖 `GameSession` 与 `SaveStore`，开发阶段用 `tests/ui_fakes.py` 的替身，不 import `engine.py`。
+
+### 可独立运行的示例
+
+在仓库根目录执行以下 Python 内容，无需窗口、网络或真实剧本：
+
+```python
+from taleloom.ui_contract import ActionRequest
+from tests.ui_fakes import FakeGameSession, MemorySaveStore
+
+session = FakeGameSession()
+first = session.start()
+taken = session.dispatch(ActionRequest("choice:take", first.view.revision))
+store = MemorySaveStore()
+store.write("slot-1", session.export_save())
+result = session.restore(store.read("slot-1"))
+assert result.view.inventory[0].id == "key"
+```
+
+- ZRS 将测试替身注入页面控制器，覆盖动作、参数、物品、资源、错误和结局。
+- ZQO 可复用 `tests/integration/test_ui_contract.py` 的 `SessionContractMixin`，用包含 take/open 动作的迷你剧本构造真实会话，再增加插件、随机、存档测试。
+- LQ 用 `MemorySaveStore` 隔离文件与浏览器，独立测试真实存储和存档互通。
+- YHT 维护数据与 `to_dict()` 结构；ZC 把同一 JSON 数据映射到 Web Worker 消息并验证真实浏览器回放。
+
+运行 `python -B -m unittest tests.integration.test_ui_contract -v` 验证样例。测试替身使用带 fixture 标记的测试存档，内存存储随实例消失，均不属于正式游戏实现。
+
+## 7 ZQO 正式运行时扩展（兼容 v1）
+
+- `session_factory.create_session` 返回 `session.GameSession`，现有 `Engine` 调用签名保持不变。未启动时调用会话操作抛出开发调用错误；正常用户操作错误返回 `SessionResult`。失败操作回滚状态和 revision；不产生状态变化的尝试仅返回提示。
+- `Scene.variants` 为可选列表，默认空。每项包含 `text`、可选 `when` 和 `mode`（默认 `append`，或 `replace`）。按数组顺序应用，随后替换 `{vars.名称}` 与 `{item:ID}`。未知占位符显示提示；不执行表达式。loader、walk、validator 同步支持此字段。
+- 新游戏由 `GameSession(story, seed=None)` 自动生成 64 位种子；`create_session` 同样接受可选 seed。测试与回放可传整数固定种子。状态保存 `random_seed` 与 `turn`，旧存档缺失 seed 时默认 0。`chance` 支持 0–100 整数，或 `{"percent": 30, "id": "meteor"}`。哈希键包含种子、回合、场景、条件所在的选项/触发器/变体位置、显式 id 和百分比；不同事件独立、同一事件重复读取稳定。插件或同一嵌套条件中的等概率事件应提供不同的显式 id。快照读取不修改随机进度，恢复后相同操作得到相同结果。
+- `Mechanic.actions(engine)` 返回结构化 `ActionSpec`；`Mechanic.clues(engine)` 返回已发现的 `DisplayItem`。两个方法默认空列表，旧插件兼容。展示在引擎副本上进行；插件仍须遵守只读约定。动作 ID 为 `插件名:动词`，参数按声明顺序传入 `Command.args`，支持 `select`、`text` 及可选参数。
+- 存档编码器归 LQ 的 #12。本 PR 不修改 save.py；正式会话暂复用已合入 `LegacySession._decode` 的校验（含 examined/asked/act），待 LQ 的公共编码器合入再替换此单一接入点。
+- `mechanics/example.py` 为可启用的最小铃铛插件，演示注册条件、效果、动词与图形按钮。现有两部剧本不启用它。
+- 展示直接读取 YHT 已合入的 `story.resources` 与 `story.assets`，不再猜测字段或按剧本 ID 硬编码。推理和道具的 actions 方法仅适配各负责人已有 build_actions，保留搜证、审问、指认理由和 use_on。图形正文复用现有命令行提示过滤。
+
+本次 contract PR 涉及 YHT 的场景变体类型/加载/校验、ZRS/ZC 的插件方法适配及 ZC 的会话入口/网页打包。LQ 的 replay.py 和 save.py 保持原实现；当前引擎回放默认 seed=0，后续通关脚本 seed 语法由 LQ 确定。网页验收通过导入固定起始存档，让浏览器与 CPython 在同一随机状态下逐步比较。原有公开方法与存档 v1 保持兼容，新增 seed 参数为可选关键字。

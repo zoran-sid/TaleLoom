@@ -1,0 +1,23 @@
+TaleLoom browser runtime
+
+Pyodide 314.0.7 — Mozilla Public License 2.0 (MPL-2.0)
+Unmodified runtime files distributed from the locked npm package.
+Source: https://github.com/pyodide/pyodide/tree/314.0.7
+License: https://www.mozilla.org/MPL/2.0/
+Pyodide includes CPython and components under their respective licenses.
+CPython license: https://docs.python.org/3/license.html
+Runtime source and bundled component notices are available in the Pyodide source release.
+
+GSAP 3.15.0 — GreenSock Standard "no charge" license
+Bundled into the cinematic page (web/cinematic/units.js) for investigation animations.
+License: https://gsap.com/standard-license
+Source: https://www.npmjs.com/package/gsap/v/3.15.0
+
+Cinematic art and sound: drawn on Canvas and synthesized with Web Audio by this
+project's own code (web/cinematic/stage.js, sound.js); no image or audio files
+are loaded. Fallback when Canvas or Web Audio is unavailable: subtitles,
+sound captions and the notebook still carry every clue.
+
+Build-only tools (not served as game runtime):
+Vite — MIT; Cloudflare CLI and Vite plugin — MIT; Playwright — Apache-2.0.
+Versions and dependency integrity are recorded in package-lock.json.

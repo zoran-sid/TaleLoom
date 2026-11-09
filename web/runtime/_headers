@@ -1,0 +1,12 @@
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: same-origin
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'
+/runtime.json
+  Cache-Control: no-cache
+/catalog.json
+  Cache-Control: no-cache
+/worker.js
+  Cache-Control: no-cache
+/pyodide/*
+  Cache-Control: public, max-age=31536000, immutable

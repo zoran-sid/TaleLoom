@@ -1,0 +1,1518 @@
+{
+  "format_version": 1,
+  "id": "deep_space_film",
+  "title": "深空回声 · 影像版",
+  "start": "bay_wake",
+  "mechanics": [],
+  "meta": {
+    "owner": "LQ",
+    "genre": "线性资源冒险 · 影像版",
+    "status": "第二轮：双资源、五结局、三处关键节点"
+  },
+  "vars": {
+    "oxygen": 12,
+    "battery": 10
+  },
+  "resources": [
+    {
+      "var": "oxygen",
+      "name": "氧气"
+    },
+    {
+      "var": "battery",
+      "name": "电量"
+    }
+  ],
+  "items": [
+    {
+      "id": "repair_kit",
+      "name": "工具包"
+    },
+    {
+      "id": "power_cell",
+      "name": "独立电芯"
+    },
+    {
+      "id": "echo_record",
+      "name": "原始回声记录"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "bay_wake",
+      "title": "最后一名值班员",
+      "text": "休眠舱突然失压。腕表里有一段提前三年录下的警报：“别把所有电力都交给导航。”你必须先封住面罩，再决定是尽快逃生，还是找出声音的主人。\n氧气 {vars.oxygen} · 电量 {vars.battery}。选择前进会消耗资源，查看笔记不会。",
+      "choices": [
+        {
+          "id": "seal",
+          "text": "扣紧面罩，封闭漏气阀",
+          "goto": "corridor_route",
+          "when": {
+            "all": [
+              {
+                "var": [
+                  "oxygen",
+                  ">",
+                  1
+                ]
+              },
+              {
+                "var": [
+                  "battery",
+                  ">",
+                  1
+                ]
+              }
+            ]
+          },
+          "effects": [
+            {
+              "add_var": [
+                "oxygen",
+                -1
+              ]
+            },
+            {
+              "add_var": [
+                "battery",
+                -1
+              ]
+            }
+          ]
+        },
+        {
+          "id": "wait",
+          "text": "留在原地，等到氧气耗尽",
+          "goto": "bay_failure_oxygen",
+          "effects": [
+            {
+              "set_var": [
+                "oxygen",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "empty_oxygen",
+          "text": "氧气已不足，仍试图继续",
+          "goto": "bay_failure_oxygen",
+          "when": {
+            "var": [
+              "oxygen",
+              "<=",
+              1
+            ]
+          },
+          "effects": [
+            {
+              "set_var": [
+                "oxygen",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "empty_power",
+          "text": "电量已不足，仍强行启动设备",
+          "goto": "energy_failure_power",
+          "when": {
+            "var": [
+              "battery",
+              "<=",
+              2
+            ]
+          },
+          "effects": [
+            {
+              "set_var": [
+                "battery",
+                0
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "corridor_route",
+      "title": "亮着灯的岔路",
+      "text": "身后的隔舱门落下，已经没有回头路。工具间的应急灯还亮着；能源舱则不断传来继电器吸合的声音。修复需要时间，抄近路则要付出更多电量。\n氧气 {vars.oxygen} · 电量 {vars.battery}。选择前进会消耗资源，查看笔记不会。",
+      "choices": [
+        {
+          "id": "tools",
+          "text": "进入工具间，寻找修理包",
+          "goto": "toolroom_kit",
+          "when": {
+            "all": [
+              {
+                "var": [
+                  "oxygen",
+                  ">",
+                  1
+                ]
+              },
+              {
+                "var": [
+                  "battery",
+                  ">",
+                  1
+                ]
+              }
+            ]
+          },
+          "effects": [
+            {
+              "add_var": [
+                "oxygen",
+                -1
+              ]
+            },
+            {
+              "add_var": [
+                "battery",
+                -1
+              ]
+            }
+          ]
+        },
+        {
+          "id": "shortcut",
+          "text": "跳过工具，直奔能源舱",
+          "goto": "energy_reserve",
+          "when": {
+            "all": [
+              {
+                "var": [
+                  "oxygen",
+                  ">",
+                  1
+                ]
+              },
+              {
+                "var": [
+                  "battery",
+                  ">",
+                  2
+                ]
+              }
+            ]
+          },
+          "effects": [
+            {
+              "add_var": [
+                "oxygen",
+                -1
+              ]
+            },
+            {
+              "add_var": [
+                "battery",
+                -2
+              ]
+            }
+          ]
+        },
+        {
+          "id": "reset",
+          "text": "切断全部备用电源，强行重启",
+          "goto": "energy_failure_power",
+          "effects": [
+            {
+              "set_var": [
+                "battery",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "wait",
+          "text": "留在原地，等到氧气耗尽",
+          "goto": "bay_failure_oxygen",
+          "effects": [
+            {
+              "set_var": [
+                "oxygen",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "empty_oxygen",
+          "text": "氧气已不足，仍试图继续",
+          "goto": "bay_failure_oxygen",
+          "when": {
+            "var": [
+              "oxygen",
+              "<=",
+              1
+            ]
+          },
+          "effects": [
+            {
+              "set_var": [
+                "oxygen",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "empty_power",
+          "text": "电量已不足，仍强行启动设备",
+          "goto": "energy_failure_power",
+          "when": {
+            "var": [
+              "battery",
+              "<=",
+              2
+            ]
+          },
+          "effects": [
+            {
+              "set_var": [
+                "battery",
+                0
+              ]
+            }
+          ]
+        }
+      ],
+      "on_enter": [
+        {
+          "say": "【存档点】密封完成 · 出发前"
+        }
+      ]
+    },
+    {
+      "id": "toolroom_kit",
+      "title": "两件带得走的东西",
+      "text": "防火罩后放着工具包和独立电芯。工具能修好气闸，电芯能为生命维持换取余量。笨重的东西会拖慢行动，但现在丢下它们，后面就不能回来。\n氧气 {vars.oxygen} · 电量 {vars.battery}。选择前进会消耗资源，查看笔记不会。",
+      "choices": [
+        {
+          "id": "kit",
+          "text": "带走工具包和独立电芯",
+          "goto": "energy_reserve",
+          "when": {
+            "all": [
+              {
+                "var": [
+                  "oxygen",
+                  ">",
+                  1
+                ]
+              },
+              {
+                "var": [
+                  "battery",
+                  ">",
+                  1
+                ]
+              }
+            ]
+          },
+          "effects": [
+            {
+              "add_var": [
+                "oxygen",
+                -1
+              ]
+            },
+            {
+              "add_var": [
+                "battery",
+                -1
+              ]
+            },
+            {
+              "give_item": "repair_kit"
+            },
+            {
+              "give_item": "power_cell"
+            }
+          ]
+        },
+        {
+          "id": "cell",
+          "text": "只拿电芯，放弃工具包",
+          "goto": "energy_reserve",
+          "when": {
+            "all": [
+              {
+                "var": [
+                  "oxygen",
+                  ">",
+                  1
+                ]
+              },
+              {
+                "var": [
+                  "battery",
+                  ">",
+                  1
+                ]
+              }
+            ]
+          },
+          "effects": [
+            {
+              "add_var": [
+                "oxygen",
+                -1
+              ]
+            },
+            {
+              "add_var": [
+                "battery",
+                -1
+              ]
+            },
+            {
+              "give_item": "power_cell"
+            }
+          ]
+        },
+        {
+          "id": "wait",
+          "text": "留在原地，等到氧气耗尽",
+          "goto": "bay_failure_oxygen",
+          "effects": [
+            {
+              "set_var": [
+                "oxygen",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "empty_oxygen",
+          "text": "氧气已不足，仍试图继续",
+          "goto": "bay_failure_oxygen",
+          "when": {
+            "var": [
+              "oxygen",
+              "<=",
+              1
+            ]
+          },
+          "effects": [
+            {
+              "set_var": [
+                "oxygen",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "empty_power",
+          "text": "电量已不足，仍强行启动设备",
+          "goto": "energy_failure_power",
+          "when": {
+            "var": [
+              "battery",
+              "<=",
+              2
+            ]
+          },
+          "effects": [
+            {
+              "set_var": [
+                "battery",
+                0
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "energy_reserve",
+      "title": "留给生命维持的电",
+      "text": "主推进器要求把剩余电力全部注入导航。旁边独立的生命维持回路却仍可接通。广播再次重复：“我们也曾想赶时间。”你可以修复回路，也可以把有限电量留给后面的选择。\n氧气 {vars.oxygen} · 电量 {vars.battery}。选择前进会消耗资源，查看笔记不会。",
+      "choices": [
+        {
+          "id": "support",
+          "text": "接入独立电芯，恢复生命维持",
+          "goto": "comms_signal",
+          "when": {
+            "all": [
+              {
+                "var": [
+                  "oxygen",
+                  ">",
+                  1
+                ]
+              },
+              {
+                "var": [
+                  "battery",
+                  ">",
+                  1
+                ]
+              },
+              {
+                "has_item": "power_cell"
+              }
+            ]
+          },
+          "effects": [
+            {
+              "add_var": [
+                "oxygen",
+                -1
+              ]
+            },
+            {
+              "add_var": [
+                "battery",
+                -1
+              ]
+            },
+            {
+              "take_item": "power_cell"
+            },
+            {
+              "add_var": [
+                "oxygen",
+                6
+              ]
+            },
+            {
+              "add_var": [
+                "battery",
+                6
+              ]
+            },
+            {
+              "set_flag": "support_fixed"
+            }
+          ]
+        },
+        {
+          "id": "reserve",
+          "text": "不启动主推进器，保留电量继续",
+          "goto": "comms_signal",
+          "when": {
+            "all": [
+              {
+                "var": [
+                  "oxygen",
+                  ">",
+                  1
+                ]
+              },
+              {
+                "var": [
+                  "battery",
+                  ">",
+                  1
+                ]
+              }
+            ]
+          },
+          "effects": [
+            {
+              "add_var": [
+                "oxygen",
+                -1
+              ]
+            },
+            {
+              "add_var": [
+                "battery",
+                -1
+              ]
+            }
+          ]
+        },
+        {
+          "id": "boost",
+          "text": "把剩余电量全部灌入主推进器",
+          "goto": "energy_failure_power",
+          "effects": [
+            {
+              "set_var": [
+                "battery",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "wait",
+          "text": "留在原地，等到氧气耗尽",
+          "goto": "bay_failure_oxygen",
+          "effects": [
+            {
+              "set_var": [
+                "oxygen",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "empty_oxygen",
+          "text": "氧气已不足，仍试图继续",
+          "goto": "bay_failure_oxygen",
+          "when": {
+            "var": [
+              "oxygen",
+              "<=",
+              1
+            ]
+          },
+          "effects": [
+            {
+              "set_var": [
+                "oxygen",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "empty_power",
+          "text": "电量已不足，仍强行启动设备",
+          "goto": "energy_failure_power",
+          "when": {
+            "var": [
+              "battery",
+              "<=",
+              2
+            ]
+          },
+          "effects": [
+            {
+              "set_var": [
+                "battery",
+                0
+              ]
+            }
+          ]
+        }
+      ],
+      "on_enter": [
+        {
+          "say": "【存档点】供电余量 · 能源舱"
+        }
+      ]
+    },
+    {
+      "id": "comms_signal",
+      "title": "两种求救",
+      "text": "通信屏幕上出现一艘接驳船的响应。另一频道里，三年前的回声仍在循环。现在发出定位就能等到救援；继续追踪记录，则可能把被删除的名字带回来。\n氧气 {vars.oxygen} · 电量 {vars.battery}。选择前进会消耗资源，查看笔记不会。",
+      "choices": [
+        {
+          "id": "rescue",
+          "text": "发送定位，接受接驳船救援",
+          "goto": "space_rescue",
+          "when": {
+            "all": [
+              {
+                "var": [
+                  "oxygen",
+                  ">",
+                  2
+                ]
+              },
+              {
+                "var": [
+                  "battery",
+                  ">",
+                  2
+                ]
+              }
+            ]
+          },
+          "effects": [
+            {
+              "add_var": [
+                "oxygen",
+                -2
+              ]
+            },
+            {
+              "add_var": [
+                "battery",
+                -2
+              ]
+            }
+          ]
+        },
+        {
+          "id": "trace",
+          "text": "追踪重复广播，前往观测室",
+          "goto": "observatory_echo",
+          "when": {
+            "all": [
+              {
+                "var": [
+                  "oxygen",
+                  ">",
+                  1
+                ]
+              },
+              {
+                "var": [
+                  "battery",
+                  ">",
+                  1
+                ]
+              }
+            ]
+          },
+          "effects": [
+            {
+              "add_var": [
+                "oxygen",
+                -1
+              ]
+            },
+            {
+              "add_var": [
+                "battery",
+                -1
+              ]
+            }
+          ]
+        },
+        {
+          "id": "leave",
+          "text": "关闭接收机，立即前往气闸",
+          "goto": "airlock_seal",
+          "when": {
+            "all": [
+              {
+                "var": [
+                  "oxygen",
+                  ">",
+                  1
+                ]
+              },
+              {
+                "var": [
+                  "battery",
+                  ">",
+                  1
+                ]
+              }
+            ]
+          },
+          "effects": [
+            {
+              "add_var": [
+                "oxygen",
+                -1
+              ]
+            },
+            {
+              "add_var": [
+                "battery",
+                -1
+              ]
+            }
+          ]
+        },
+        {
+          "id": "overload",
+          "text": "持续满功率发送，直到电池耗尽",
+          "goto": "energy_failure_power",
+          "effects": [
+            {
+              "set_var": [
+                "battery",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "wait",
+          "text": "留在原地，等到氧气耗尽",
+          "goto": "bay_failure_oxygen",
+          "effects": [
+            {
+              "set_var": [
+                "oxygen",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "empty_oxygen",
+          "text": "氧气已不足，仍试图继续",
+          "goto": "bay_failure_oxygen",
+          "when": {
+            "var": [
+              "oxygen",
+              "<=",
+              1
+            ]
+          },
+          "effects": [
+            {
+              "set_var": [
+                "oxygen",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "empty_power",
+          "text": "电量已不足，仍强行启动设备",
+          "goto": "energy_failure_power",
+          "when": {
+            "var": [
+              "battery",
+              "<=",
+              2
+            ]
+          },
+          "effects": [
+            {
+              "set_var": [
+                "battery",
+                0
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "observatory_echo",
+      "title": "没有被写进日志的人",
+      "text": "舷窗外没有怪物，记录器里也没有陌生信号。那段回声来自上一班船员：他们把氧气留给了最后一名伤员，却被自动航海日志标成“无人值守”。原始记录还在这里。\n氧气 {vars.oxygen} · 电量 {vars.battery}。选择前进会消耗资源，查看笔记不会。",
+      "choices": [
+        {
+          "id": "record",
+          "text": "下载原始记录，切回低功率通信",
+          "goto": "comms_transmit",
+          "when": {
+            "all": [
+              {
+                "var": [
+                  "oxygen",
+                  ">",
+                  1
+                ]
+              },
+              {
+                "var": [
+                  "battery",
+                  ">",
+                  1
+                ]
+              }
+            ]
+          },
+          "effects": [
+            {
+              "add_var": [
+                "oxygen",
+                -1
+              ]
+            },
+            {
+              "add_var": [
+                "battery",
+                -1
+              ]
+            },
+            {
+              "give_item": "echo_record"
+            }
+          ]
+        },
+        {
+          "id": "abandon",
+          "text": "放弃记录，赶往气闸",
+          "goto": "airlock_seal",
+          "when": {
+            "all": [
+              {
+                "var": [
+                  "oxygen",
+                  ">",
+                  1
+                ]
+              },
+              {
+                "var": [
+                  "battery",
+                  ">",
+                  1
+                ]
+              }
+            ]
+          },
+          "effects": [
+            {
+              "add_var": [
+                "oxygen",
+                -1
+              ]
+            },
+            {
+              "add_var": [
+                "battery",
+                -1
+              ]
+            }
+          ]
+        },
+        {
+          "id": "wait",
+          "text": "留在原地，等到氧气耗尽",
+          "goto": "bay_failure_oxygen",
+          "effects": [
+            {
+              "set_var": [
+                "oxygen",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "empty_oxygen",
+          "text": "氧气已不足，仍试图继续",
+          "goto": "bay_failure_oxygen",
+          "when": {
+            "var": [
+              "oxygen",
+              "<=",
+              1
+            ]
+          },
+          "effects": [
+            {
+              "set_var": [
+                "oxygen",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "empty_power",
+          "text": "电量已不足，仍强行启动设备",
+          "goto": "energy_failure_power",
+          "when": {
+            "var": [
+              "battery",
+              "<=",
+              2
+            ]
+          },
+          "effects": [
+            {
+              "set_var": [
+                "battery",
+                0
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "comms_transmit",
+      "title": "把名字发回去",
+      "text": "芯片中保存着上一班船员的姓名与交接时间。发送原始记录需要两格电量。你也可以只带着芯片离开，让自己先活下来；这一次不会有系统替你作决定。\n氧气 {vars.oxygen} · 电量 {vars.battery}。选择前进会消耗资源，查看笔记不会。",
+      "choices": [
+        {
+          "id": "send",
+          "text": "将原始记录和船员姓名发回地球",
+          "goto": "airlock_seal",
+          "when": {
+            "all": [
+              {
+                "var": [
+                  "oxygen",
+                  ">",
+                  1
+                ]
+              },
+              {
+                "var": [
+                  "battery",
+                  ">",
+                  2
+                ]
+              },
+              {
+                "has_item": "echo_record"
+              }
+            ]
+          },
+          "effects": [
+            {
+              "add_var": [
+                "oxygen",
+                -1
+              ]
+            },
+            {
+              "add_var": [
+                "battery",
+                -2
+              ]
+            },
+            {
+              "set_flag": "truth_sent"
+            }
+          ]
+        },
+        {
+          "id": "keep",
+          "text": "只保留芯片，留电量撤离",
+          "goto": "airlock_seal",
+          "when": {
+            "all": [
+              {
+                "var": [
+                  "oxygen",
+                  ">",
+                  1
+                ]
+              },
+              {
+                "var": [
+                  "battery",
+                  ">",
+                  1
+                ]
+              }
+            ]
+          },
+          "effects": [
+            {
+              "add_var": [
+                "oxygen",
+                -1
+              ]
+            },
+            {
+              "add_var": [
+                "battery",
+                -1
+              ]
+            }
+          ]
+        },
+        {
+          "id": "wait",
+          "text": "留在原地，等到氧气耗尽",
+          "goto": "bay_failure_oxygen",
+          "effects": [
+            {
+              "set_var": [
+                "oxygen",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "empty_oxygen",
+          "text": "氧气已不足，仍试图继续",
+          "goto": "bay_failure_oxygen",
+          "when": {
+            "var": [
+              "oxygen",
+              "<=",
+              1
+            ]
+          },
+          "effects": [
+            {
+              "set_var": [
+                "oxygen",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "empty_power",
+          "text": "电量已不足，仍强行启动设备",
+          "goto": "energy_failure_power",
+          "when": {
+            "var": [
+              "battery",
+              "<=",
+              2
+            ]
+          },
+          "effects": [
+            {
+              "set_var": [
+                "battery",
+                0
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "airlock_seal",
+      "title": "最后一道密封",
+      "text": "气闸面板的螺栓松脱，逃生舱就在门后。工具包可以做可靠的修复；没有工具就只能启动应急旁路。先检查密封，资源不足时不要把过载当成捷径。\n氧气 {vars.oxygen} · 电量 {vars.battery}。选择前进会消耗资源，查看笔记不会。",
+      "choices": [
+        {
+          "id": "repair",
+          "text": "用工具修好面板，检查舱门密封",
+          "goto": "space_depart",
+          "when": {
+            "all": [
+              {
+                "var": [
+                  "oxygen",
+                  ">",
+                  1
+                ]
+              },
+              {
+                "var": [
+                  "battery",
+                  ">",
+                  1
+                ]
+              },
+              {
+                "has_item": "repair_kit"
+              }
+            ]
+          },
+          "effects": [
+            {
+              "add_var": [
+                "oxygen",
+                -1
+              ]
+            },
+            {
+              "add_var": [
+                "battery",
+                -1
+              ]
+            },
+            {
+              "set_flag": "panel_fixed"
+            }
+          ]
+        },
+        {
+          "id": "emergency",
+          "text": "启动耗电的应急开门旁路",
+          "goto": "airlock_emergency",
+          "when": {
+            "all": [
+              {
+                "var": [
+                  "oxygen",
+                  ">",
+                  1
+                ]
+              },
+              {
+                "var": [
+                  "battery",
+                  ">",
+                  2
+                ]
+              }
+            ]
+          },
+          "effects": [
+            {
+              "add_var": [
+                "oxygen",
+                -1
+              ]
+            },
+            {
+              "add_var": [
+                "battery",
+                -2
+              ]
+            }
+          ]
+        },
+        {
+          "id": "vent",
+          "text": "不等密封，直接打开外舱门",
+          "goto": "bay_failure_oxygen",
+          "effects": [
+            {
+              "set_var": [
+                "oxygen",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "wait",
+          "text": "留在原地，等到氧气耗尽",
+          "goto": "bay_failure_oxygen",
+          "effects": [
+            {
+              "set_var": [
+                "oxygen",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "empty_oxygen",
+          "text": "氧气已不足，仍试图继续",
+          "goto": "bay_failure_oxygen",
+          "when": {
+            "var": [
+              "oxygen",
+              "<=",
+              1
+            ]
+          },
+          "effects": [
+            {
+              "set_var": [
+                "oxygen",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "empty_power",
+          "text": "电量已不足，仍强行启动设备",
+          "goto": "energy_failure_power",
+          "when": {
+            "var": [
+              "battery",
+              "<=",
+              2
+            ]
+          },
+          "effects": [
+            {
+              "set_var": [
+                "battery",
+                0
+              ]
+            }
+          ]
+        }
+      ],
+      "on_enter": [
+        {
+          "say": "【存档点】撤离准备 · 气闸前"
+        }
+      ]
+    },
+    {
+      "id": "airlock_emergency",
+      "title": "一根机械拉杆",
+      "text": "电机转速正在下降。面板提醒你：继续加压会用尽最后的电，而机械拉杆可以释放货物锁。你必须放弃额外负重，把有限电量留给逃生舱。\n氧气 {vars.oxygen} · 电量 {vars.battery}。选择前进会消耗资源，查看笔记不会。",
+      "choices": [
+        {
+          "id": "lever",
+          "text": "丢下货物，用机械拉杆释放舱锁",
+          "goto": "space_depart",
+          "when": {
+            "all": [
+              {
+                "var": [
+                  "oxygen",
+                  ">",
+                  1
+                ]
+              },
+              {
+                "var": [
+                  "battery",
+                  ">",
+                  1
+                ]
+              }
+            ]
+          },
+          "effects": [
+            {
+              "add_var": [
+                "oxygen",
+                -1
+              ]
+            },
+            {
+              "add_var": [
+                "battery",
+                -1
+              ]
+            }
+          ]
+        },
+        {
+          "id": "burn",
+          "text": "让电机持续过载，直到电量归零",
+          "goto": "energy_failure_power",
+          "effects": [
+            {
+              "set_var": [
+                "battery",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "wait",
+          "text": "留在原地，等到氧气耗尽",
+          "goto": "bay_failure_oxygen",
+          "effects": [
+            {
+              "set_var": [
+                "oxygen",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "empty_oxygen",
+          "text": "氧气已不足，仍试图继续",
+          "goto": "bay_failure_oxygen",
+          "when": {
+            "var": [
+              "oxygen",
+              "<=",
+              1
+            ]
+          },
+          "effects": [
+            {
+              "set_var": [
+                "oxygen",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "empty_power",
+          "text": "电量已不足，仍强行启动设备",
+          "goto": "energy_failure_power",
+          "when": {
+            "var": [
+              "battery",
+              "<=",
+              2
+            ]
+          },
+          "effects": [
+            {
+              "set_var": [
+                "battery",
+                0
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "space_depart",
+      "title": "分离之前",
+      "text": "逃生舱已经离开母船的机械锁。那段广播终于停止循环；前方是返航信标，身后是逐渐熄灭的“回声号”。你最后一次检查面罩与电量，决定把哪段故事带回家。\n氧气 {vars.oxygen} · 电量 {vars.battery}。选择前进会消耗资源，查看笔记不会。",
+      "choices": [
+        {
+          "id": "truth",
+          "text": "带着已送达地球的真相返航",
+          "goto": "space_truth",
+          "when": {
+            "all": [
+              {
+                "var": [
+                  "oxygen",
+                  ">",
+                  1
+                ]
+              },
+              {
+                "var": [
+                  "battery",
+                  ">",
+                  1
+                ]
+              },
+              {
+                "flag": "truth_sent"
+              }
+            ]
+          },
+          "effects": [
+            {
+              "add_var": [
+                "oxygen",
+                -1
+              ]
+            },
+            {
+              "add_var": [
+                "battery",
+                -1
+              ]
+            }
+          ]
+        },
+        {
+          "id": "escape",
+          "text": "沿返航信标离开，只求活着回家",
+          "goto": "space_escape",
+          "when": {
+            "all": [
+              {
+                "var": [
+                  "oxygen",
+                  ">",
+                  1
+                ]
+              },
+              {
+                "var": [
+                  "battery",
+                  ">",
+                  1
+                ]
+              }
+            ]
+          },
+          "effects": [
+            {
+              "add_var": [
+                "oxygen",
+                -1
+              ]
+            },
+            {
+              "add_var": [
+                "battery",
+                -1
+              ]
+            }
+          ]
+        },
+        {
+          "id": "wait",
+          "text": "留在原地，等到氧气耗尽",
+          "goto": "bay_failure_oxygen",
+          "effects": [
+            {
+              "set_var": [
+                "oxygen",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "empty_oxygen",
+          "text": "氧气已不足，仍试图继续",
+          "goto": "bay_failure_oxygen",
+          "when": {
+            "var": [
+              "oxygen",
+              "<=",
+              1
+            ]
+          },
+          "effects": [
+            {
+              "set_var": [
+                "oxygen",
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "empty_power",
+          "text": "电量已不足，仍强行启动设备",
+          "goto": "energy_failure_power",
+          "when": {
+            "var": [
+              "battery",
+              "<=",
+              2
+            ]
+          },
+          "effects": [
+            {
+              "set_var": [
+                "battery",
+                0
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "space_escape",
+      "title": "活着回家",
+      "text": "逃生舱划过星光。你保住了自己的生命，也记住了那句没有解释完的警告。返航信标越来越近，回声留在了身后。",
+      "ending": {
+        "id": "escape",
+        "title": "活着回家"
+      }
+    },
+    {
+      "id": "space_truth",
+      "title": "有人听见",
+      "text": "地球站回复：“原始记录与船员姓名已保存。”你把逃生舱对准归航方向。那些没有被写进日志的人，终于等到了一位愿意听完的值班员。",
+      "ending": {
+        "id": "truth",
+        "title": "有人听见"
+      }
+    },
+    {
+      "id": "space_rescue",
+      "title": "接驳灯",
+      "text": "接驳船按照定位靠近，保持着足够安全的距离。你带着仍有余量的面罩进入接驳舱。没有解开回声的谜，也是一种把生命交给明天的选择。",
+      "ending": {
+        "id": "rescue",
+        "title": "接驳灯"
+      }
+    },
+    {
+      "id": "bay_failure_oxygen",
+      "title": "面罩归零",
+      "text": "最后一格氧气消失，面罩不再响起气流声。资源耗尽使任务立即失败。回到上一个选择或较早的存档点，重新安排补给与路线。",
+      "ending": {
+        "id": "fail_oxygen",
+        "title": "氧气耗尽"
+      }
+    },
+    {
+      "id": "energy_failure_power",
+      "title": "最后一盏灯",
+      "text": "备用电量降到零。氧气还在，控制系统却已停止响应：这次任务因为供电耗尽而失败。回退后保留供电余量，别把过载当作修复。",
+      "ending": {
+        "id": "fail_power",
+        "title": "电量耗尽"
+      }
+    }
+  ]
+}

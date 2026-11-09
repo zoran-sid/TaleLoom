@@ -17,7 +17,13 @@ def _puzzle() -> Mechanic:
     return PuzzleMechanic()
 
 
+def _example() -> Mechanic:
+    from .example import BellMechanic
+    return BellMechanic()
+
+
 _FACTORIES: dict[str, Callable[[], Mechanic]] = {
+    "example": _example,
     "mystery": _mystery,   # ZC：线索、搜证、指认
     "puzzle": _puzzle,     # ZRS：道具使用与组合
 }

@@ -80,12 +80,14 @@ class Engine:
     def available_choices(self) -> list[Choice]:
         if self.state.ending:
             return []
-        ctx = self._ctx()
+        import copy
+        ctx = Context(self.story, copy.deepcopy(self.state))
         result = []
         for choice in self.scene.choices:
             key = f"{self.scene.id}/{choice.id}"
             if choice.once and key in self.state.used_choices:
                 continue
+            ctx.condition_path = f"choice:{self.scene.id}/{choice.id}"
             if self.registry.check(ctx, choice.when):
                 result.append(choice)
         return result
@@ -152,6 +154,7 @@ class Engine:
         for trig in self.story.triggers:
             if trig.once and trig.id in self.state.fired_triggers:
                 continue
+            ctx.condition_path = f"trigger:{trig.id}"
             if self.registry.check(ctx, trig.when):
                 if trig.once:
                     self.state.fired_triggers.append(trig.id)
@@ -163,7 +166,8 @@ class Engine:
     def _describe(self, scene: Scene, ctx: Context) -> None:
         if scene.title:
             ctx.say(f"== {scene.title} ==")
-        ctx.say(scene.text)
+        from .presentation import scene_text
+        ctx.say(scene_text(self, scene))
 
     def _inventory(self, ctx: Context) -> None:
         if not self.state.inventory:
@@ -186,7 +190,9 @@ class Engine:
         return next((m for m in self.mechanics.values() if verb in m.verbs), None)
 
     def _output(self, ctx: Context) -> Output:
-        choices = [(i + 1, c.text) for i, c in enumerate(self.available_choices())]
+        from .presentation import interpolate
+        choices = [(i + 1, interpolate(c.text, self.story, self.state))
+                   for i, c in enumerate(self.available_choices())]
         return Output(
             lines=ctx.lines,
             choices=choices,

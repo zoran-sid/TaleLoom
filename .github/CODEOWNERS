@@ -1,0 +1,46 @@
+# 改动某人负责的文件时，GitHub 自动请求该成员审阅（通知用，不强制批准）。
+# 文件归属以 docs/team-tasks.md 第 1 节为准；两处修改时保持一致。
+# 成员与账号：ZC @zoran-sid · YHT @Christian-kk · ZQO @zhanqianou · ZRS @zhourschn · LQ @tomq98
+# 后面的规则覆盖前面的规则。
+
+# 默认：整合负责人 ZC（文档、CI、构建与部署配置、网页运行时桥接）
+*                                   @zoran-sid
+
+# YHT：剧本格式、加载、校验、展示数据类型
+/taleloom/model.py                  @Christian-kk
+/taleloom/loader.py                 @Christian-kk
+/taleloom/validator.py              @Christian-kk
+/taleloom/walk.py                   @Christian-kk
+/tests/yht/                         @Christian-kk
+
+# ZQO：运行时核心、插件接口、正式会话与展示快照
+/taleloom/state.py                  @zhanqianou
+/taleloom/rules.py                  @zhanqianou
+/taleloom/engine.py                 @zhanqianou
+/taleloom/mechanics/base.py         @zhanqianou
+/taleloom/session.py                @zhanqianou
+/taleloom/presentation.py           @zhanqianou
+/tests/zqo/                         @zhanqianou
+
+# ZRS：解析、命令行与桌面／网页界面、道具插件
+/taleloom/parser.py                 @zhourschn
+/taleloom/cli.py                    @zhourschn
+/taleloom/gui/                      @zhourschn
+/taleloom/mechanics/puzzle.py       @zhourschn
+/web/ui/                            @zhourschn
+/web/styles/                        @zhourschn
+/tests/zrs/                         @zhourschn
+
+# LQ：存档与存储、回放、剧本 B
+/taleloom/save.py                   @tomq98
+/taleloom/storage.py                @tomq98
+/taleloom/gui/storage.py            @tomq98
+/taleloom/replay.py                 @tomq98
+/web/storage/                       @tomq98
+/stories/deep_space/                @tomq98
+/stories/film/deep_space_film/      @tomq98
+/tests/lq/                          @tomq98
+
+# 共享接口：改动需要相关负责人都知道（contract PR）
+/taleloom/ui_contract.py            @Christian-kk @zhanqianou @zoran-sid
+/tests/ui_fakes.py                  @zoran-sid @zhourschn

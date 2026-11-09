@@ -35,5 +35,17 @@ class Mechanic:
     def validate(self, story: Story) -> list[Issue]:
         return []
 
+    def actions(self, engine: "Engine") -> list:
+        """返回 ActionSpec 列表；只读取状态，只展示玩家已知候选，不泄漏答案。
+
+        动作 ID 为 插件名:动词；参数顺序对应 Command.args。引擎会用状态
+        副本生成展示。实现仍不得修改 Story、其他插件分区或进行文件读写。
+        """
+        return []
+
+    def clues(self, engine: "Engine") -> list:
+        """返回已发现线索的 DisplayItem 列表，不包括隐藏线索。"""
+        return []
+
     def help_lines(self) -> list[str]:
         return []

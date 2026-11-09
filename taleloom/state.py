@@ -1,7 +1,7 @@
 """游戏状态。负责人：ZQO。
 
 GameState 只保存可序列化的数据（字符串、整数、列表、字典），
-存档模块（LJ）直接调用 to_dict / from_dict。
+存档模块（LQ）直接调用 to_dict / from_dict。
 """
 
 from __future__ import annotations
@@ -24,6 +24,8 @@ class GameState:
     ending: str | None = None
     history: list[str] = field(default_factory=list)       # 玩家原始输入，供回放
     ext: dict[str, Any] = field(default_factory=dict)       # 机制插件的状态，按插件名分区
+
+    random_seed: int = 0  # 与回合、场景共同确定随机事件；旧存档默认为 0
 
     # ---- 便捷操作：保持列表去重且有序，方便存档对比 ----
     def has_flag(self, name: str) -> bool:
@@ -59,4 +61,8 @@ class GameState:
         unknown = set(data) - known
         if unknown:
             raise ValueError(f"未知的状态字段：{sorted(unknown)}")
-        return cls(**data)
+        import copy
+        seed = data.get('random_seed', 0)
+        if type(seed) is not int:
+            raise ValueError('random_seed 必须是整数')
+        return cls(**copy.deepcopy(data))
