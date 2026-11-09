@@ -238,7 +238,18 @@ def _scene(s: Any, path: str) -> Scene:
         if "title" in raw_ending:
             ending["title"] = _str(raw_ending, "title", f"{path}.ending")
 
+    variants = s.get('variants', [])
+    _expect(variants, list, f'{path}.variants')
+    for i, variant in enumerate(variants):
+        vp = f'{path}.variants[{i}]'
+        _expect(variant, dict, vp)
+        _str(variant, 'text', vp)
+        if variant.get('mode', 'append') not in ('append', 'replace'):
+            raise StoryFormatError(f'{vp}.mode: 应为 append 或 replace')
+        if variant.get('when') is not None:
+            _expect(variant['when'], dict, f'{vp}.when')
     return Scene(
+        variants=variants,
         id=_str(s, "id", path, non_empty=True),
         title=_str(s, "title", path, default=""),
         text=_str(s, "text", path),

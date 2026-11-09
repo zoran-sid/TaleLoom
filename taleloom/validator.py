@@ -334,6 +334,12 @@ def _all_effects(story: Story):
 
 
 def _condition_problem(key: str, arg: Any) -> str:
+    if key == "chance":
+        if isinstance(arg, dict):
+            if set(arg) != {'percent', 'id'} or not isinstance(arg['id'], str) or not arg['id'].strip():
+                return "条件 chance 对象需要 percent 和非空 id"
+            arg = arg['percent']
+        return "条件 chance 应为 0 到 100 的整数" if type(arg) is not int or not 0 <= arg <= 100 else ""
     if key == "var":
         return _var_problem(arg)
     if key in STRING_CONDITIONS:

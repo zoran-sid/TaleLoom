@@ -16,7 +16,7 @@
 | M2 桌面闭环 | 已完成：Tkinter 桌面 GUI（ZRS，PR #9），`python main.py` 无参数打开窗口，缺少 Tk 时回退命令行；CI 中窗口测试仍被跳过（#15） |
 | M3 浏览器核心 | 已完成：两个剧本的全部通关脚本在 Pyodide 与 CPython 中逐步一致（PR #4、#10） |
 | M4 网页与存档 | 正式网页界面已完成（`web/ui/`、`web/styles/`，ZRS，PR #9）；存储仍为临时单槽 `web/preview/storage.js`，待 LQ 的 `web/storage/` |
-| M5 自动发布 | 已上线：<https://taleloom.zoranzhou28.workers.dev>（生产分支 `develop`，PR 合入后自动部署；正式发布后改为 `main`） |
+| M5 自动发布 | 已上线：<https://taleloom.zoranzhou.com>（生产分支 `develop`，PR 合入后自动部署；正式发布后改为 `main`）；成员分支预览在 `<分支名>.taleloom.zoranzhou.com` |
 
 | 成员 | 已完成 | 下一个 PR | 接入点 |
 | --- | --- | --- | --- |
@@ -24,7 +24,7 @@
 | ZQO | — | 先接受仓库邀请；`taleloom/session.py` 实现 `GameSession`，以及文本插值与可复现随机（[#16](https://github.com/zoran-sid/TaleLoom/issues/16)） | `taleloom/session_factory.py` 改一行，桌面和网页同时切换 |
 | ZRS | 桌面 GUI、网页正式界面、道具“用在某处”（PR #9） | 真实剧本测试迁到集成测试（[#14](https://github.com/zoran-sid/TaleLoom/issues/14)）、窗口测试在 CI 运行（[#15](https://github.com/zoran-sid/TaleLoom/issues/15)）、与 LQ 商定桌面存档归属（[#13](https://github.com/zoran-sid/TaleLoom/issues/13)） | — |
 | ZC | 共享契约、网页运行时与部署（PR #3–#6）、启动入口；推理插件、剧本 A 扩写、打包脚本（PR #10） | CI 虚拟显示器（[#15](https://github.com/zoran-sid/TaleLoom/issues/15)）；Cloudflare 非生产分支预览；整合各成员 PR | — |
-| LQ | 工作计划与存档问题核对（PR #8） | 优先：剧本 B 声明氧气资源（[#11](https://github.com/zoran-sid/TaleLoom/issues/11)）；存档编码与校验（[#12](https://github.com/zoran-sid/TaleLoom/issues/12)）、桌面存档归属（[#13](https://github.com/zoran-sid/TaleLoom/issues/13)）；之后 `web/storage/`、随机探索、剧本 B 扩写 | `taleloom/legacy_session.py` 的 `export_save`／`_decode` 改用 LQ 的编码器；`web/preview/storage.js` 由 `web/storage/` 替换 |
+| LQ | 工作计划与存档核对（PR #8，[共享计划](lq-work-plan.md)）；存档、正式存储、探索与剧本 B 已实现并本地验证（[PR #22](https://github.com/zoran-sid/TaleLoom/pull/22)，待审阅/合并） | 氧气修复 [#21](https://github.com/zoran-sid/TaleLoom/pull/21)；按 #19/#20 → #22 顺序审阅整合，详见 PR 验证与对接说明 | 统一编码器已接兼容/正式会话；唯一 FileSaveStore 位于 `storage.py`；正式网页存储 `web/storage/`；最终材料仍在功能冻结后完成 |
 
 ## 1 分工总览
 
@@ -34,7 +34,7 @@
 | 2 | ZQO | 运行时核心与插件接口；正式会话与展示快照 | `state.py` `rules.py` `engine.py` `mechanics/base.py`；`session.py` `presentation.py`（新建） | `tests/zqo/` |
 | 3 | ZRS | 命令行与桌面／网页界面；道具谜题插件 | `parser.py` `cli.py` `mechanics/puzzle.py`；`gui/`（新建）；`web/ui/` `web/styles/`（新建） | `tests/zrs/` |
 | 4 | ZC | 推理插件、剧本 A《雾港旧案》、整合与发布 | `mechanics/mystery.py` `session_factory.py` `legacy_session.py`（临时）；`main.py`、`.vscode/launch.json`、`stories/fog_harbor/`；`web/runtime/`、`web/preview/storage.js`（临时）、`tools/`、CI 与 Cloudflare 配置 | `tests/zc/`、`tests/integration/`、`tests/browser/` |
-| 5 | LQ | 存档与存储、回放与探索测试、剧本 B《深空回声》 | `save.py` `replay.py`；`web/storage/`（新建）；`stories/deep_space/` | `tests/lq/` |
+| 5 | LQ | 存档与存储、回放与探索测试、剧本 B《深空回声》 | `save.py` `storage.py` `replay.py`；`gui/storage.py`（兼容导入）；`web/storage/`；`stories/deep_space/` | `tests/lq/` |
 
 - 共享接口 `taleloom/ui_contract.py` 与测试替身 `tests/ui_fakes.py` 的改动走 contract PR（[接口约定](contracts.md) 第 5 节）。
 - [`.github/CODEOWNERS`](../.github/CODEOWNERS) 与本表一致：PR 改到别人的文件时，GitHub 自动请求该成员审阅。两处修改时保持同步。

@@ -95,6 +95,12 @@ class PuzzleMechanic(Mechanic):
         ctx.say("这里用不上它。")
         return False
 
+    def actions(self, engine):
+        """适配正式会话，复用已有的道具与目标动作。"""
+        inventory = [DisplayItem(i, engine.story.items[i].name, engine.story.items[i].description)
+                     for i in engine.state.inventory]
+        return build_actions(engine.story, engine.state, inventory)
+
     def help_lines(self) -> list[str]:
         return ["道具命令：使用 <物品>、把 <物品> 用在 <目标> 上、组合 <物品1> <物品2>。"]
 

@@ -269,6 +269,16 @@ class MysteryMechanic(Mechanic):
             choices = "、".join(_name(o, o["id"]) for o in options) or "（暂无）"
             ctx.say(f"  {reason.get('label') or reason['id']}可选：{choices}")
 
+    def actions(self, engine):
+        """适配正式会话，复用搜证、审问和含理由的指认动作。"""
+        return build_actions(engine.story, engine.state, engine.registry)
+
+    def clues(self, engine):
+        """仅展示当前已发现的线索。"""
+        data = engine.story.data.get('clues', {})
+        found = engine.state.ext.get('mystery', {}).get('clues', [])
+        return [DisplayItem(c, data.get(c, {}).get('name', c), data.get(c, {}).get('text', '')) for c in found]
+
     def help_lines(self) -> list[str]:
         return ["推理命令：线索（查看笔记）、调查 <线索>（深入搜证）、问 <人物> <话题或线索>（审问或出示），"
                 "指认 <嫌疑人> <理由…>（给出结论；只输入“指认 名字”会提示需要的理由）。"]
