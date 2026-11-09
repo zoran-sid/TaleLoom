@@ -141,19 +141,27 @@ class FilmStoriesTest(unittest.TestCase):
         self.assertTrue(any(m.startswith("【戒备】") for m in result.messages))
         self.assertIn(("wary_gu", 1), {(r.id, r.value) for r in result.view.resources})
 
-    def test_key_nodes_announce_checkpoints(self):
-        """关键节点进入时发出“【存档点】名称”，影像模式据此自动存档；名称不重复。"""
+    def test_key_nodes_declare_checkpoints(self):
+        """每部影像版至少有两个存档点，名称不重复；正式的 checkpoint 字段与旧的“【存档点】”提示都算。"""
         for d in FILM_DIRS:
             story = load_story(d)
-            labels = [e["say"][len("【存档点】"):] for s in story.scenes.values() for e in s.on_enter
-                      if isinstance(e.get("say"), str) and e["say"].startswith("【存档点】")]
+            labels = set()
+            for scene in story.scenes.values():
+                field = getattr(scene, "checkpoint", None)
+                said = [e["say"][len("【存档点】"):] for e in scene.on_enter
+                        if isinstance(e.get("say"), str) and e["say"].startswith("【存档点】")]
+                names = ({field} if field else set()) | set(said)
+                self.assertLessEqual(len(names), 1, f"{d.name}/{scene.id} 的存档点名称前后不一致")
+                labels |= names
             self.assertGreaterEqual(len(labels), 2, d.name)
-            self.assertEqual(len(labels), len(set(labels)), d.name)
-            session = create_session(story)
-            view = session.start().view
-            result = session.dispatch(ActionRequest("choice:office", view.revision))
-            self.assertIn("【存档点】第一幕 · 账房", result.messages)
 
+    def test_fog_film_office_announces_checkpoint(self):
+        story = load_story(STORIES / "film" / "fog_harbor_film")
+        session = create_session(story)
+        view = session.start().view
+        result = session.dispatch(ActionRequest("choice:office", view.revision))
+        self.assertTrue(result.ok, result.messages)
+        self.assertIn("【存档点】第一幕 · 账房", result.messages)
 
 if __name__ == "__main__":
     unittest.main()

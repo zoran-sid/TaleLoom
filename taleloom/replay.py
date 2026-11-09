@@ -150,6 +150,12 @@ def explore(story: Story, *, seed: int = 0, runs: int = 20, steps: int = 100) ->
     return results
 
 
+def story_files(root: str | Path) -> list[Path]:
+    """枚举文字版与 stories/film/*，排序去重；不扫描素材/攻略等任意深层目录。"""
+    root = Path(root)
+    return sorted(set(root.glob('*/story.json')) | set((root / 'film').glob('*/story.json')))
+
+
 if __name__ == '__main__':
     import argparse
     from .loader import load_story
@@ -159,6 +165,6 @@ if __name__ == '__main__':
     parser.add_argument('--runs', type=int, default=20)
     parser.add_argument('--steps', type=int, default=100)
     args = parser.parse_args()
-    for path in sorted(args.stories.glob('*/story.json')):
+    for path in story_files(args.stories):
         results = explore(load_story(path), seed=args.seed, runs=args.runs, steps=args.steps)
         print(f'{path.parent.name}: {len(results)} 次，{sum(r.steps for r in results)} 步，无异常；seed={args.seed}')

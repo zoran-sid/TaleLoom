@@ -75,3 +75,82 @@ class FileSaveStore:
                 if story_id is None or slot.startswith(story_id + '-'):
                     rows.append({'slot': slot, 'error': '存档损坏或无法读取'})
         return rows
+
+
+def checkpoint_bundle(story_id: str, entries: list[dict]) -> dict:
+    """构造可跨端交换的检查点容器；内部 save 仍为未改变的 v1 标准存档。
+
+    存储层验证容器及身份/元数据一致性；恢复时仍由会话完整校验剧情状态。
+    一次写整个容器，回退裁剪不会留下半份索引或已作废的后续节点。
+    """
+    try:
+        if not valid_slot(story_id):
+            raise SaveError('剧本 ID 无效')
+        data = json_copy(entries)
+        if not isinstance(data, list) or len(data) > 64:
+            raise SaveError('存档点应为至多 64 项的列表')
+        labels = set()
+        for entry in data:
+            if not isinstance(entry, dict):
+                raise SaveError('存档点应为对象')
+            label = entry.get('label')
+            if not isinstance(label, str) or not label.strip() or len(label) > 120 or label in labels:
+                raise SaveError('存档点名称为空、过长或重复')
+            labels.add(label)
+            if not isinstance(entry.get('scene'), str):
+                raise SaveError('存档点场景名称无效')
+            for key in ('turn', 'at'):
+                if type(entry.get(key)) is not int or not 0 <= entry[key] <= 2 ** 53 - 1:
+                    raise SaveError(f'存档点 {key} 应为跨端可精确表示的非负整数')
+            save = entry.get('save')
+            if not isinstance(save, dict) or type(save.get('save_version')) is not int or save['save_version'] != 1:
+                raise SaveError('存档点必须含标准 v1 游戏存档')
+            state = save.get('state')
+            if (save.get('story_id') != story_id or not isinstance(state, dict)
+                    or state.get('story_id') != story_id or not isinstance(state.get('scene'), str)
+                    or type(state.get('turn')) is not int or state['turn'] != entry['turn']
+                    or state.get('ending') is not None):
+                raise SaveError('存档点身份、回合或游戏状态不匹配')
+        return {'checkpoint_version': 1, 'story_id': story_id, 'entries': data}
+    except (SaveError, TypeError, ValueError) as exc:
+        raise StorageError(f'存档点数据无效：{exc}') from exc
+
+
+class CheckpointStore:
+    """桌面检查点容器，适配现有 SaveStore；不接管会话层的回退或机会规则。
+
+    文件端使用 <story_id>-checkpoints 槽，容器可直接导入浏览器
+    CinematicSaveStore；每个 entry.save 也能单独作为标准游戏存档恢复。
+    """
+    def __init__(self, store, story_id: str):
+        checkpoint_bundle(story_id, [])
+        self.store = store
+        self.story_id = story_id
+        self.slot = story_id + '-checkpoints'
+
+    def read_entries(self) -> list[dict]:
+        """返回独立节点列表；缺失时为空，损坏时明确抛错而不覆盖文件。"""
+        if self.slot not in self.store.list_slots():
+            return []
+        payload = self.store.read(self.slot)
+        self._validate_envelope(payload)
+        return checkpoint_bundle(self.story_id, payload['entries'])['entries']
+
+    def write_entries(self, entries: list[dict]) -> None:
+        """原子替换节点列表，用于新增节点、重新开始或回退后的裁剪。"""
+        self.store.write(self.slot, checkpoint_bundle(self.story_id, entries))
+
+    def export_bundle(self) -> dict:
+        """导出跨端容器；不会把标准游戏状态改成新格式。"""
+        return checkpoint_bundle(self.story_id, self.read_entries())
+
+    def import_bundle(self, payload: dict) -> None:
+        """整体验证成功后才替换；错误剧本/版本或坏条目保留已有节点。"""
+        self._validate_envelope(payload)
+        self.write_entries(payload['entries'])
+
+    def _validate_envelope(self, payload):
+        if (not isinstance(payload, dict) or type(payload.get('checkpoint_version')) is not int
+                or payload['checkpoint_version'] != 1 or payload.get('story_id') != self.story_id
+                or 'entries' not in payload):
+            raise StorageError('存档点容器版本或剧本不匹配')
