@@ -84,6 +84,18 @@ function plume(ctx, sprite, t, { x, y, count, life, rise, spread, drift = 0, ySp
   ctx.globalAlpha = 1;
 }
 
+/** 光里的浮尘：place(u, v) 把两个 0–1 的随机数映射到光束内的位置。 */
+function motes(ctx, t, count, place, rgb, seed) {
+  const r = prng(seed);
+  for (let i = 0; i < count; i += 1) {
+    const u = (r() + t * 0.008 * (0.5 + r())) % 1;
+    const v = r();
+    const [x, y] = place(u, v);
+    ctx.fillStyle = `rgba(${rgb},${0.15 + 0.35 * Math.abs(Math.sin(t * 0.9 + i))})`;
+    ctx.fillRect(x + Math.sin(t * 0.7 + i) * 6, y + Math.cos(t * 0.5 + i) * 6, 2.2, 2.2);
+  }
+}
+
 function makeSprite(rgb) {
   const c = document.createElement('canvas');
   c.width = 128;
@@ -115,6 +127,26 @@ class Fog {
       ctx.drawImage(sprite, x - p.s, y - p.s * 0.45, p.s * 2, p.s * 0.9);
     }
     ctx.globalAlpha = 1;
+  }
+}
+
+/** 一条小船：船身、船舱、桅杆；lamp 为船头灯笼的亮度（0 为不点灯）。 */
+function boat(ctx, x, y, k, color, lamp, t) {
+  const bob = Math.sin(t * 1.4) * 3 * k;
+  ctx.save();
+  ctx.translate(x, y + bob);
+  ctx.scale(k, k);
+  poly(ctx, [-110, 0, 110, 0, 86, 30, -86, 30], color);
+  ctx.fillStyle = color;
+  ctx.fillRect(-40, -46, 70, 46);
+  ctx.fillRect(-4, -120, 5, 120);
+  poly(ctx, [1, -120, 40, -110, 1, -100], color);
+  ctx.restore();
+  ctx.fillStyle = `rgba(${COOL},0.12)`;
+  ctx.fillRect(x - 100 * k, y + 34 * k + bob, 200 * k, 2);
+  if (lamp > 0) {
+    glow(ctx, x + 100 * k, y - 10 * k + bob, 70 * k, AMBER, 0.7 * lamp);
+    glow(ctx, x + 100 * k, y + 40 * k, 40 * k, AMBER, 0.2 * lamp);
   }
 }
 
@@ -306,9 +338,31 @@ function harbor(ctx, s, o, st) {
     ctx.fillStyle = warm ? `rgba(${AMBER},${0.08 + 0.14 * Math.sin(s * 1.5 + i) ** 2})` : `rgba(${COOL},${0.04 + 0.06 * Math.sin(s * 1.1 + i) ** 2})`;
     ctx.fillRect(x, y, 16 + r() * 80 * (1 - depth * 0.5), 1.4 + depth * 1.6);
   }
+  if (o.storm) {
+    ctx.strokeStyle = 'rgba(190,205,220,0.28)';
+    ctx.lineWidth = 3;
+    for (let row = 0; row < 7; row += 1) {
+      const base = 590 + row * 52;
+      ctx.beginPath();
+      for (let x = -300; x <= W + 300; x += 20) {
+        const y = base + Math.sin(x * 0.012 + s * (1.7 + row * 0.25) + row) * (14 + row * 7) + Math.sin(x * 0.031 - s * 2.4) * 6;
+        if (x === -300) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    plume(ctx, st.cool, s, { x: 760, y: 600, count: 30, life: 1.8, rise: 120, spread: 160, ySpread: 40, size: 50, alpha: 0.25, seed: 41 });
+  }
   ctx.fillStyle = INK;
   for (let x = 660; x < 1060; x += 46) ctx.fillRect(x, 560, 7, 70 + Math.sin(x) * 8);
   ctx.fillRect(640, 556, 430, 8);
+  if (o.boat === 'arrive') {
+    const t = ease(s / 16);
+    boat(ctx, 1780 - 820 * t, 586, 1.1, mix('#0a0d11', '#2c3237', dawn), 0, s);
+  } else if (o.boat === 'leave') {
+    const t = clamp01(s / 18);
+    boat(ctx, 780 + 820 * t, 584 - 14 * t, 0.9 - 0.45 * t, '#06080b', 1 - 0.7 * t, s);
+  }
   poly(ctx, [-300, 960, -300, 300, 120, 300, 160, 250, 470, 250, 510, 300, 650, 300, 650, 960], '#060709');
   ctx.fillStyle = '#0d0e10';
   ctx.fillRect(176, 196, 300, 50);
@@ -429,6 +483,18 @@ function lobby(ctx, s, o, st) {
   poly(ctx, [770, 120, 830, 120, 846, 168, 754, 168], '#0b0806');
   glow(ctx, 800, 170, 760, AMBER, 0.28 * f);
   glow(ctx, 800, 168, 120, '255,224,170', 0.75 * f);
+  for (let i = 0; i < 3; i += 1) {
+    const a = s * (1.9 + i * 0.45) + i * 2.1;
+    const radius = 70 + 26 * Math.sin(s * 1.3 + i);
+    const mx = 800 + Math.cos(a) * radius;
+    const my = 168 + Math.sin(a) * radius * 0.55;
+    const flap = 0.35 + 0.65 * Math.abs(Math.sin(s * 28 + i));
+    ctx.fillStyle = 'rgba(235,214,170,0.75)';
+    ctx.beginPath();
+    ctx.ellipse(mx - 4, my, 5, 3.5 * flap, -0.4, 0, Math.PI * 2);
+    ctx.ellipse(mx + 4, my, 5, 3.5 * flap, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
   st.fog.draw(ctx, s, st.warm, { alpha: 0.5, top: 120, bottom: 760, drift: 0.4 });
   shade(ctx, 760, 300, 1200, 0.8 * (1.08 - f * 0.1));
 }
@@ -536,6 +602,7 @@ function office(ctx, s, o, st) {
     ctx.restore();
   }
   plume(ctx, st.cool, s, { x: 1080, y: 380, count: 34, life: 11, rise: -6, drift: -58, spread: 60, ySpread: 300, size: 120, alpha: 0.09, seed: 9 });
+  motes(ctx, s, 55, (u, v) => [1180 - 640 * u + (v - 0.5) * 260 * (0.4 + u), 260 + 640 * u], COOL, 51);
   st.fog.draw(ctx, s, st.cool, { alpha: 0.6, top: 500, bottom: 980, drift: -0.5 });
   shade(ctx, 1000, 420, 1250, 0.74);
 }
@@ -646,9 +713,12 @@ function portrait(ctx, s, o, st) {
     glow(ctx, x, y, 30 + r() * 70, r() < 0.7 ? warmth : COOL, 0.05 + r() * 0.1);
   }
   glow(ctx, 1320, 200, 820, warmth, 0.22 * flicker(s));
-  const breath = 1 + 0.007 * Math.sin(s * 1.6);
+  const mood = o.mood || '';
+  const breath = 1 + (mood === 'cold' ? 0.004 : 0.007) * Math.sin(s * (mood === 'nervous' ? 2.6 : 1.6));
+  const shiver = mood === 'nervous' ? Math.sin(s * 29) * 1.6 : 0;
   const shape = () => {
     ctx.save();
+    ctx.translate(shiver, 0);
     ctx.translate(640, 900);
     ctx.scale(breath, breath);
     ctx.translate(-640, -900);
@@ -687,7 +757,18 @@ function portrait(ctx, s, o, st) {
     ctx.stroke();
     glow(ctx, 702, 418, 40, '255,240,210', 0.9 * Math.max(0, Math.sin(s * 1.3)) ** 20);
   }
-  if (o.suspect === 'gu') {
+  if (mood === 'nervous') {
+    for (const [x, y, ph] of [[742, 372, 0], [548, 388, 2.4]]) {
+      const k = Math.max(0, Math.sin(s * 0.9 + ph)) ** 6;
+      glow(ctx, x + shiver, y + 40 * ((s * 0.15 + ph) % 1), 10, '255,240,220', 0.9 * k);
+    }
+  } else if (mood === 'tears') {
+    for (const [x, ph] of [[598, 0], [684, 1.7]]) {
+      const k = ((s * 0.33 + ph) % 1);
+      glow(ctx, x, 452 + 120 * k, 9, '235,240,255', 0.85 * Math.sin(Math.PI * k));
+    }
+  }
+  if (o.suspect === 'gu' && mood !== 'cold') {
     const pull = (s % 6) / 6 < 0.3;
     ctx.fillStyle = 'rgba(220,210,200,0.55)';
     ctx.fillRect(716, 514, 92, 6);
@@ -724,6 +805,390 @@ function generic(ctx, s, o, st) {
   shade(ctx, 760, 380, 1150, 0.78);
 }
 
+function guestroom(ctx, s, o, st) {
+  const f = flicker(s, 0.7);
+  vfill(ctx, -300, -300, W + 600, 1020, [[0, '#110f0d'], [1, '#221b15']]);
+  ctx.fillStyle = 'rgba(0,0,0,0.18)';
+  for (let x = -280; x < W + 300; x += 46) ctx.fillRect(x, -300, 18, 1020);
+  vfill(ctx, -300, 720, W + 600, 500, [[0, '#17110c'], [1, '#050403']]);
+  ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i < 9; i += 1) { const y = 728 + i * i * 4 + i * 6; ctx.moveTo(-300, y); ctx.lineTo(W + 300, y); }
+  ctx.stroke();
+  // 雨夜的窗：雾在外面流，雨滴顺着玻璃往下滑
+  ctx.fillStyle = '#060708';
+  ctx.fillRect(1180, 170, 280, 360);
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(1198, 188, 244, 324);
+  ctx.clip();
+  vfill(ctx, 1198, 188, 244, 324, [[0, '#2b3542'], [1, '#18202a']]);
+  st.fog.draw(ctx, s * 1.8, st.cool, { alpha: 2.6, top: 180, bottom: 520 });
+  const r = prng(31);
+  ctx.strokeStyle = 'rgba(190,205,220,0.4)';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 28; i += 1) {
+    const x = 1200 + r() * 240;
+    const speed = 40 + r() * 90;
+    const y = 188 + ((s * speed + r() * 400) % 340);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + 1, y + 10 + r() * 14);
+    ctx.stroke();
+  }
+  ctx.restore();
+  ctx.fillStyle = '#060708';
+  ctx.fillRect(1316, 188, 8, 324);
+  ctx.fillRect(1198, 346, 244, 8);
+  // 床
+  ctx.fillStyle = '#0c0907';
+  ctx.fillRect(50, 420, 36, 340);
+  poly(ctx, [60, 560, 560, 560, 584, 652, 40, 652], '#1b1612');
+  poly(ctx, [100, 554, 540, 554, 556, 600, 90, 600], 'rgba(205,195,175,0.12)');
+  ctx.fillStyle = 'rgba(215,205,185,0.15)';
+  ctx.beginPath();
+  ctx.ellipse(160, 548, 62, 16, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#0b0806';
+  ctx.fillRect(40, 652, 544, 28);
+  ctx.fillRect(56, 680, 14, 80);
+  ctx.fillRect(552, 680, 14, 80);
+  // 床头灯
+  ctx.fillRect(612, 560, 110, 200);
+  ctx.fillRect(660, 500, 8, 60);
+  poly(ctx, [628, 500, 700, 500, 688, 462, 640, 462], `rgba(${AMBER},${0.5 * f})`);
+  glow(ctx, 664, 492, 440, AMBER, 0.22 * f);
+  glow(ctx, 664, 492, 60, '255,222,170', 0.6 * f);
+  // 椅子和搭着的湿外套
+  ctx.fillStyle = '#0a0806';
+  ctx.fillRect(900, 430, 110, 210);
+  ctx.fillRect(880, 620, 160, 22);
+  ctx.fillRect(888, 640, 12, 120);
+  ctx.fillRect(1020, 640, 12, 120);
+  ctx.beginPath();
+  ctx.moveTo(896, 436);
+  ctx.quadraticCurveTo(955, 412, 1014, 436);
+  ctx.lineTo(1034, 700);
+  ctx.lineTo(1012, 692);
+  ctx.lineTo(992, 706);
+  ctx.lineTo(964, 694);
+  ctx.lineTo(938, 708);
+  ctx.lineTo(912, 694);
+  ctx.lineTo(886, 702);
+  ctx.closePath();
+  ctx.fillStyle = '#040405';
+  ctx.fill();
+  ctx.strokeStyle = `rgba(${AMBER},${0.3 * f})`;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(896, 436);
+  ctx.lineTo(886, 702);
+  ctx.stroke();
+  // 衣摆滴水，地上一圈圈水纹
+  ctx.fillStyle = 'rgba(150,170,190,0.12)';
+  ctx.beginPath();
+  ctx.ellipse(962, 772, 130, 14, 0, 0, Math.PI * 2);
+  ctx.fill();
+  for (const [x, ph] of [[914, 0], [964, 0.45], [1012, 0.8]]) {
+    const k = (s * 0.7 + ph) % 1;
+    if (k < 0.6) {
+      const y = 706 + 66 * (k / 0.6) ** 2;
+      ctx.fillStyle = 'rgba(200,215,230,0.7)';
+      ctx.beginPath();
+      ctx.ellipse(x, y, 2.5, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      const ring = (k - 0.6) / 0.4;
+      ctx.strokeStyle = `rgba(200,215,230,${0.5 * (1 - ring)})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.ellipse(x, 772, 4 + 30 * ring, 2 + 5 * ring, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+  // 从窗边一路走到椅子的湿脚印
+  for (let i = 0; i < 8; i += 1) {
+    const u = i / 7;
+    const x = 1250 - 230 * u + (i % 2 ? 14 : -14);
+    const y = 900 - 110 * u;
+    ctx.fillStyle = 'rgba(150,170,190,0.14)';
+    ctx.beginPath();
+    ctx.ellipse(x, y, 16 - 5 * u, 7 - 2 * u, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+    glow(ctx, x - 4, y - 2, 6, '210,225,240', 0.35 * Math.abs(Math.sin(s * 0.8 + i)));
+  }
+  st.fog.draw(ctx, s, st.warm, { alpha: 0.3, top: 300, bottom: 800, drift: 0.2 });
+  shade(ctx, 760, 520, 1200, 0.72);
+}
+
+function backyard(ctx, s, o, st) {
+  vfill(ctx, -300, -300, W + 600, 900, [[0, '#03050a'], [1, '#131b24']]);
+  vfill(ctx, 900, 560, W + 400, 500, [[0, '#0b1118'], [1, '#03050a']]);
+  const r = prng(61);
+  for (let i = 0; i < 40; i += 1) {
+    const x = 980 + r() * 900 + Math.sin(s * 0.6 + i) * 8;
+    const y = 570 + r() * 260;
+    ctx.fillStyle = `rgba(${COOL},${0.04 + 0.06 * Math.sin(s * 1.2 + i) ** 2})`;
+    ctx.fillRect(x, y, 20 + r() * 60, 1.6);
+  }
+  // 旅馆后墙、账房的窗、后门、墙上的风灯
+  ctx.fillStyle = '#0b0b0d';
+  ctx.fillRect(-300, 120, 1280, 600);
+  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let y = 140; y < 720; y += 30) {
+    ctx.moveTo(-300, y);
+    ctx.lineTo(980, y);
+    for (let x = (y / 30) % 2 ? -300 : -260; x < 980; x += 80) { ctx.moveTo(x, y); ctx.lineTo(x, y + 30); }
+  }
+  ctx.stroke();
+  vfill(ctx, 300, 300, 170, 170, [[0, '#5d6a77'], [1, '#3a4550']]);
+  ctx.fillStyle = '#0b0b0d';
+  ctx.fillRect(381, 300, 8, 170);
+  ctx.fillRect(300, 381, 170, 8);
+  glow(ctx, 385, 385, 240, COOL, 0.12);
+  ctx.fillStyle = '#050405';
+  ctx.fillRect(640, 430, 120, 290);
+  const f = flicker(s, 0.9);
+  ctx.fillStyle = `rgba(${AMBER},${0.55 * f})`;
+  ctx.fillRect(752, 432, 5, 286);
+  poly(ctx, [757, 720, 762, 720, 900, 960, 820, 960], `rgba(${AMBER},${0.08 * f})`);
+  ctx.save();
+  ctx.translate(820, 380);
+  ctx.rotate(Math.sin(s * 1.3) * 0.14);
+  ctx.fillStyle = '#060505';
+  ctx.fillRect(-2, 0, 4, 34);
+  ctx.fillRect(-14, 34, 28, 36);
+  glow(ctx, 0, 52, 160, AMBER, 0.32 * f);
+  glow(ctx, 0, 52, 22, '255,220,160', 0.8 * f);
+  ctx.restore();
+  // 泥地与通往码头的石阶
+  vfill(ctx, -300, 710, W + 600, 500, [[0, '#0d0c0a'], [1, '#040303']]);
+  for (let i = 0; i < 8; i += 1) {
+    const x = 1000 + i * 80;
+    const y = 716 + i * 26;
+    poly(ctx, [x, y, x + 600, y, x + 600, y + 26, x, y + 26], i % 2 ? '#0c0d0f' : '#101215');
+    ctx.fillStyle = 'rgba(150,170,190,0.12)';
+    ctx.fillRect(x, y, 600, 2);
+  }
+  // 两行脚印：皮鞋印从石阶走到窗下，布鞋印从后门走向码头，依次显现
+  const trails = [
+    { from: [1180, 860], to: [430, 760], n: 10, size: [17, 7] },
+    { from: [710, 770], to: [1120, 830], n: 8, size: [11, 5] },
+  ];
+  trails.forEach((trail, tIndex) => {
+    for (let i = 0; i < trail.n; i += 1) {
+      const u = i / (trail.n - 1);
+      const appear = clamp01((s * 0.9 - i * 0.35 - tIndex * 2) / 0.8);
+      if (appear <= 0) continue;
+      const x = trail.from[0] + (trail.to[0] - trail.from[0]) * u + (i % 2 ? 10 : -10);
+      const y = trail.from[1] + (trail.to[1] - trail.from[1]) * u;
+      ctx.fillStyle = `rgba(4,4,4,${0.85 * appear})`;
+      ctx.beginPath();
+      ctx.ellipse(x, y, trail.size[0], trail.size[1], tIndex ? 0.3 : -0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = `rgba(150,170,190,${0.18 * appear})`;
+      ctx.fillRect(x - 4, y - 2, 6, 1.5);
+    }
+  });
+  st.fog.draw(ctx, s, st.cool, { alpha: 2.1, top: 300, bottom: 900, drift: 0.8 });
+  shade(ctx, 760, 520, 1250, 0.66);
+}
+
+function zhouroom(ctx, s, o, st) {
+  vfill(ctx, -300, -300, W + 600, 1000, [[0, '#0b0c0d'], [1, '#18191b']]);
+  vfill(ctx, -300, 700, W + 600, 520, [[0, '#0f0c0a'], [1, '#040303']]);
+  // 书架与一摞摞账本
+  ctx.fillStyle = '#070606';
+  ctx.fillRect(80, 160, 320, 560);
+  const r = prng(71);
+  for (let row = 0; row < 4; row += 1) {
+    ctx.fillStyle = '#0d0b0a';
+    ctx.fillRect(80, 290 + row * 130, 320, 10);
+    for (let x = 96; x < 384;) {
+      const w = 14 + r() * 18;
+      const h = 70 + r() * 40;
+      ctx.fillStyle = `rgba(${90 + r() * 60},${40 + r() * 30},${30 + r() * 20},0.35)`;
+      ctx.fillRect(x, 290 + row * 130 - h, w - 3, h);
+      x += w;
+    }
+  }
+  // 书桌：算盘、眼镜盒、砚台
+  ctx.fillStyle = '#080706';
+  ctx.fillRect(980, 520, 440, 26);
+  ctx.fillRect(1000, 546, 16, 214);
+  ctx.fillRect(1384, 546, 16, 214);
+  ctx.strokeStyle = 'rgba(60,45,35,0.9)';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(1040, 480, 180, 40);
+  for (let i = 0; i < 9; i += 1) {
+    for (let j = 0; j < 3; j += 1) {
+      ctx.fillStyle = '#1a1310';
+      ctx.beginPath();
+      ctx.ellipse(1058 + i * 19, 490 + j * 11, 6, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.fillStyle = '#120f0d';
+  ctx.fillRect(1260, 500, 70, 20);
+  glow(ctx, 1290, 506, 14, '255,240,210', 0.5 * Math.max(0, Math.sin(s * 1.1)) ** 12);
+  // 我们手里的灯：一道暖光在地板上扫过
+  const cx = 700 + Math.sin(s * 0.45) * 220;
+  const cone = ctx.createLinearGradient(200, 1000, cx, 760);
+  cone.addColorStop(0, `rgba(${AMBER},0.02)`);
+  cone.addColorStop(1, `rgba(${AMBER},0.2)`);
+  poly(ctx, [200, 1000, cx - 190, 740, cx + 190, 740, 360, 1000], cone);
+  glow(ctx, cx, 770, 220, AMBER, 0.2);
+  // 松动的地板：撬开后露出藏着的暗账
+  if (o.open) {
+    poly(ctx, [600, 790, 900, 790, 900, 812, 600, 812], '#010101');
+    ctx.save();
+    ctx.translate(600, 790);
+    ctx.rotate(-0.32);
+    ctx.fillStyle = '#2a1f17';
+    ctx.fillRect(0, -18, 300, 18);
+    ctx.restore();
+    poly(ctx, [690, 796, 800, 796, 806, 808, 684, 808], 'rgba(210,200,180,0.35)');
+    glow(ctx, 750, 800, 30, '255,235,200', 0.4 + 0.3 * Math.sin(s * 2));
+  } else {
+    ctx.fillStyle = 'rgba(70,52,38,0.4)';
+    ctx.fillRect(600, 790, 300, 20);
+  }
+  motes(ctx, s, 40, (u, v) => [cx - 180 + 360 * v, 760 - 260 * u], AMBER, 73);
+  shade(ctx, cx, 640, 1200, 0.78);
+}
+
+function attic(ctx, s, o, st) {
+  const f = flicker(s, 1.8);
+  if (o.closed) {
+    // 闩上的阁楼门外：门缝下的烛光里，有人影在晃
+    vfill(ctx, -300, -300, W + 600, 1100, [[0, '#0d0a08'], [1, '#1b140f']]);
+    ctx.fillStyle = '#120d09';
+    ctx.fillRect(600, 140, 400, 690);
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(640, 190, 320, 260);
+    ctx.strokeRect(640, 500, 320, 280);
+    const sway = Math.sin(s * 0.8) * 60;
+    const strip = ctx.createLinearGradient(600, 0, 1000, 0);
+    strip.addColorStop(0, `rgba(${AMBER},${0.6 * f})`);
+    strip.addColorStop(clamp01(0.45 + sway / 400), 'rgba(0,0,0,0.6)');
+    strip.addColorStop(clamp01(0.62 + sway / 400), `rgba(${AMBER},${0.6 * f})`);
+    strip.addColorStop(1, `rgba(${AMBER},${0.6 * f})`);
+    ctx.fillStyle = strip;
+    ctx.fillRect(604, 826, 392, 6);
+    poly(ctx, [604, 832, 996, 832, 1120, 960, 480, 960], `rgba(${AMBER},${0.07 * f})`);
+    glow(ctx, 940, 480, 6, AMBER, 0.8 * f);
+    shade(ctx, 800, 700, 1100, 0.8);
+    return;
+  }
+  vfill(ctx, -300, -300, W + 600, 1100, [[0, '#120d0a'], [1, '#24190f']]);
+  poly(ctx, [-300, -300, W + 300, -300, W + 300, 90, 880, 90, -300, 560], '#070504');
+  ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+  ctx.lineWidth = 10;
+  ctx.beginPath();
+  for (let i = 0; i < 5; i += 1) { ctx.moveTo(880 + i * 180, 90); ctx.lineTo(880 + i * 180 - 400, -300); }
+  ctx.stroke();
+  // 圆窗里的雾光
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(1200, 300, 90, 0, Math.PI * 2);
+  ctx.clip();
+  vfill(ctx, 1110, 210, 180, 180, [[0, '#56636f'], [1, '#2f3842']]);
+  st.fog.draw(ctx, s * 2, st.cool, { alpha: 3, top: 200, bottom: 400 });
+  ctx.restore();
+  ctx.strokeStyle = '#070504';
+  ctx.lineWidth = 10;
+  ctx.beginPath();
+  ctx.arc(1200, 300, 90, 0, Math.PI * 2);
+  ctx.moveTo(1110, 300); ctx.lineTo(1290, 300);
+  ctx.moveTo(1200, 210); ctx.lineTo(1200, 390);
+  ctx.stroke();
+  vfill(ctx, -300, 760, W + 600, 400, [[0, '#120c08'], [1, '#040302']]);
+  // 窄床、木盒、小桌、蜡烛
+  poly(ctx, [100, 640, 620, 640, 640, 700, 80, 700], '#1a130e');
+  poly(ctx, [120, 630, 600, 630, 610, 660, 110, 660], 'rgba(200,180,150,0.1)');
+  ctx.fillStyle = '#0b0806';
+  ctx.fillRect(80, 700, 560, 24);
+  ctx.fillStyle = '#2a1c12';
+  ctx.fillRect(240, 592, 90, 44);
+  ctx.fillStyle = '#3a2716';
+  ctx.fillRect(236, 584, 98, 12);
+  glow(ctx, 322, 588, 12, '255,230,180', 0.8 * Math.max(0, Math.sin(s * 0.9)) ** 10);
+  ctx.fillStyle = '#0b0806';
+  ctx.fillRect(900, 600, 240, 20);
+  ctx.fillRect(916, 620, 14, 140);
+  ctx.fillRect(1110, 620, 14, 140);
+  poly(ctx, [1040, 592, 1100, 590, 1104, 600, 1044, 602], 'rgba(220,210,190,0.3)');
+  ctx.fillStyle = 'rgba(230,220,200,0.55)';
+  ctx.fillRect(970, 560, 12, 40);
+  const lean = Math.sin(s * 3.1) * 3 + Math.sin(s * 7.3) * 1.5;
+  ctx.beginPath();
+  ctx.moveTo(970, 560);
+  ctx.quadraticCurveTo(968 + lean, 540, 976 + lean, 524);
+  ctx.quadraticCurveTo(984 + lean, 540, 982, 560);
+  ctx.fillStyle = `rgba(255,200,120,${0.9 * f})`;
+  ctx.fill();
+  glow(ctx, 976, 540, 520, AMBER, 0.3 * f);
+  glow(ctx, 976, 540, 40, '255,236,190', 0.8 * f);
+  shade(ctx, 900, 520, 1150, 0.78);
+}
+
+function doorway(ctx, s, o, st) {
+  // 失败：撬地板时，门被推开，周文站在走廊的灯光里
+  zhouroom(ctx, s, { open: true }, st);
+  const open = ease(s / 3);
+  const left = 1340 - 240 * open;
+  poly(ctx, [left, 120, 1340, 120, 1340, 820, left, 820], `rgba(${AMBER},${0.55})`);
+  poly(ctx, [left, 820, 1340, 820, 1340 + 260 * open, 1000, left - 420 * open, 1000], `rgba(${AMBER},${0.14 * open})`);
+  ctx.save();
+  ctx.translate(1240, 820);
+  ctx.scale(1.55, 1.55);
+  ctx.translate(-1240, -820);
+  ctx.beginPath();
+  standing(ctx, 'zhou', 1240, 820, s);
+  ctx.fillStyle = INK;
+  ctx.globalAlpha = open;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.restore();
+  glow(ctx, 1290, 560, 26, '255,230,170', open * (0.6 + 0.4 * Math.sin(s * 5)));
+  shade(ctx, 1200, 500, 1300, 0.6);
+}
+
+function storeroom(ctx, s, o, st) {
+  // 失败：被反锁在储藏室，门在撞击下震动，灰尘簌簌往下落
+  vfill(ctx, -300, -300, W + 600, 1100, [[0, '#0a0806'], [1, '#160f0a']]);
+  vfill(ctx, -300, 780, W + 600, 400, [[0, '#0d0907'], [1, '#030202']]);
+  const r = prng(81);
+  for (const sx of [80, 1140]) {
+    ctx.fillStyle = '#060504';
+    ctx.fillRect(sx, 160, 380, 620);
+    for (let row = 0; row < 4; row += 1) {
+      ctx.fillStyle = '#0d0907';
+      ctx.fillRect(sx, 300 + row * 140, 380, 10);
+      for (let x = sx + 20; x < sx + 360; x += 40 + r() * 20) {
+        poly(ctx, [x, 300 + row * 140, x + 22, 300 + row * 140, x + 18, 240 + row * 140, x + 14, 220 + row * 140, x + 8, 220 + row * 140, x + 4, 240 + row * 140], 'rgba(40,52,40,0.55)');
+      }
+    }
+  }
+  const burst = (s % 3.2) < 0.9;
+  const knock = burst ? Math.sin(s * 40) * 4 : 0;
+  ctx.fillStyle = '#100b08';
+  ctx.fillRect(620 + knock, 200, 360, 600);
+  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(660 + knock, 250, 280, 230);
+  ctx.strokeRect(660 + knock, 520, 280, 240);
+  ctx.fillStyle = `rgba(${AMBER},0.6)`;
+  ctx.fillRect(624, 798, 352, 5);
+  poly(ctx, [624, 803, 976, 803, 1100, 960, 500, 960], `rgba(${AMBER},0.08)`);
+  plume(ctx, st.warm, s, { x: 800, y: 210, count: 26, life: 2.6, rise: -60, spread: 300, ySpread: 20, size: 8, alpha: burst ? 0.5 : 0.2, seed: 83 });
+  shade(ctx, 800, 600, 1100, 0.78);
+}
+
 const SCENES = {
   black: { draw(ctx) { ctx.fillStyle = '#000'; ctx.fillRect(-300, -300, W + 600, H + 600); }, camera: () => [1, 0, 0] },
   harbor: { draw: harbor, camera: (s) => [1 + 0.14 * ease(s / 18), -110 * ease(s / 18), 20 * ease(s / 18)] },
@@ -733,6 +1198,12 @@ const SCENES = {
   kitchen: { draw: kitchen, camera: (s) => [1.04 + 0.03 * Math.sin(s * 0.12), -40 + Math.sin(s * 0.18) * 30, 0] },
   portrait: { draw: portrait, camera: (s) => [1 + 0.08 * ease(s / 12), 30 * ease(s / 12), -20 * ease(s / 12)] },
   generic: { draw: generic, camera: (s) => [1.03 + 0.03 * ease(s / 20), Math.sin(s * 0.15) * 30, 0] },
+  guestroom: { draw: guestroom, camera: (s) => [1.04 + 0.05 * ease(s / 20), 70 * ease(s / 20), 0] },
+  backyard: { draw: backyard, camera: (s) => [1.05, -70 + 170 * ease(s / 22), Math.sin(s * 0.2) * 6] },
+  zhouroom: { draw: zhouroom, camera: (s) => [1.05 + 0.04 * ease(s / 18), -40 + Math.sin(s * 0.16) * 30, 0] },
+  attic: { draw: attic, camera: (s) => [1.06 + 0.04 * ease(s / 18), 30 * Math.sin(s * 0.12), 10] },
+  doorway: { draw: doorway, camera: (s) => [1 + 0.12 * ease(s / 6), 120 * ease(s / 6), 0] },
+  storeroom: { draw: storeroom, camera: (s) => [1.05 + 0.06 * ease(s / 10), 0, 0] },
 };
 
 export class Stage {
@@ -747,6 +1218,9 @@ export class Stage {
     this.fadeAt = 0;
     this.fadeMs = 1;
     this.flashAt = -1e9;
+    this.shakeUntil = 0;
+    this.shakeMs = 1;
+    this.shakePower = 0;
     this.res = {
       fog: new Fog(38, 3),
       cool: makeSprite('178,190,202'),
@@ -791,10 +1265,23 @@ export class Stage {
     this.flashAt = performance.now();
   }
 
+  /** 镜头震动 ms 毫秒，power 为最大位移（虚拟像素）；减少动态效果时不震。 */
+  shake(ms, power) {
+    if (REDUCED) return;
+    this.shakeMs = ms;
+    this.shakePower = power;
+    this.shakeUntil = performance.now() + ms;
+  }
+
   frame(now) {
     const { ctx, canvas } = this;
     const s = (now - this.sceneAt) / 1000;
-    const [zoom, dx, dy] = REDUCED ? [1.02, 0, 0] : this.scene.camera(s);
+    let [zoom, dx, dy] = REDUCED ? [1.02, 0, 0] : this.scene.camera(s);
+    if (now < this.shakeUntil) {
+      const left = (this.shakeUntil - now) / this.shakeMs;
+      dx += (Math.random() - 0.5) * 2 * this.shakePower * left;
+      dy += (Math.random() - 0.5) * 2 * this.shakePower * left;
+    }
     const k = canvas.width / W;
     ctx.setTransform(k, 0, 0, k, 0, 0);
     ctx.translate(W / 2, H / 2);

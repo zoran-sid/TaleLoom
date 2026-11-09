@@ -12,6 +12,10 @@ const AMBIENCE = {
   portrait: { cutoff: 200, level: 0.04, drone: [55, 82.4] },
   ending: { cutoff: 380, level: 0.1, swell: 0.05, rate: 0.08, drone: [65.4, 98] },
   generic: { cutoff: 420, level: 0.08, swell: 0.04, rate: 0.13 },
+  rain: { cutoff: 2400, level: 0.04, drips: true },
+  attic: { cutoff: 260, level: 0.04, drone: [73.4] },
+  storm: { cutoff: 1100, level: 0.26, swell: 0.18, rate: 0.3 },
+  tension: { cutoff: 160, level: 0.05, drone: [49, 51.5] },
 };
 
 export class Sound {
@@ -89,6 +93,11 @@ export class Sound {
     }
     this.bed = { gain, stop: () => nodes.forEach((node) => { try { node.stop(); } catch { /* 已停止 */ } }) };
     if (preset.tick) this.timers.push(setInterval(() => this.burst(0.012, 'highpass', 2600, 0.05), 1000));
+    if (preset.drips) {
+      this.timers.push(setInterval(() => {
+        if (Math.random() < 0.45) this.burst(0.006, 'highpass', 3200 + Math.random() * 2000, 0.05 + Math.random() * 0.05);
+      }, 160));
+    }
     if (preset.crackle) {
       this.timers.push(setInterval(() => {
         if (Math.random() < 0.3) this.burst(0.008 + Math.random() * 0.02, 'bandpass', 1200 + Math.random() * 2800, 0.03 + Math.random() * 0.07);
