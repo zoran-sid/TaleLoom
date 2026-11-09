@@ -4,11 +4,19 @@ import { test, expect } from '@playwright/test';
 test('书架显示影像模式入口并指向 /cinematic', async ({ page }) => {
   await page.goto('/?fixture=1');
   await expect(page.locator('#app')).toHaveAttribute('aria-busy', 'false');
-  const entry = page.locator('[data-cinematic]');
+  const entry = page.locator('[data-cinematic="fog_harbor_ledger"]');
   await expect(entry).toBeVisible();
   await expect(entry).toContainText('互动影像');
   const link = entry.getByRole('link', { name: /影像模式/ });
   await expect(link).toHaveAttribute('href', '/cinematic');
+});
+
+test('书架也有《深空回声 · 影像版》的入口', async ({ page }) => {
+  await page.goto('/?fixture=1');
+  await expect(page.locator('#app')).toHaveAttribute('aria-busy', 'false');
+  const entry = page.locator('[data-cinematic="deep_space_film"]');
+  await expect(entry).toContainText('深空回声 · 影像版');
+  await expect(entry.getByRole('link', { name: /影像模式/ })).toHaveAttribute('href', '/cinematic?story=deep_space_film');
 });
 
 test('页眉也有影像模式入口', async ({ page }) => {
