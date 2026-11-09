@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 from collections import deque
+from pathlib import Path
 from typing import Any
 
 from .mechanics import available, create_mechanic
@@ -65,6 +66,7 @@ def validate(story: Story) -> list[Issue]:
         ))
 
     issues += _check_parameters(story)
+    issues += _check_display(story)
     issues += _check_references(story, registry)
     for mech in mechanics:
         try:
@@ -106,7 +108,7 @@ def format_report(issues: list[Issue], story: Story | None = None) -> str:
         if key.startswith("scene:") and key not in scene_order:
             scene_order.append(key)
 
-    other_order = ["global", "mechanics", "items", "plugin"]
+    other_order = ["global", "mechanics", "items", "display", "plugin"]
     order = scene_order + [k for k in other_order if k in groups]
     lines = []
     for key in order:
@@ -181,6 +183,74 @@ def _check_parameters(story: Story) -> list[Issue]:
         problem = _effect_problem(key, arg)
         if problem:
             issues.append(Issue("error", path, problem))
+    return issues
+
+
+def _check_display(story: Story) -> list[Issue]:
+    """检查公开资源与素材这些可选展示字段。"""
+    issues: list[Issue] = []
+    seen_vars: set[str] = set()
+    for i, resource in enumerate(story.resources):
+        path = f"resources[{i}]"
+        var = getattr(resource, "var", None)
+        name = getattr(resource, "name", None)
+        maximum = getattr(resource, "maximum", None)
+        if not isinstance(var, str) or not var.strip():
+            issues.append(Issue(
+                "error", f"{path}.var",
+                "公开资源的变量名必须是非空字符串。建议：填写 vars 中的变量名，例如 oxygen。",
+            ))
+        elif var in seen_vars:
+            issues.append(Issue(
+                "error", f"{path}.var",
+                f"公开资源变量重复：{var}。建议：每个变量只声明一次。",
+            ))
+        else:
+            seen_vars.add(var)
+        if not isinstance(name, str) or not name.strip():
+            issues.append(Issue(
+                "error", f"{path}.name",
+                "公开资源的显示名称必须是非空字符串。建议：填写玩家看到的名称，例如 氧气。",
+            ))
+        if maximum is not None:
+            if isinstance(maximum, bool) or not isinstance(maximum, int):
+                issues.append(Issue(
+                    "error", f"{path}.max",
+                    "公开资源的上限必须是整数。建议：填写正整数，或省略 max。",
+                ))
+            elif maximum <= 0:
+                issues.append(Issue(
+                    "error", f"{path}.max",
+                    "公开资源的上限必须大于 0。建议：填写正整数，或省略 max。",
+                ))
+
+    if not isinstance(story.assets, dict):
+        issues.append(Issue(
+            "error", "assets",
+            "素材字段应为角色到路径的对象。建议：写成 {\"background\": \"assets/bg.png\"}。",
+        ))
+        return issues
+    root = Path(story.source_dir) if story.source_dir else None
+    for role, asset in story.assets.items():
+        path = f"assets.{role}"
+        if not isinstance(role, str) or not role.strip():
+            issues.append(Issue(
+                "error", "assets",
+                "素材角色必须是非空字符串。建议：使用 background、portrait 等角色名。",
+            ))
+            continue
+        if not isinstance(asset, str) or not asset.strip():
+            issues.append(Issue(
+                "error", path,
+                "素材路径必须是非空字符串。建议：填写剧本目录内的相对路径。",
+            ))
+            continue
+        if root is not None and not (root / asset).is_file():
+            issues.append(Issue(
+                "warning", path,
+                f"素材文件不存在：{asset}。建议：把文件放到剧本目录下，或删除这个引用；"
+                "缺少素材仍可文字通关。",
+            ))
     return issues
 
 
@@ -656,6 +726,8 @@ def _group_name(path: str, story: Story | None) -> tuple[str, str]:
         return "mechanics", "机制插件"
     if path.startswith("items."):
         return "items", "物品"
+    if path.startswith(("resources", "assets")):
+        return "display", "展示字段"
     if parts[0].split("[", 1)[0] in ("clues", "accusation", "combinations", "uses"):
         return "plugin", "插件数据"
     return "global", "全局"

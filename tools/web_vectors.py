@@ -13,6 +13,7 @@ from taleloom.loader import load_story
 from taleloom.parser import parse
 from taleloom.replay import load_walkthrough
 from taleloom.ui_contract import ActionRequest
+from taleloom.mechanics import mystery
 from taleloom.mechanics.puzzle import resolve_item
 from taleloom.session_factory import create_session
 
@@ -46,13 +47,12 @@ def build_vectors() -> list:
                     values = dict(zip(keys, ids))
                     cmd.args = ids
                     action_id = f'puzzle:{cmd.verb}'
-                elif cmd.verb == 'accuse':
-                    suspects = story.data['accusation']['suspects']
-                    target = next(sid for sid, suspect in suspects.items()
-                                  if cmd.target in [sid, suspect.get('name')] + suspect.get('aliases', []))
-                    values = {'suspect': target}
-                    cmd.args = [target]
-                    action_id = 'mystery:accuse'
+                elif cmd.verb in ('examine', 'ask', 'accuse'):
+                    values = mystery.action_values(story, native.state, native.registry, cmd)
+                    assert values is not None, (file, text, '通关脚本中的推理命令无法对应到界面动作')
+                    # 动作参数顺序即命令参数顺序：suspect 在前，各理由按剧本声明的顺序。
+                    cmd.args = list(values.values())
+                    action_id = f'mystery:{cmd.verb}'
                 else:
                     raise AssertionError(f'新增动词需要网页操作：{cmd.verb}')
                 cmd.raw = ' '.join([cmd.verb] + cmd.args)

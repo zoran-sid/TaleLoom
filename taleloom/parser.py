@@ -23,6 +23,8 @@ BUILTIN_VERBS: dict[str, list[str]] = {
 }
 
 _ARG_SPLIT = re.compile(r"\s+|和|与|跟|,|，|、")
+# “把 扳手 用在 控制面板 上”“扳手用在控制面板上” → use_on [扳手, 控制面板]
+_USE_ON = re.compile(r"^(?:把\s*)?(.+?)\s*用在\s*(.+?)\s*上?$")
 
 
 def normalize(text: str) -> str:
@@ -81,6 +83,12 @@ def parse(
             return Command("choose", [str(index)], raw)
 
     aliases = _alias_table(extra_verbs)
+    if "use_on" in (extra_verbs or {}):
+        match = _USE_ON.match(t)
+        if match:
+            items = [a.strip() for a in match.groups() if a.strip()]
+            return Command("use_on", items, raw)
+
     head, _, rest = t.partition(" ")
     if head in aliases:
         return Command(aliases[head], split_args(rest), raw)

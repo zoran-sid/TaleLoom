@@ -53,5 +53,29 @@ class ParserTest(unittest.TestCase):
         self.assertEqual(parse("  Look ").raw, "  Look ")
 
 
+PUZZLE = {"use": ["使用", "用", "use"], "use_on": [], "combine": ["组合", "combine"]}
+
+
+class UseOnParsingTest(unittest.TestCase):
+    def test_use_a_on_b_with_and_without_spaces(self):
+        for text in ("把 扳手 用在 控制面板 上", "把扳手用在控制面板上", "扳手用在控制面板上"):
+            with self.subTest(text=text):
+                self.assertEqual(parse(text, extra_verbs=PUZZLE).args, ["扳手", "控制面板"])
+                self.assertEqual(parse(text, extra_verbs=PUZZLE).verb, "use_on")
+
+    def test_missing_trailing_shang_is_tolerated(self):
+        self.assertEqual(parse("把 木棍 用在 砖墙", extra_verbs=PUZZLE).args, ["木棍", "砖墙"])
+
+    def test_particles_around_item_are_trimmed(self):
+        self.assertEqual(parse("把 扳手用在 panel 上", extra_verbs=PUZZLE).args, ["扳手", "panel"])
+
+    def test_plain_use_is_not_taken_as_use_on(self):
+        self.assertEqual(parse("用 扳手", extra_verbs=PUZZLE).verb, "use")
+        self.assertEqual(parse("使用 提灯", extra_verbs=PUZZLE).args, ["提灯"])
+
+    def test_sentence_needs_puzzle_plugin(self):
+        self.assertEqual(parse("把 扳手 用在 控制面板 上").verb, "unknown")
+
+
 if __name__ == "__main__":
     unittest.main()
