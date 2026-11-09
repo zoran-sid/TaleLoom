@@ -22,6 +22,9 @@ from ..validator import errors, validate
 from ..storage import FileSaveStore, valid_slot
 
 QUICK_SLOT = "quick"
+CHECKPOINT_SLOT = "checkpoint"
+REWIND_CHANCES = 3
+CHECKPOINT_NOTICE = "【存档点】"
 
 
 @dataclass(frozen=True)
@@ -92,6 +95,12 @@ class GameController:
         self.error: str | None = None
         self.dirty = False
         self.busy = False
+        self._rewind_payload: dict | None = None   # 上一个选择之前的存档
+        self._rewind_seq = 0                       # 该检查点记下时已有的存档点数量
+        self.chances_left = REWIND_CHANCES
+        self.mistakes = 0
+        self.rollbacks = 0
+        self.checkpoints: list[dict] = []          # 关键节点自动存档（新的在前）
 
     def load_catalog(self) -> None:
         self.stories, self.problems = load_catalog(self.stories_dir)
@@ -119,9 +128,11 @@ class GameController:
             session = self._create_session(story)
             store = self._make_store(self.saves_dir)
             self.story, self.store, self.store_slot = entry, store, self._slot(entry.id)
+            self._reset_rollback()
             result = session.start()
             self.session = session
             self._apply(result)
+            self._remember_checkpoint(result.view)
             payload = None
             if resume:
                 try:
@@ -154,6 +165,9 @@ class GameController:
         self.error = None
         try:
             before_revision = self.view.revision
+            # 每次选择前记下检查点：失败时可以退回这一步重来。
+            self._rewind_payload = self.session.export_save()
+            self._rewind_seq = len(self.checkpoints)
             result = self.session.dispatch(ActionRequest(action_id, self.view.revision, values or {}))
             self._apply(result)
             if result.ok:
@@ -163,6 +177,7 @@ class GameController:
                         self.store.write(self._slot(self.story.id, "auto"), self.session.export_save())
                     except StorageError as exc:
                         self.error = f"自动存档失败：{exc}；当前进度仍保留。"
+                    self._remember_checkpoint(result.view, result.messages)
             return result
         except RuntimeError as exc:
             self.error = f"操作没有完成：{exc}。可以继续游戏，或先保存进度。"
@@ -210,6 +225,100 @@ class GameController:
         if self.story is None:
             return False
         return self.start(self.story.id, resume=False)
+
+    # ---------- 失败回退（影像模式的失败惩罚，桌面同口径） ----------
+
+    @property
+    def failed(self) -> bool:
+        """当前是否是中途失败的结局。
+
+        第二轮正式字段 `ending.kind` 由 YHT／ZQO 交付；在此之前按影像页
+        同一约定判断：结局 id 以 fail_ 开头。
+        """
+        return bool(self.view and self.view.ended and self.view.ending_id
+                    and self.view.ending_id.startswith("fail_"))
+
+    @property
+    def can_rewind(self) -> bool:
+        """只有中途失败、还有机会、且记过检查点时才给“回到上一个选择”。"""
+        return bool(self.failed and self.chances_left > 0 and self._rewind_payload)
+
+    def rewind(self) -> bool:
+        """回到上一个选择：扣一次机会、记一次失误；之后记的存档点作废。"""
+        if self.busy or not self.can_rewind or self.session is None:
+            return False
+        payload = self._rewind_payload
+        self.busy = True
+        self.error = None
+        try:
+            result = self.session.restore(payload)
+            self._apply(result)
+            if not result.ok:
+                return False
+            self.chances_left -= 1
+            self.mistakes += 1
+            self.checkpoints = self.checkpoints[self._rewind_seq:]
+            self.dirty = True
+            self.messages = [f"回到上一个选择。还剩 {self.chances_left} 次机会。"]
+            return True
+        finally:
+            self.busy = False
+
+    def rollback_to(self, slot: str) -> bool:
+        """回到某个关键节点存档：不消耗机会，之后的进度与存档点作废。"""
+        if self.busy or self.session is None or self.store is None:
+            return False
+        entry = next((row for row in self.checkpoints if row["slot"] == slot), None)
+        if entry is None:
+            self.error = "找不到这个存档点，可能已经被之后的进度覆盖。"
+            return False
+        self.busy = True
+        self.error = None
+        try:
+            result = self.session.restore(self.store.read(slot))
+            self._apply(result)
+            if not result.ok:
+                return False
+            self.rollbacks += 1
+            self.checkpoints = [row for row in self.checkpoints if row["seq"] <= entry["seq"]]
+            self._rewind_payload = None
+            self.dirty = True
+            self.messages = [f"回到存档点「{entry['label']}」。之后的进度已作废。"]
+            return True
+        except StorageError as exc:
+            self.error = str(exc)
+            return False
+        finally:
+            self.busy = False
+
+    def _remember_checkpoint(self, view: ViewSnapshot, messages: list[str] | None = None) -> None:
+        """识别“【存档点】名称”提示，把当前标准存档另存为关键节点。"""
+        if view.ended or self.session is None or self.store is None:
+            return
+        label = None
+        for line in messages or []:
+            if CHECKPOINT_NOTICE in line:
+                label = line.split(CHECKPOINT_NOTICE, 1)[1].strip()
+                break
+        if not label:
+            return
+        seq = len(self.checkpoints) + 1
+        slot = self._slot(self.story.id, f"{CHECKPOINT_SLOT}-{seq}")
+        try:
+            self.store.write(slot, self.session.export_save())
+        except StorageError as exc:
+            self.error = f"存档点没能保存：{exc}；当前进度仍保留。"
+            return
+        self.checkpoints.insert(0, {"slot": slot, "label": label, "seq": seq,
+                                    "scene": view.scene_id, "turn": view.turn})
+
+    def _reset_rollback(self) -> None:
+        self._rewind_payload = None
+        self._rewind_seq = 0
+        self.chances_left = REWIND_CHANCES
+        self.mistakes = 0
+        self.rollbacks = 0
+        self.checkpoints = []
 
     def export_json(self, path: str | Path) -> bool:
         """导出当前存档供网页导入；失败不影响游戏。"""

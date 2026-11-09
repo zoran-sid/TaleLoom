@@ -25,7 +25,10 @@ button.primary { background: var(--accent); color: white; border-color: var(--ac
 button.primary:hover:not(:disabled) { background: #234738; }
 .text-button { border-color: transparent; padding-left: 0; }
 .masthead, main, footer { max-width: 1200px; margin: 0 auto; padding-left: 48px; padding-right: 48px; }
-.masthead { height: 100px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); }
+.masthead { height: 100px; display: flex; justify-content: space-between; align-items: center; gap: 16px; border-bottom: 1px solid var(--line); }
+.masthead-links { display: flex; align-items: center; gap: 14px; min-width: 0; flex-wrap: nowrap; }
+.cinematic-entry { flex: 0 0 auto; font-size: 13px; color: var(--accent); text-decoration: none; border-bottom: 1px solid currentColor; padding-bottom: 1px; white-space: nowrap; }
+.cinematic-entry:hover { color: #234738; }
 .wordmark { font-family: "Songti SC", Georgia, serif; text-decoration: none; font-size: 25px; letter-spacing: -.5px; }
 .wordmark span { margin-left: 10px; font-size: 18px; }
 .edition, .kicker, .shelf-heading span, .library-note, .notebook-note, .hint { color: var(--muted); font-size: 13px; }
@@ -95,7 +98,10 @@ footer { display: flex; gap: 24px; justify-content: space-between; padding-top: 
   .masthead { height: 76px; }
   .wordmark { font-size: 22px; }
   .wordmark span { font-size: 16px; margin-left: 4px; }
-  .edition { font-size: 13px; max-width: 104px; text-align: right; line-height: 1.6; }
+  .masthead { gap: 10px; }
+  .masthead-links { gap: 10px; }
+  .cinematic-entry { font-size: 12px; }
+  .edition { font-size: 12px; text-align: right; line-height: 1.4; white-space: nowrap; }
   .intro { padding: 44px 0 40px; }
   .intro-copy { font-size: 15px; }
   .page h1 { font-size: 29px; }
@@ -104,3 +110,9 @@ footer { display: flex; gap: 24px; justify-content: space-between; padding-top: 
   footer { flex-wrap: wrap; gap: 14px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* 影像模式卡片：不是会话剧本，用链接进入 */
+.story-cinematic .story-number { color: var(--accent); font-size: 24px; }
+.cinematic-link { display: inline-flex; align-items: center; min-height: 44px; padding: 9px 16px; border: 1px solid var(--accent); border-radius: 5px; background: var(--accent); color: white; text-decoration: none; font-size: 15px; }
+.cinematic-link:hover { background: #234738; }
+.story-cinematic .genre { color: var(--accent); }
