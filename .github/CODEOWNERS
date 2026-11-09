@@ -33,6 +33,8 @@
 
 # LQ：存档与存储、回放、剧本 B
 /taleloom/save.py                   @tomq98
+/taleloom/storage.py                @tomq98
+/taleloom/gui/storage.py            @tomq98
 /taleloom/replay.py                 @tomq98
 /web/storage/                       @tomq98
 /stories/deep_space/                @tomq98

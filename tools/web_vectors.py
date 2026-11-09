@@ -14,7 +14,7 @@ from taleloom.parser import parse
 from taleloom.replay import load_walkthrough
 from taleloom.ui_contract import ActionRequest
 from taleloom.mechanics import mystery
-from taleloom.mechanics.puzzle import resolve_item
+from taleloom.mechanics.puzzle import resolve_item, resolve_target
 from taleloom.session_factory import create_session
 
 
@@ -26,9 +26,11 @@ def build_vectors() -> list:
         for file in sorted((story_file.parent / 'walkthroughs').glob('*.txt')):
             walkthrough = load_walkthrough(file)
             native = Engine(story)
+            native.state.random_seed = walkthrough.seed
             output = native.start()
-            session = create_session(story)
+            session = create_session(story, seed=walkthrough.seed)
             session.start()
+            initial_save = session.export_save()
             actions = []
             for text in walkthrough.commands:
                 cmd = parse(text, output.choices, native.verb_aliases())
@@ -41,6 +43,12 @@ def build_vectors() -> list:
                     choice = choices[int(cmd.target) - 1] if cmd.target.isdigit() else next(c for c in choices if c.id == cmd.target)
                     action_id = f'choice:{choice.id}'
                     cmd.args = [choice.id]
+                elif cmd.verb == 'use_on':
+                    values = {'item': resolve_item(story, native.state, cmd.args[0]),
+                              'target': resolve_target(story, cmd.args[1], native.state.scene)}
+                    assert all(values.values()), (file, text, '未知物品或目标')
+                    cmd.args = list(values.values())
+                    action_id = 'puzzle:use_on'
                 elif cmd.verb in ('use', 'combine'):
                     ids = [resolve_item(story, native.state, arg) for arg in cmd.args]
                     keys = ['item'] if cmd.verb == 'use' else ['first', 'second']
@@ -63,7 +71,7 @@ def build_vectors() -> list:
                 actions.append({'action_id': action_id, 'values': values})
             assert session.snapshot().ending_id == walkthrough.expect, file
             vectors.append({'story_id': story.id, 'name': walkthrough.name,
-                            'actions': actions, 'ending': walkthrough.expect,
+                            'actions': actions, 'ending': walkthrough.expect, 'initial_save': initial_save,
                             'save': session.export_save()})
     return vectors
 
