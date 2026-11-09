@@ -14,11 +14,11 @@ INT6181 应用 Python 程式设计 · 小组项目。
 - 自动发布：Cloudflare 监听本仓库推送，检查与构建成功后自动部署；`main` 更新正式网址，`develop`／成员分支提供预览。
 - 异步协作：共享接口和固定样例先行，界面、引擎、插件、存档与素材分模块扩展。
 
-每人的下一步与接入点见 [任务安排第 0 节](docs/team-tasks.md#0-当前进度与每人下一步)。独立模块开发入口：`taleloom/ui_contract.py`、`tests/ui_fakes.py`，展示端统一用 `taleloom.session_factory.create_session` 取得会话；可运行 `python -B -m unittest tests.integration.test_ui_contract -v`。
+独立模块开发入口：`taleloom/ui_contract.py`、`tests/ui_fakes.py`，展示端统一用 `taleloom.session_factory.create_session` 取得会话；可运行 `python -B -m unittest tests.integration.test_ui_contract -v`。
 
 当前状态：命令行可完整游玩两个序章；网页可在线点击游玩：<https://taleloom.zoranzhou.com>；影像模式（互动影像、失败惩罚、关键节点存档）：<https://taleloom.zoranzhou.com/cinematic>，`develop` 合入后由 Cloudflare 自动部署，成员分支的预览在 `<分支名>.taleloom.zoranzhou.com`；桌面 GUI 与各成员的正式模块按分工开发中。
 
-本地网页：安装 Node（版本见 `.node-version`）与 Python 后运行 `npm ci`，再运行 `npm run dev -- --open`。发布设置与成员接入点见 [网页试玩与 Cloudflare 自动发布](docs/cloudflare-deploy.md)，完整目标见 [GUI／网页实施要求](docs/gui-web-plan.md)。
+本地网页：安装 Node（版本见 `.node-version`）与 Python 后运行 `npm ci`，再运行 `npm run dev -- --open`。
 
 ## 当前版本运行（CLI）
 
@@ -65,7 +65,6 @@ stories/<剧本>/          story.json、剧情大纲、walkthroughs/ 通关脚�
 tests/<成员缩写>/        各模块单元测试；tests/integration/ 集成测试；tests/browser/ 浏览器测试
 web/                    网页：runtime/ 浏览器中运行 Python 的桥接，preview/ 临时试玩界面
 tools/                  网页打包与发布检查脚本
-docs/                   分工、接口、剧本格式、需求、部署、课程要求
 ```
 
 ## 成员分工
@@ -78,21 +77,6 @@ docs/                   分工、接口、剧本格式、需求、部署、课�
 | 4 | ZC | 推理插件、剧本 A《雾港旧案》、整合与发布 |
 | 5 | LQ | 存档与存储、回放与探索测试、剧本 B《深空回声》 |
 
-**第一次参与先读 [五人任务安排](docs/team-tasks.md) 第 0、1 节**：当前进度、你的下一个 PR、负责的文件。模块阶段只做代码；最终报告、PPT、视频在最终合并阶段统一完成。
-
-## 项目文档
-
-- [五人任务安排](docs/team-tasks.md)：当前进度与每人下一步、文件归属、必做与加分项、时间线、审阅轮换、评分对应
-- [GUI／网页实施要求](docs/gui-web-plan.md)：范围、共享核心、Cloudflare 自动部署与验收
-- [网页试玩与 Cloudflare 自动发布](docs/cloudflare-deploy.md)：配置参数、发布检查与模块替换入口
-- [项目说明](docs/project-brief.md)：为什么做引擎、两个剧本、灵感来源与原创性、范围
-- [接口约定](docs/contracts.md)：模块依赖、引擎与插件接口、修改接口的流程
-- [剧本格式](docs/story-format.md)：写剧本的完整字段说明
-- [协作流程](docs/collaboration.md)：分支、PR、测试分层、CI、提交信息
-- [需求与测试对应表](docs/requirements.md) · [AI 使用记录](docs/ai-usage.md)（两者在最终合并阶段统一补齐）
-- [开工提示词](docs/prompts.md) · [AGENTS.md](AGENTS.md)
-- [课程要求全文](docs/course-requirements.md)
-
 ## 外部资源
 
-Python 核心与桌面端仅使用标准库。网页端使用 Pyodide 在浏览器中运行 Python，版本与许可证见 `web/runtime/THIRD_PARTY_NOTICES.txt`；网页构建与测试工具（Vite、Cloudflare CLI、Playwright）锁定在 `package-lock.json`，只用于开发和发布。剧本 A 的玩法机制参考了剧本杀的通用玩法，剧情、人物与文字为原创，参考来源见 [项目说明](docs/project-brief.md)。
+Python 核心与桌面端仅使用标准库。网页端使用 Pyodide 在浏览器中运行 Python，版本与许可证见 `web/runtime/THIRD_PARTY_NOTICES.txt`；网页构建与测试工具（Vite、Cloudflare CLI、Playwright）锁定在 `package-lock.json`，只用于开发和发布。剧本 A 的玩法机制参考了剧本杀的通用玩法，剧情、人物与文字为原创。
