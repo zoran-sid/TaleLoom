@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { voiceFor, voicesForScene } from '../../web/cinematic/voice-cues.js';
 import { readingPages } from '../../web/cinematic/narrative.js';
+import { VOICE_LINES } from '../../web/cinematic/voice-lines.generated.js';
 
 test('人物配音只匹配引擎场景、人物和原剧本句子', () => {
   const scene = { story_id: 'fog_harbor_ledger', scene_id: 'c01_batch' };
@@ -23,5 +24,16 @@ test('阿芸与顾先生的原句按现有段落规则找到已录制配音', ()
     const view = { story_id: 'fog_harbor_ledger', scene_id: sceneId };
     const pages = readingPages(paragraph, { storyId: view.story_id, sceneId });
     assert.ok(pages.some((page) => voiceFor(view, page) === asset));
+  }
+});
+
+test('序章与第一章的每句对白按场景、人物和原句命中', () => {
+  for (const [scene, lines] of Object.entries(VOICE_LINES)) {
+    const view = { story_id: 'fog_harbor_ledger', scene_id: scene };
+    for (const line of lines) {
+      assert.equal(voiceFor(view, { speaker: line.speaker, text: `“${line.text}”` }), line.asset);
+      assert.equal(voiceFor(view, { speaker: '你', text: `“${line.text}”` }), null);
+    }
+    assert.deepEqual(new Set(voicesForScene(view)), new Set(lines.map((line) => line.asset)));
   }
 });

@@ -1,0 +1,60 @@
+/** 生成文件：python tools/render_voice.py；数据来自 tools/voice_spec.json。 */
+export const VOICE_LINES = {
+  "p01_dock": [
+    { speaker: "阿水", text: "去旅馆，走前头那条路。后院的石阶涨潮淹了，别图近。", asset: "voice_ashui_p01_dock_1" },
+    { speaker: "阿水", text: "这船只走港里。", asset: "voice_ashui_p01_dock_2" },
+    { speaker: "阿水", text: "外头那道浪，换谁坐都一样。", asset: "voice_ashui_p01_dock_3" },
+    { speaker: "阿水", text: "我叫阿水。明早若要过海，先来问风。", asset: "voice_ashui_p01_dock_4" },
+    { speaker: "阿水", text: "沿油灯走，几分钟就到；后窗那边得坐短渡。", asset: "voice_ashui_p01_dock_5" },
+    { speaker: "老许", text: "电话还通。船什么时候开，要看水上。", asset: "voice_laoxu_p01_dock_6" },
+  ],
+  "p02_lobby": [
+    { speaker: "周文", text: "商行来的？周文。我替掌柜记账。", asset: "voice_zhou_p02_lobby_1" },
+    { speaker: "周文", text: "邻行串过来的。", asset: "voice_zhou_p02_lobby_2" },
+    { speaker: "周文", text: "请你自己对一下。明早换了掌柜，这样的小错就说不清了。", asset: "voice_zhou_p02_lobby_3" },
+    { speaker: "周文", text: "原始流水也带来了？", asset: "voice_zhou_p02_lobby_4" },
+    { speaker: "周文", text: "那就齐了。", asset: "voice_zhou_p02_lobby_5" },
+    { speaker: "周文", text: "明早。", asset: "voice_zhou_p02_lobby_6" },
+  ],
+  "p03_dinner": [
+    { speaker: "周文", text: "原始流水也带来了？", asset: "voice_zhou_p02_lobby_4" },
+    { speaker: "周文", text: "那就齐了。", asset: "voice_zhou_p02_lobby_5" },
+    { speaker: "周文", text: "明早。", asset: "voice_zhou_p02_lobby_6" },
+    { speaker: "陈掌柜", text: "资料等我整理好，十一点后放在账房。你睡前来取，带回房慢慢看。", asset: "voice_chen_p03_dinner_1" },
+    { speaker: "陈掌柜", text: "今晚先吃饭。", asset: "voice_chen_p03_dinner_2" },
+    { speaker: "陈掌柜", text: "坐下吃。明天人多。", asset: "voice_chen_p03_dinner_3" },
+    { speaker: "阿芸", text: "明天交割完，欠的那半月工钱也一起结吗？", asset: "voice_ayun_p03_dinner_4" },
+    { speaker: "陈掌柜", text: "你还怕我少你？", asset: "voice_chen_p03_dinner_5" },
+    { speaker: "周文", text: "工钱在另一册，我记着。", asset: "voice_zhou_p03_dinner_6" },
+    { speaker: "阿芸", text: "上个月也是你记着。", asset: "voice_ayun_p03_dinner_7" },
+    { speaker: "阿芸", text: "九月下半月。写上日期。", asset: "voice_ayun_p03_dinner_8" },
+    { speaker: "阿芸", text: "我要走了。工钱关系到路费。", asset: "voice_ayun_p03_dinner_9" },
+    { speaker: "阿芸", text: "你查数就好，不用替我劝他。", asset: "voice_ayun_p03_dinner_10" },
+  ],
+  "p04_office": [
+    { speaker: "陈掌柜", text: "开店那年买的。坏过一次，还能使。", asset: "voice_chen_p04_office_1" },
+    { speaker: "顾先生", text: "那封信，能不能后天再寄？我的货款后天到。", asset: "voice_gu_p04_office_2" },
+    { speaker: "陈掌柜", text: "顾兄，我等的是你还钱，不是你每次换一个日子。欠据明早跟信走。", asset: "voice_chen_p04_office_3" },
+    { speaker: "顾先生", text: "我们另谈。", asset: "voice_gu_p04_office_4" },
+    { speaker: "阿水", text: "信在值房，老许今夜当班。", asset: "voice_ashui_p04_office_5" },
+    { speaker: "陈掌柜", text: "旧船行的人。", asset: "voice_chen_p04_office_6" },
+  ],
+  "a01_found": [
+    { speaker: "顾先生", text: "看书，看得忘了时辰。", asset: "voice_gu_a01_found_1" },
+    { speaker: "顾先生", text: "掌柜也没歇？", asset: "voice_gu_a01_found_2" },
+  ],
+  "a02_door": [
+    { speaker: "周文", text: "别围在这里。掌柜有时候会晕——", asset: "voice_zhou_a02_door_1" },
+    { speaker: "顾先生", text: "那张纸……", asset: "voice_gu_a02_door_2" },
+    { speaker: "顾先生", text: "我说，桌上的纸别吹散了。", asset: "voice_gu_a02_door_3" },
+    { speaker: "顾先生", text: "一起等吧。谁也别单独进去。", asset: "voice_gu_a02_door_4" },
+  ],
+  "a03_lamp": [
+    { speaker: "顾先生", text: "你要抄多少？", asset: "voice_gu_a03_lamp_1" },
+    { speaker: "顾先生", text: "包括没看全的？", asset: "voice_gu_a03_lamp_2" },
+  ],
+  "a04_window": [
+    { speaker: "阿芸", text: "我送茶的时候，后窗只留着一道缝。", asset: "voice_ayun_a04_window_1" },
+    { speaker: "阿芸", text: "钟响过后。", asset: "voice_ayun_a04_window_2" },
+  ],
+};

@@ -1,14 +1,18 @@
 """用 fal 生成并加工影像版声音素材；开发工具，不参与网页或桌面运行时。
 
     python tools/audio_pipeline.py --list
-    python tools/audio_pipeline.py                 # 生成 spec 中缺失的素材
+    python tools/audio_pipeline.py                 # 生成缺失的配乐与环境声
+    python tools/audio_pipeline.py --voice --list  # 列出人物配音
+    python tools/audio_pipeline.py --voice         # 生成缺失的人物配音
     python tools/audio_pipeline.py --only harbor_arrival --force
     python tools/audio_pipeline.py --dry-run
 
 凭据只从环境变量 ``FAL_KEY`` 或仓库根目录的 ``.fal-key`` 读取，不写入日志。
 生成原始文件放在 ``web/cinematic/audio/raw/``（已忽略），成品 MP3、响度、SHA-256
 与请求 ID 写入 ``web/cinematic/audio/manifest.json``，供声音设计文档引用。
-素材参数在 ``tools/audio_spec.json``，模型、授权与费用记录见 ``docs/audio-direction.md``。
+配乐与环境声参数在 ``tools/audio_spec.json``；人物配音在 ``tools/voice_spec.json``，
+由 ``tools/make_voice_spec.mjs`` 从剧本对白署名生成。模型、授权与费用见
+``docs/audio-direction.md``。
 """
 
 from __future__ import annotations
@@ -30,12 +34,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC_PATH = ROOT / 'tools' / 'audio_spec.json'
+VOICE_SPEC_PATH = ROOT / 'tools' / 'voice_spec.json'
 AUDIO_DIR = ROOT / 'web' / 'cinematic' / 'audio'
 RAW_DIR = AUDIO_DIR / 'raw'
 MANIFEST = AUDIO_DIR / 'manifest.json'
 QUEUE = 'https://queue.fal.run/'
 POLL_SECONDS = 2
 POLL_LIMIT = 900
+VOICE_LUFS = -24
+VOICE_TP = -3
 
 
 def load_key() -> str:
@@ -151,6 +158,20 @@ def process(source: Path, destination: Path, post: dict, workdir: Path) -> None:
         raise SystemExit(f'ffmpeg 编码失败：{result.stderr.strip()[:800]}')
 
 
+def process_voice(source: Path, destination: Path) -> None:
+    """把 TTS 输出统一到 −18 LUFS、单声道 44.1 kHz，峰值不越过 −2 dB。"""
+    before = probe(source)
+    gain = VOICE_LUFS - before['lufs']
+    if before['peak'] + gain > VOICE_TP:
+        gain = VOICE_TP - before['peak']
+    command = ['ffmpeg', '-y', '-hide_banner', '-loglevel', 'error', '-i', str(source),
+               '-af', f'volume={gain:.2f}dB', '-ar', '44100', '-ac', '1',
+               '-c:a', 'libmp3lame', '-b:a', '128k', str(destination)]
+    result = subprocess.run(command, capture_output=True, text=True)
+    if result.returncode:
+        raise SystemExit(f'ffmpeg 配音编码失败：{result.stderr.strip()[:800]}')
+
+
 def probe(path: Path) -> dict:
     """读取成品时长与综合响度，作为试听前的数值记录。"""
     info = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration',
@@ -174,22 +195,47 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def load_manifest() -> list[dict]:
-    if MANIFEST.is_file():
-        return json.loads(MANIFEST.read_text(encoding='utf-8')).get('assets', [])
-    return []
+def load_manifest() -> tuple[list[dict], list[dict]]:
+    """返回配乐／环境声与人物配音两组记录；旧 manifest 没有 voices 时为空。"""
+    if not MANIFEST.is_file():
+        return [], []
+    data = json.loads(MANIFEST.read_text(encoding='utf-8'))
+    return data.get('assets', []), data.get('voices', [])
 
 
-def save_manifest(records: list[dict], order: list[str]) -> None:
-    index = {record['id']: record for record in records}
-    ordered = [index[name] for name in order if name in index]
-    MANIFEST.write_text(json.dumps({'assets': ordered}, ensure_ascii=False, indent=2) + '\n',
-                        encoding='utf-8')
+def save_manifest(assets: list[dict], voices: list[dict]) -> None:
+    MANIFEST.write_text(json.dumps({'assets': assets, 'voices': voices},
+                                   ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+
+def record(identifier: str, endpoint: str, request_id: str, stats: dict, path: Path,
+           **extra) -> dict:
+    """生成一条可追溯的 manifest 记录。"""
+    return {
+        'id': identifier,
+        'layer': extra.pop('layer'),
+        'endpoint': endpoint,
+        'request_id': request_id,
+        'duration': stats['duration'],
+        'lufs': stats['lufs'],
+        'peak': stats['peak'],
+        'sha256': sha256(path),
+        'generated_at': datetime.now(timezone.utc).isoformat(timespec='seconds'),
+        **extra,
+    }
+
+
+def require_ffmpeg() -> None:
+    for command in ('ffmpeg', 'ffprobe'):
+        if shutil.which(command) is None:
+            raise SystemExit(f'需要 {command}，请先安装 FFmpeg。')
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description='生成《未结的账》序章与第一章的声音素材')
     parser.add_argument('--spec', type=Path, default=SPEC_PATH)
+    parser.add_argument('--voice-spec', type=Path, default=VOICE_SPEC_PATH)
+    parser.add_argument('--voice', action='store_true', help='生成人物配音而不是配乐／环境声')
     parser.add_argument('--only', action='append', default=[], metavar='ID')
     parser.add_argument('--force', action='store_true', help='覆盖已存在的 MP3')
     parser.add_argument('--dry-run', action='store_true', help='只显示将要提交的请求')
@@ -197,26 +243,71 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--list', action='store_true', help='列出 spec 中的素材')
     args = parser.parse_args(argv)
 
-    spec = json.loads(args.spec.read_text(encoding='utf-8'))
-    assets = spec['assets']
+    require_ffmpeg()
+    audio_spec = json.loads(args.spec.read_text(encoding='utf-8'))
+    audio_order = [a['id'] for a in audio_spec['assets']]
+    assets, voices = load_manifest()
+
+    if args.voice:
+        spec = json.loads(args.voice_spec.read_text(encoding='utf-8'))
+        entries = spec['lines']
+        if args.list:
+            for line in entries:
+                print(f"{line['id']:28} {line['speaker']:4} {line['text']}")
+            return 0
+        selected = [e for e in entries if not args.only or e['id'] in args.only]
+        missing = set(args.only) - {e['id'] for e in entries}
+        if missing:
+            raise SystemExit(f'未知配音：{", ".join(sorted(missing))}')
+        if not selected:
+            raise SystemExit('没有匹配的配音；用 --voice --list 查看 ID。')
+        key = '' if args.dry_run else load_key()
+        saved = 0
+        for line in selected:
+            identifier = line['id']
+            destination = AUDIO_DIR / line['file']
+            if destination.exists() and not args.force:
+                print(f"跳过 {identifier}：{destination.name} 已存在（--force 可重做）")
+                continue
+            print(f"生成 {identifier} ← {line['endpoint']}（{line['speaker']}：{line['text'][:24]}）")
+            if args.dry_run:
+                continue
+            previous = next((r for r in voices if r['id'] == identifier), {})
+            if args.reuse_raw:
+                candidates = sorted((RAW_DIR / 'voice').glob(f'{identifier}.*'))
+                if not candidates:
+                    raise SystemExit(f'缺少 {identifier} 的原始文件；先去 --force 生成一次。')
+                source, request_id = candidates[0], previous.get('request_id', '')
+            else:
+                request_id, urls = submit(line['endpoint'], line['input'], key)
+                result = wait_for_result(line['endpoint'], request_id, urls, key)
+                source = download(audio_url(result), RAW_DIR / 'voice' / identifier)
+            process_voice(source, destination)
+            stats = probe(destination)
+            voices = [r for r in voices if r['id'] != identifier] + [record(
+                identifier, line['endpoint'], request_id, stats, destination,
+                layer='voice', scene=line['scene'], speaker=line['speaker'], text=line['text'])]
+            save_manifest(assets, voices)
+            saved += 1
+            print(f"  完成 {destination.name}：{stats['duration']} 秒，{stats['lufs']} LUFS，"
+                  f"request_id={request_id}")
+        if not args.dry_run and not saved:
+            print('没有生成新配音。')
+        return 0
+
     if args.list:
-        for asset in assets:
+        for asset in audio_spec['assets']:
             print(f"{asset['id']:16} {asset['layer']:9} {asset['endpoint']}")
         return 0
 
-    selected = [a for a in assets if not args.only or a['id'] in args.only]
+    selected = [a for a in audio_spec['assets'] if not args.only or a['id'] in args.only]
     if not selected:
         raise SystemExit('没有匹配的素材；用 --list 查看 ID。')
-    missing = set(args.only) - {a['id'] for a in assets}
+    missing = set(args.only) - set(audio_order)
     if missing:
         raise SystemExit(f'未知素材：{", ".join(sorted(missing))}')
-    for command in ('ffmpeg', 'ffprobe'):
-        if shutil.which(command) is None:
-            raise SystemExit(f'需要 {command}，请先安装 FFmpeg。')
-
     key = '' if args.dry_run else load_key()
-    records = load_manifest()
-    saved: list[str] = []
+    saved = 0
     for asset in selected:
         identifier = asset['id']
         destination = AUDIO_DIR / f'{identifier}.mp3'
@@ -227,7 +318,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"生成 {identifier} ← {asset['endpoint']}（{payload.get('seconds_total') or payload.get('duration')} 秒）")
         if args.dry_run:
             continue
-        previous = next((r for r in records if r['id'] == identifier), {})
+        previous = next((r for r in assets if r['id'] == identifier), {})
         if args.reuse_raw:
             candidates = sorted(RAW_DIR.glob(f'{identifier}.*'))
             if not candidates:
@@ -239,21 +330,14 @@ def main(argv: list[str] | None = None) -> int:
             source = download(audio_url(result), RAW_DIR / identifier)
         process(source, destination, asset['post'], RAW_DIR)
         stats = probe(destination)
-        record = {
-            'id': identifier,
-            'layer': asset['layer'],
-            'endpoint': asset['endpoint'],
-            'request_id': request_id,
-            'seed': payload.get('seed'),
-            'duration': stats['duration'],
-            'lufs': stats['lufs'],
-            'peak': stats['peak'],
-            'sha256': sha256(destination),
-            'generated_at': datetime.now(timezone.utc).isoformat(timespec='seconds'),
-        }
-        records = [r for r in records if r['id'] != identifier] + [record]
-        save_manifest(records, [a['id'] for a in assets])
-        saved.append(identifier)
+        assets = [r for r in assets if r['id'] != identifier] + [record(
+            identifier, asset['endpoint'], request_id, stats, destination,
+            layer=asset['layer'], seed=payload.get('seed'))]
+        by_id = {r['id']: r for r in assets}
+        assets = [by_id[name] for name in audio_order if name in by_id] + [
+            r for r in assets if r['id'] not in audio_order]
+        save_manifest(assets, voices)
+        saved += 1
         print(f"  完成 {destination.name}：{stats['duration']} 秒，{stats['lufs']} LUFS，"
               f"request_id={request_id}")
 

@@ -1,0 +1,1218 @@
+{
+  "story": "fog_harbor_ledger",
+  "section": "序章与第一章",
+  "note": "由 tools/make_voice_spec.mjs 生成；同一人物同一句复用一条录音。",
+  "scenes": {
+    "p01_dock": [
+      {
+        "speaker": "阿水",
+        "text": "去旅馆，走前头那条路。后院的石阶涨潮淹了，别图近。",
+        "asset": "voice_ashui_p01_dock_1"
+      },
+      {
+        "speaker": "阿水",
+        "text": "这船只走港里。",
+        "asset": "voice_ashui_p01_dock_2"
+      },
+      {
+        "speaker": "阿水",
+        "text": "外头那道浪，换谁坐都一样。",
+        "asset": "voice_ashui_p01_dock_3"
+      },
+      {
+        "speaker": "阿水",
+        "text": "我叫阿水。明早若要过海，先来问风。",
+        "asset": "voice_ashui_p01_dock_4"
+      },
+      {
+        "speaker": "阿水",
+        "text": "沿油灯走，几分钟就到；后窗那边得坐短渡。",
+        "asset": "voice_ashui_p01_dock_5"
+      },
+      {
+        "speaker": "老许",
+        "text": "电话还通。船什么时候开，要看水上。",
+        "asset": "voice_laoxu_p01_dock_6"
+      }
+    ],
+    "p02_lobby": [
+      {
+        "speaker": "周文",
+        "text": "商行来的？周文。我替掌柜记账。",
+        "asset": "voice_zhou_p02_lobby_1"
+      },
+      {
+        "speaker": "周文",
+        "text": "邻行串过来的。",
+        "asset": "voice_zhou_p02_lobby_2"
+      },
+      {
+        "speaker": "周文",
+        "text": "请你自己对一下。明早换了掌柜，这样的小错就说不清了。",
+        "asset": "voice_zhou_p02_lobby_3"
+      },
+      {
+        "speaker": "周文",
+        "text": "原始流水也带来了？",
+        "asset": "voice_zhou_p02_lobby_4"
+      },
+      {
+        "speaker": "周文",
+        "text": "那就齐了。",
+        "asset": "voice_zhou_p02_lobby_5"
+      },
+      {
+        "speaker": "周文",
+        "text": "明早。",
+        "asset": "voice_zhou_p02_lobby_6"
+      }
+    ],
+    "p03_dinner": [
+      {
+        "speaker": "周文",
+        "text": "原始流水也带来了？",
+        "asset": "voice_zhou_p02_lobby_4"
+      },
+      {
+        "speaker": "周文",
+        "text": "那就齐了。",
+        "asset": "voice_zhou_p02_lobby_5"
+      },
+      {
+        "speaker": "周文",
+        "text": "明早。",
+        "asset": "voice_zhou_p02_lobby_6"
+      },
+      {
+        "speaker": "陈掌柜",
+        "text": "资料等我整理好，十一点后放在账房。你睡前来取，带回房慢慢看。",
+        "asset": "voice_chen_p03_dinner_1"
+      },
+      {
+        "speaker": "陈掌柜",
+        "text": "今晚先吃饭。",
+        "asset": "voice_chen_p03_dinner_2"
+      },
+      {
+        "speaker": "陈掌柜",
+        "text": "坐下吃。明天人多。",
+        "asset": "voice_chen_p03_dinner_3"
+      },
+      {
+        "speaker": "阿芸",
+        "text": "明天交割完，欠的那半月工钱也一起结吗？",
+        "asset": "voice_ayun_p03_dinner_4"
+      },
+      {
+        "speaker": "陈掌柜",
+        "text": "你还怕我少你？",
+        "asset": "voice_chen_p03_dinner_5"
+      },
+      {
+        "speaker": "周文",
+        "text": "工钱在另一册，我记着。",
+        "asset": "voice_zhou_p03_dinner_6"
+      },
+      {
+        "speaker": "阿芸",
+        "text": "上个月也是你记着。",
+        "asset": "voice_ayun_p03_dinner_7"
+      },
+      {
+        "speaker": "阿芸",
+        "text": "九月下半月。写上日期。",
+        "asset": "voice_ayun_p03_dinner_8"
+      },
+      {
+        "speaker": "阿芸",
+        "text": "我要走了。工钱关系到路费。",
+        "asset": "voice_ayun_p03_dinner_9"
+      },
+      {
+        "speaker": "阿芸",
+        "text": "你查数就好，不用替我劝他。",
+        "asset": "voice_ayun_p03_dinner_10"
+      }
+    ],
+    "p04_office": [
+      {
+        "speaker": "陈掌柜",
+        "text": "开店那年买的。坏过一次，还能使。",
+        "asset": "voice_chen_p04_office_1"
+      },
+      {
+        "speaker": "顾先生",
+        "text": "那封信，能不能后天再寄？我的货款后天到。",
+        "asset": "voice_gu_p04_office_2"
+      },
+      {
+        "speaker": "陈掌柜",
+        "text": "顾兄，我等的是你还钱，不是你每次换一个日子。欠据明早跟信走。",
+        "asset": "voice_chen_p04_office_3"
+      },
+      {
+        "speaker": "顾先生",
+        "text": "我们另谈。",
+        "asset": "voice_gu_p04_office_4"
+      },
+      {
+        "speaker": "阿水",
+        "text": "信在值房，老许今夜当班。",
+        "asset": "voice_ashui_p04_office_5"
+      },
+      {
+        "speaker": "陈掌柜",
+        "text": "旧船行的人。",
+        "asset": "voice_chen_p04_office_6"
+      }
+    ],
+    "a01_found": [
+      {
+        "speaker": "顾先生",
+        "text": "看书，看得忘了时辰。",
+        "asset": "voice_gu_a01_found_1"
+      },
+      {
+        "speaker": "顾先生",
+        "text": "掌柜也没歇？",
+        "asset": "voice_gu_a01_found_2"
+      }
+    ],
+    "a02_door": [
+      {
+        "speaker": "周文",
+        "text": "别围在这里。掌柜有时候会晕——",
+        "asset": "voice_zhou_a02_door_1"
+      },
+      {
+        "speaker": "顾先生",
+        "text": "那张纸……",
+        "asset": "voice_gu_a02_door_2"
+      },
+      {
+        "speaker": "顾先生",
+        "text": "我说，桌上的纸别吹散了。",
+        "asset": "voice_gu_a02_door_3"
+      },
+      {
+        "speaker": "顾先生",
+        "text": "一起等吧。谁也别单独进去。",
+        "asset": "voice_gu_a02_door_4"
+      }
+    ],
+    "a03_lamp": [
+      {
+        "speaker": "顾先生",
+        "text": "你要抄多少？",
+        "asset": "voice_gu_a03_lamp_1"
+      },
+      {
+        "speaker": "顾先生",
+        "text": "包括没看全的？",
+        "asset": "voice_gu_a03_lamp_2"
+      }
+    ],
+    "a04_window": [
+      {
+        "speaker": "阿芸",
+        "text": "我送茶的时候，后窗只留着一道缝。",
+        "asset": "voice_ayun_a04_window_1"
+      },
+      {
+        "speaker": "阿芸",
+        "text": "钟响过后。",
+        "asset": "voice_ayun_a04_window_2"
+      }
+    ]
+  },
+  "lines": [
+    {
+      "id": "voice_ashui_p01_dock_1",
+      "file": "voice-ashui-p01-dock-1.mp3",
+      "scene": "p01_dock",
+      "speaker": "阿水",
+      "text": "去旅馆，走前头那条路。后院的石阶涨潮淹了，别图近。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "去旅馆，走前头那条路。后院的石阶涨潮淹了，别图近。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Casual_Guy",
+          "speed": 0.9,
+          "pitch": -4,
+          "emotion": "neutral",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_ashui_p01_dock_2",
+      "file": "voice-ashui-p01-dock-2.mp3",
+      "scene": "p01_dock",
+      "speaker": "阿水",
+      "text": "这船只走港里。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "这船只走港里。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Casual_Guy",
+          "speed": 0.9,
+          "pitch": -4,
+          "emotion": "neutral",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_ashui_p01_dock_3",
+      "file": "voice-ashui-p01-dock-3.mp3",
+      "scene": "p01_dock",
+      "speaker": "阿水",
+      "text": "外头那道浪，换谁坐都一样。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "外头那道浪，换谁坐都一样。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Casual_Guy",
+          "speed": 0.9,
+          "pitch": -4,
+          "emotion": "neutral",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_ashui_p01_dock_4",
+      "file": "voice-ashui-p01-dock-4.mp3",
+      "scene": "p01_dock",
+      "speaker": "阿水",
+      "text": "我叫阿水。明早若要过海，先来问风。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "我叫阿水。明早若要过海，先来问风。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Casual_Guy",
+          "speed": 0.9,
+          "pitch": -4,
+          "emotion": "neutral",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_ashui_p01_dock_5",
+      "file": "voice-ashui-p01-dock-5.mp3",
+      "scene": "p01_dock",
+      "speaker": "阿水",
+      "text": "沿油灯走，几分钟就到；后窗那边得坐短渡。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "沿油灯走，几分钟就到；后窗那边得坐短渡。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Casual_Guy",
+          "speed": 0.9,
+          "pitch": -4,
+          "emotion": "neutral",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_laoxu_p01_dock_6",
+      "file": "voice-laoxu-p01-dock-6.mp3",
+      "scene": "p01_dock",
+      "speaker": "老许",
+      "text": "电话还通。船什么时候开，要看水上。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "电话还通。船什么时候开，要看水上。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Imposing_Manner",
+          "speed": 0.84,
+          "pitch": -3,
+          "emotion": "neutral",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_zhou_p02_lobby_1",
+      "file": "voice-zhou-p02-lobby-1.mp3",
+      "scene": "p02_lobby",
+      "speaker": "周文",
+      "text": "商行来的？周文。我替掌柜记账。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "商行来的？周文。我替掌柜记账。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Patient_Man",
+          "speed": 0.92,
+          "pitch": -2,
+          "emotion": "neutral",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_zhou_p02_lobby_2",
+      "file": "voice-zhou-p02-lobby-2.mp3",
+      "scene": "p02_lobby",
+      "speaker": "周文",
+      "text": "邻行串过来的。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "邻行串过来的。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Patient_Man",
+          "speed": 0.92,
+          "pitch": -2,
+          "emotion": "neutral",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_zhou_p02_lobby_3",
+      "file": "voice-zhou-p02-lobby-3.mp3",
+      "scene": "p02_lobby",
+      "speaker": "周文",
+      "text": "请你自己对一下。明早换了掌柜，这样的小错就说不清了。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "请你自己对一下。明早换了掌柜，这样的小错就说不清了。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Patient_Man",
+          "speed": 0.92,
+          "pitch": -2,
+          "emotion": "neutral",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_zhou_p02_lobby_4",
+      "file": "voice-zhou-p02-lobby-4.mp3",
+      "scene": "p02_lobby",
+      "speaker": "周文",
+      "text": "原始流水也带来了？",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "原始流水也带来了？",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Patient_Man",
+          "speed": 0.92,
+          "pitch": -2,
+          "emotion": "neutral",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_zhou_p02_lobby_5",
+      "file": "voice-zhou-p02-lobby-5.mp3",
+      "scene": "p02_lobby",
+      "speaker": "周文",
+      "text": "那就齐了。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "那就齐了。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Patient_Man",
+          "speed": 0.92,
+          "pitch": -2,
+          "emotion": "neutral",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_zhou_p02_lobby_6",
+      "file": "voice-zhou-p02-lobby-6.mp3",
+      "scene": "p02_lobby",
+      "speaker": "周文",
+      "text": "明早。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "明早。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Patient_Man",
+          "speed": 0.92,
+          "pitch": -2,
+          "emotion": "neutral",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_chen_p03_dinner_1",
+      "file": "voice-chen-p03-dinner-1.mp3",
+      "scene": "p03_dinner",
+      "speaker": "陈掌柜",
+      "text": "资料等我整理好，十一点后放在账房。你睡前来取，带回房慢慢看。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "资料等我整理好，十一点后放在账房。你睡前来取，带回房慢慢看。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Deep_Voice_Man",
+          "speed": 0.86,
+          "pitch": -3,
+          "emotion": "neutral",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_chen_p03_dinner_2",
+      "file": "voice-chen-p03-dinner-2.mp3",
+      "scene": "p03_dinner",
+      "speaker": "陈掌柜",
+      "text": "今晚先吃饭。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "今晚先吃饭。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Deep_Voice_Man",
+          "speed": 0.86,
+          "pitch": -3,
+          "emotion": "neutral",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_chen_p03_dinner_3",
+      "file": "voice-chen-p03-dinner-3.mp3",
+      "scene": "p03_dinner",
+      "speaker": "陈掌柜",
+      "text": "坐下吃。明天人多。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "坐下吃。明天人多。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Deep_Voice_Man",
+          "speed": 0.86,
+          "pitch": -3,
+          "emotion": "neutral",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_ayun_p03_dinner_4",
+      "file": "voice-ayun-p03-dinner-4.mp3",
+      "scene": "p03_dinner",
+      "speaker": "阿芸",
+      "text": "明天交割完，欠的那半月工钱也一起结吗？",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "明天交割完，欠的那半月工钱也一起结吗？",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Calm_Woman",
+          "speed": 0.88,
+          "pitch": 1,
+          "emotion": "sad",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_chen_p03_dinner_5",
+      "file": "voice-chen-p03-dinner-5.mp3",
+      "scene": "p03_dinner",
+      "speaker": "陈掌柜",
+      "text": "你还怕我少你？",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "你还怕我少你？",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Deep_Voice_Man",
+          "speed": 0.86,
+          "pitch": -3,
+          "emotion": "neutral",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_zhou_p03_dinner_6",
+      "file": "voice-zhou-p03-dinner-6.mp3",
+      "scene": "p03_dinner",
+      "speaker": "周文",
+      "text": "工钱在另一册，我记着。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "工钱在另一册，我记着。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Patient_Man",
+          "speed": 0.92,
+          "pitch": -2,
+          "emotion": "neutral",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_ayun_p03_dinner_7",
+      "file": "voice-ayun-p03-dinner-7.mp3",
+      "scene": "p03_dinner",
+      "speaker": "阿芸",
+      "text": "上个月也是你记着。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "上个月也是你记着。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Calm_Woman",
+          "speed": 0.88,
+          "pitch": 1,
+          "emotion": "sad",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_ayun_p03_dinner_8",
+      "file": "voice-ayun-p03-dinner-8.mp3",
+      "scene": "p03_dinner",
+      "speaker": "阿芸",
+      "text": "九月下半月。写上日期。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "九月下半月。写上日期。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Calm_Woman",
+          "speed": 0.88,
+          "pitch": 1,
+          "emotion": "sad",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_ayun_p03_dinner_9",
+      "file": "voice-ayun-p03-dinner-9.mp3",
+      "scene": "p03_dinner",
+      "speaker": "阿芸",
+      "text": "我要走了。工钱关系到路费。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "我要走了。工钱关系到路费。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Calm_Woman",
+          "speed": 0.88,
+          "pitch": 1,
+          "emotion": "sad",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_ayun_p03_dinner_10",
+      "file": "voice-ayun-p03-dinner-10.mp3",
+      "scene": "p03_dinner",
+      "speaker": "阿芸",
+      "text": "你查数就好，不用替我劝他。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "你查数就好，不用替我劝他。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Calm_Woman",
+          "speed": 0.88,
+          "pitch": 1,
+          "emotion": "sad",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_chen_p04_office_1",
+      "file": "voice-chen-p04-office-1.mp3",
+      "scene": "p04_office",
+      "speaker": "陈掌柜",
+      "text": "开店那年买的。坏过一次，还能使。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "开店那年买的。坏过一次，还能使。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Deep_Voice_Man",
+          "speed": 0.86,
+          "pitch": -3,
+          "emotion": "neutral",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_gu_p04_office_2",
+      "file": "voice-gu-p04-office-2.mp3",
+      "scene": "p04_office",
+      "speaker": "顾先生",
+      "text": "那封信，能不能后天再寄？我的货款后天到。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "那封信，能不能后天再寄？我的货款后天到。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Elegant_Man",
+          "speed": 0.91,
+          "pitch": -2,
+          "emotion": "sad",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_chen_p04_office_3",
+      "file": "voice-chen-p04-office-3.mp3",
+      "scene": "p04_office",
+      "speaker": "陈掌柜",
+      "text": "顾兄，我等的是你还钱，不是你每次换一个日子。欠据明早跟信走。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "顾兄，我等的是你还钱，不是你每次换一个日子。欠据明早跟信走。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Deep_Voice_Man",
+          "speed": 0.86,
+          "pitch": -3,
+          "emotion": "neutral",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_gu_p04_office_4",
+      "file": "voice-gu-p04-office-4.mp3",
+      "scene": "p04_office",
+      "speaker": "顾先生",
+      "text": "我们另谈。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "我们另谈。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Elegant_Man",
+          "speed": 0.91,
+          "pitch": -2,
+          "emotion": "sad",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_ashui_p04_office_5",
+      "file": "voice-ashui-p04-office-5.mp3",
+      "scene": "p04_office",
+      "speaker": "阿水",
+      "text": "信在值房，老许今夜当班。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "信在值房，老许今夜当班。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Casual_Guy",
+          "speed": 0.9,
+          "pitch": -4,
+          "emotion": "neutral",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_chen_p04_office_6",
+      "file": "voice-chen-p04-office-6.mp3",
+      "scene": "p04_office",
+      "speaker": "陈掌柜",
+      "text": "旧船行的人。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "旧船行的人。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Deep_Voice_Man",
+          "speed": 0.86,
+          "pitch": -3,
+          "emotion": "neutral",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_gu_a01_found_1",
+      "file": "voice-gu-a01-found-1.mp3",
+      "scene": "a01_found",
+      "speaker": "顾先生",
+      "text": "看书，看得忘了时辰。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "看书，看得忘了时辰。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Elegant_Man",
+          "speed": 0.91,
+          "pitch": -2,
+          "emotion": "sad",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_gu_a01_found_2",
+      "file": "voice-gu-a01-found-2.mp3",
+      "scene": "a01_found",
+      "speaker": "顾先生",
+      "text": "掌柜也没歇？",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "掌柜也没歇？",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Elegant_Man",
+          "speed": 0.91,
+          "pitch": -2,
+          "emotion": "sad",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_zhou_a02_door_1",
+      "file": "voice-zhou-a02-door-1.mp3",
+      "scene": "a02_door",
+      "speaker": "周文",
+      "text": "别围在这里。掌柜有时候会晕——",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "别围在这里。掌柜有时候会晕——",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Patient_Man",
+          "speed": 0.92,
+          "pitch": -2,
+          "emotion": "neutral",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_gu_a02_door_2",
+      "file": "voice-gu-a02-door-2.mp3",
+      "scene": "a02_door",
+      "speaker": "顾先生",
+      "text": "那张纸……",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "那张纸……",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Elegant_Man",
+          "speed": 0.91,
+          "pitch": -2,
+          "emotion": "sad",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_gu_a02_door_3",
+      "file": "voice-gu-a02-door-3.mp3",
+      "scene": "a02_door",
+      "speaker": "顾先生",
+      "text": "我说，桌上的纸别吹散了。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "我说，桌上的纸别吹散了。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Elegant_Man",
+          "speed": 0.91,
+          "pitch": -2,
+          "emotion": "sad",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_gu_a02_door_4",
+      "file": "voice-gu-a02-door-4.mp3",
+      "scene": "a02_door",
+      "speaker": "顾先生",
+      "text": "一起等吧。谁也别单独进去。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "一起等吧。谁也别单独进去。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Elegant_Man",
+          "speed": 0.91,
+          "pitch": -2,
+          "emotion": "sad",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_gu_a03_lamp_1",
+      "file": "voice-gu-a03-lamp-1.mp3",
+      "scene": "a03_lamp",
+      "speaker": "顾先生",
+      "text": "你要抄多少？",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "你要抄多少？",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Elegant_Man",
+          "speed": 0.91,
+          "pitch": -2,
+          "emotion": "sad",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_gu_a03_lamp_2",
+      "file": "voice-gu-a03-lamp-2.mp3",
+      "scene": "a03_lamp",
+      "speaker": "顾先生",
+      "text": "包括没看全的？",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "包括没看全的？",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Elegant_Man",
+          "speed": 0.91,
+          "pitch": -2,
+          "emotion": "sad",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_ayun_a04_window_1",
+      "file": "voice-ayun-a04-window-1.mp3",
+      "scene": "a04_window",
+      "speaker": "阿芸",
+      "text": "我送茶的时候，后窗只留着一道缝。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "我送茶的时候，后窗只留着一道缝。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Calm_Woman",
+          "speed": 0.88,
+          "pitch": 1,
+          "emotion": "sad",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    },
+    {
+      "id": "voice_ayun_a04_window_2",
+      "file": "voice-ayun-a04-window-2.mp3",
+      "scene": "a04_window",
+      "speaker": "阿芸",
+      "text": "钟响过后。",
+      "endpoint": "fal-ai/minimax/speech-2.8-hd",
+      "input": {
+        "prompt": "钟响过后。",
+        "language_boost": "Chinese",
+        "voice_setting": {
+          "voice_id": "Calm_Woman",
+          "speed": 0.88,
+          "pitch": 1,
+          "emotion": "sad",
+          "vol": 1
+        },
+        "audio_setting": {
+          "format": "mp3",
+          "sample_rate": 44100,
+          "bitrate": 128000,
+          "channel": 1
+        },
+        "output_format": "url"
+      }
+    }
+  ]
+}

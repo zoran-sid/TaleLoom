@@ -52,7 +52,7 @@ python tools/audio_pipeline.py --reuse-raw --force     # 只重做后期，不�
 | `office.mp3` | Sonilo v1.1，fal `01a1c55c-acf4-7850-a3d5-c9e220cf1993` | 42 秒，WAV；Prompt J | $0.0756 | 40 秒，−33.2 LUFS；`55591d09876d50d4ef426e429335f625e12ffcc2b82f4e75618ffb825ac2af88` |
 | `ledger.mp3` | Sonilo v1.1，fal `01a1c567-66e8-7fd3-b82c-f86c20429ce4` | 42 秒，WAV；Prompt K | $0.0756 | 40 秒，−30.9 LUFS；`bd41a6d73494bbaad4c773b12ea4f34f776b7401f518b7ce7b668f59dd13a573` |
 
-序章与第一章的音色、循环接缝和与字幕的平衡尚待总设计者试听确认。本次八条素材加上一次 `ledger` 重生成合计约 **$1.05**（Stable Audio 3 × $0.20，Sonilo 6 × 42 秒 × $0.0018）。第一次 `ledger` 生成几乎全程静音，只有两处纸声，不能作为连续环境床；改用“全程稳定房间底噪、纸声均匀分布”的 Prompt K 后重生成。实际账单以 fal 为准。
+序章与第一章的音色、循环接缝和与字幕的平衡尚待总设计者试听确认。配乐与环境声八条素材加上一次 `ledger` 重生成合计约 **$1.05**（Stable Audio 3 × $0.20，Sonilo 6 × 42 秒 × $0.0018）；再加人物配音约 $0.05，本轮合计约 **$1.10**。第一次 `ledger` 生成几乎全程静音，只有两处纸声，不能作为连续环境床；改用“全程稳定房间底噪、纸声均匀分布”的 Prompt K 后重生成。实际账单以 fal 为准。
 
 **Prompt D**：Original restrained cinematic opening cue for a 1931 foggy Chinese harbor at nightfall. The last ferry nudges the pier, foghorns far out on the water, wet stone and rope. Sparse felt piano over low sustained cello, a lone bass clarinet, faint harmonium air, slow 58 BPM, minor mode with a fragile rising third, long silences. Intimate, humid, patient. No vocals, no drums, no jump scare, no recognizable film or game theme. Seamless sustained ending suitable for looping under Chinese text.
 
@@ -69,6 +69,34 @@ python tools/audio_pipeline.py --reuse-raw --force     # 只重做后期，不�
 **Prompt J**：Continuous naturalistic 1931 Chinese inn accounting office at night: rain against a closed wooden window, a clock ticking, faint paper shifts, a low oil lamp, old timber creaks, no voices, no music, no sudden events, even level, loop-friendly field recording aesthetic.
 
 **Prompt K**：Continuous 42-second naturalistic room tone inside a 1931 inn accounting room at night. A steady quiet bed throughout: soft rain on a wooden window, constant low oil-lamp hum, continuous room air and faint old timber creaks, with sparse dry paper rustles distributed evenly across the whole take. No silence, no long gaps, no loud transients, no voices, no music, even level, loop-friendly field recording aesthetic.
+
+## 序章与第一章人物配音（2026-11-10 生成）
+
+覆盖 `p01_dock`–`p04_office` 与 `a01_found`–`a04_window` 中剧本已署名的人物对白。玩家“你”不配音；同一人物同一句只录一次，同一句在不同场景出现时复用同一条录音。共 38 条唯一台词、41 处场景引用；原文仍按 `readingPages` 的段落规则逐句显示，未录制的句子只显示文字。
+
+| 人物 | 声线 / 参数 | 唯一台词 | 场景 |
+| --- | --- | ---: | --- |
+| 周文 | `Patient_Man`，speed 0.92，pitch −2，neutral | 8 | p02、p03 |
+| 阿芸 | `Calm_Woman`，0.88，+1，sad | 7 | p03、p04 |
+| 顾先生 | `Elegant_Man`，0.91，−2，sad | 9 | p04、a01–a03 |
+| 陈掌柜 | `Deep_Voice_Man`，0.86，−3，neutral | 7 | p03、p04 |
+| 阿水 | `Casual_Guy`，0.90，−4，neutral | 6 | p01、p04 |
+| 老许 | `Imposing_Manner`，0.84，−3，neutral | 1 | p01 |
+
+生成链：
+
+```bash
+node tools/make_voice_spec.mjs                 # 剧本对白 → tools/voice_spec.json
+python tools/audio_pipeline.py --voice         # fal MiniMax Speech 2.8 HD
+python tools/audio_pipeline.py --voice --reuse-raw --force   # 只重做响度与编码
+python tools/render_voice.py                   # → voice-lines.generated.js / voice-assets.generated.js
+```
+
+`audio_pipeline.py --voice` 输出单声道 44.1 kHz、128 kbps MP3，响度统一到 −24 LUFS、峰值不超过 −3 dB，与 C01 的三句试听同一量级。每条请求 ID、时长、响度与 SHA-256 写在 `web/cinematic/audio/manifest.json` 的 `voices` 段；`tests/zc/audio-assets.test.mjs` 会比对哈希，文件或记录不一致时失败。生成文件由 `render_voice.py` 覆盖，不要手改。
+
+费用按 MiniMax Speech 2.8 HD 每千字符 $0.10 估算，38 条共 476 字符，合计约 **$0.05**；实际账单以 fal 为准。本轮配乐、环境声与人物配音合计约 **$1.10**。
+
+需要人工试听的重点：阿水与陈掌柜的年龄感是否合适，周文在 p02/p03 的重复句是否一致，阿芸在 p03 饭桌与 p04 账房的语气差别，以及配音与配乐的音量平衡。声线不一致时改 `tools/make_voice_spec.mjs` 的 `VOICES`，重新生成并渲染；不要手改生成文件。
 
 ## 账目调查小样
 
@@ -100,9 +128,9 @@ python tools/audio_pipeline.py --reuse-raw --force     # 只重做后期，不�
 - Sonilo：其[授权页](https://sonilo.com/licensing)说明 API 生成输出可以在产品中商业使用，具体使用受[条款](https://sonilo.com/terms-of-service)约束；本样本经 fal 的 Sonilo endpoint 生成。发布前保留请求记录与本表，若课程项目改为商业发行，再核对届时的服务条款。
 - fal：[服务条款](https://fal.ai/legal/terms-of-service)和模型页面共同适用。素材不单独售卖，也不声称生成输出具有排他版权。
 
-## 人物配音小样
+## 人物配音首批试听（C01、B03、B05）
 
-人物配音跟随玩家逐段阅读：只在 Python 快照给出的场景、剧本原句和明确标注的说话人同时匹配时播放。玩家点击继续会停止当前句；声音结束不会自动翻页。未录制的段落继续显示完整文字。为了保留玩家代入，本轮不替“你”指定固定嗓音。
+序章与第一章的完整配音见上一节；这里保留最早三条试听的声线与生成记录，用于对照。人物配音跟随玩家逐段阅读：只在 Python 快照给出的场景、剧本原句和明确标注的说话人同时匹配时播放。玩家点击继续会停止当前句；声音结束不会自动翻页。未录制的段落继续显示完整文字。为了保留玩家代入，本轮不替“你”指定固定嗓音。
 
 | 人物 | 声音方向与剧情依据 | 本轮接入的原句 |
 | --- | --- | --- |

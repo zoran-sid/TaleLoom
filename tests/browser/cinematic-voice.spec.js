@@ -30,3 +30,20 @@ test('周文配音跟随原句，玩家点击后停止，文字不会随声音�
   await expect.poll(() => page.evaluate(() => window.__cinematic.sound.samples.voice)).toBe(null);
   await expect(line).not.toContainText('也许是记到别处了');
 });
+
+test('序章大堂：周文的原句能触发已录配音', async ({ page }) => {
+  const save = DATA.scenes.truth.p02_lobby;
+  const entries = [{ label: '测试 · 大堂', scene: 'p02_lobby', turn: save.state.turn, at: 1_000, save }];
+  await page.goto('/cinematic.html?fast=1');
+  await page.evaluate((value) => localStorage.setItem('taleloom:v1:fog_harbor_ledger:checkpoints', value),
+    JSON.stringify({ checkpoint_version: 1, story_id: 'fog_harbor_ledger', entries }));
+  await page.reload();
+  await page.locator('#resume').click();
+  const voice = () => page.evaluate(() => window.__cinematic.sound.samples.voice?.id || null);
+  await page.evaluate(() => window.__cinematic.sound.playVoiceFor(
+    { story_id: 'fog_harbor_ledger', scene_id: 'p02_lobby' },
+    { speaker: '周文', text: '“商行来的？周文。我替掌柜记账。”' }));
+  await expect.poll(voice, { timeout: 10_000 }).toBe('voice_zhou_p02_lobby_1');
+  await page.waitForTimeout(700);
+  expect(await voice()).toBe('voice_zhou_p02_lobby_1');
+});
