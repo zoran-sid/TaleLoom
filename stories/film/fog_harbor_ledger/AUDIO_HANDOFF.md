@@ -53,10 +53,12 @@ document.addEventListener('taleloom:audio-progress', ({ detail }) => {
 
 动画成员可以在独立模块中开发和测试镜头，音频事件与画面绘制分开。接入后用 `npm run build` 和 `npx playwright test tests/browser/cinematic-audio-sync.spec.js` 核对文字与声音同步；本地正常速度试玩时不要加 `?fast=1`，该参数仅缩短转场以便测试。当前不要求截图，由项目负责人自行检查画面。
 
-## 待修声音问题（2026-11-11）
+## 声音修正（2026-11-11）
 
-- `b02_kitchen`、`c04_book_a`、`c04_book_b`、`d04_seal`、`e01_table` 中阿芸的部分句子被生成成男声，共 10 页；已用基频检测定位。需要在取得可用的 Seed Audio 凭据后重生成并逐句复听。
-- 现有 10 条环境声循环偏通用，部分场景不合适；计划按场景重做后再替换。
+- 阿芸曾被生成成男声的 10 页（`b02_kitchen`、`c04_book_a`、`c04_book_b`、`d04_seal`、`e01_table`）已用 Seed Audio 1.0 重新生成：以女声参考音 `@Audio1` 固定阿芸声线，其余角色保持男声。复测基频均在 220–250 Hz，确认是女声。
+- 10 条环境声循环已按场景重写提示并重新生成，统一 40 秒、约 −34 LUFS，替换 `web/cinematic/audio/seed/ambience_*.mp3`。
+- 火山引擎凭据在当前环境被拒（`45000000`/`45000010`），因此本次改用 fal 托管的 `bytedance/seed-audio-1.0`（同一模型）；参考音与生成记录在 `web/cinematic/audio/seed/manifest.json`，估算费用约 2 美元。
+- 场景每页结束时间重新按 Seed Audio 台词对齐；`tests/zc/test_seed_runtime.py` 校验时间单调且不超出音频。
 
 ## 生成与审校
 
