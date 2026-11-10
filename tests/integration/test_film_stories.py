@@ -5,8 +5,10 @@
 """
 
 import io
+import json
 import unittest
 from contextlib import redirect_stdout
+from itertools import product
 
 import main
 from taleloom import replay
@@ -29,6 +31,30 @@ def forward_edges(story):
         targets |= {e["goto"] for e in scene.on_enter if "goto" in e}
         edges[sid] = targets
     return edges
+
+
+def choices_cover_conditions(choices):
+    """穷举条件真假组合，允许互补分支而不强求某个按钮无条件显示。"""
+    atoms = set()
+
+    def evaluate(condition, values=None):
+        if not condition:
+            return True
+        if 'all' in condition:
+            return all([evaluate(c, values) for c in condition['all']])
+        if 'any' in condition:
+            return any([evaluate(c, values) for c in condition['any']])
+        if 'not' in condition:
+            return not evaluate(condition['not'], values)
+        key = json.dumps(condition, sort_keys=True)
+        atoms.add(key)
+        return values[key] if values is not None else False
+
+    for choice in choices:
+        evaluate(choice.when)
+    keys = sorted(atoms)
+    return all(any(evaluate(c.when, dict(zip(keys, values))) for c in choices)
+               for values in product((False, True), repeat=len(keys)))
 
 
 class FilmStoriesTest(unittest.TestCase):
@@ -107,8 +133,8 @@ class FilmStoriesTest(unittest.TestCase):
                         # 场景内的搜证与追问（once、无 goto）只给反馈；其余选择都进入下一段剧情。
                         self.assertTrue(all(c.goto or c.once for c in scene.choices), "影像版的每个选择都进入下一段剧情")
                         here = [u for u in units.values() if sid in u.get("scenes", [])]
-                        self.assertTrue(any(not c.when for c in scene.choices) or here,
-                                        "至少一个选择总是可用，或本场景有调查单元可推进，避免卡住")
+                        self.assertTrue(here or choices_cover_conditions(scene.choices),
+                                        "任意条件组合下都应有选择可用，或本场景有调查单元可推进")
 
     def test_not_listed_on_shelf_desktop_or_cli(self):
         listed, films = build_web.catalogs(ROOT)
