@@ -154,6 +154,7 @@ def main() -> None:
     parser.add_argument("--list", action="store_true", help="Show planned requests without calling the API")
     parser.add_argument("--generate", action="store_true", help="Generate missing assets")
     parser.add_argument("--refresh", action="store_true", help="Rebuild runtime mapping from the saved manifest")
+    parser.add_argument("--force", action="store_true", help="Archive selected assets and regenerate them")
     parser.add_argument("--prune-review", action="store_true", help="Move mismatched clips out of the web bundle")
     parser.add_argument("--retry-review", action="store_true", help="Regenerate mismatched clips from the literal text")
     parser.add_argument("--kind", choices=("scene", "choice", "ambience"))
@@ -201,6 +202,21 @@ def main() -> None:
         RUNTIME.write_text(json.dumps(runtime_manifest(saved, all_jobs), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         print(json.dumps({k: len(v) for k, v in runtime_manifest(saved, all_jobs).items()}))
         return
+    if args.force:
+        force_ids = {j["id"] for j in planned}
+        for asset in list(saved["assets"]):
+            if asset["id"] not in force_ids:
+                continue
+            saved["assets"].remove(asset)
+            asset["rejection_reason"] = "forced regeneration"
+            saved.setdefault("rejected", []).append(asset)
+            source = OUT / asset["file"]
+            if source.exists():
+                rejected = Path("/private/tmp/taleloom-seed-rejected") / f"{asset['id']}-forced-{len(saved['rejected'])}.mp3"
+                rejected.parent.mkdir(exist_ok=True)
+                shutil.move(source, rejected)
+        MANIFEST.write_text(json.dumps(saved, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        RUNTIME.write_text(json.dumps(runtime_manifest(saved, all_jobs), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     done = {j["id"] for j in saved["assets"]}
     pending = [j for j in planned if j["id"] not in done]
     if args.list or not args.generate:
