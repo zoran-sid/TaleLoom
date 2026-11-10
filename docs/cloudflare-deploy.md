@@ -20,7 +20,8 @@ npm run dev -- --open
 - Cloudflare 项目 `taleloom` 已连接本仓库（Workers Builds）。
 - **正式网址**：<https://taleloom.zoranzhou.com>（自定义域名，域名配置支持生产和预览；<https://taleloom.zoranzhou28.workers.dev> 同样可用）
 - **生产分支**：`main`。2026-11-10 已通过 Cloudflare API 核实，自动构建开启；发布 PR #37 已将影像版入口合入 `main`。后续功能先进入 `develop`，验收后用发布 PR 更新 `main`。只有一个同名项目，不要另建。
-- **非生产分支**（成员分支）：2026-11-10 核实时自动预览开关 `previews_enabled` 为关闭，不能把分支推送视作已发布预览。预览构建命令仍配置为 `npm run build:cloudflare`，部署命令为 `npm run deploy:preview`。启用后构建并部署以分支命名的预览（Worker Preview），网址为 `<预览名>.taleloom.zoranzhou.com`，同时有 workers.dev 预览网址；不切换正式网址。预览名取自分支名，`/` 换成 `-`，例如 `zc/custom-domain` → <https://zc-custom-domain.taleloom.zoranzhou.com>。同一分支再次推送会更新同一个预览网址。
+- **非生产分支**（成员分支）：由独立的 `Deploy non-production branches` 触发器监听所有非 `main` 分支，运行 `npm run build:cloudflare` 和 `npm run deploy:preview`。2026-11-10 已核实 `zc/auto-units` 的推送构建与预览部署成功。Worker 配置中的 `previews_enabled` 值不代表这个独立触发器是否启用，应同时检查构建记录。
+- **预览网址**：`<预览名>.taleloom.zoranzhou.com`，另有 workers.dev 预览网址；不切换正式网址。预览名取自分支名，`/` 换成 `-`，例如 `zc/auto-units` → <https://zc-auto-units.taleloom.zoranzhou.com>。同一分支再次推送会更新同一个预览网址。
 - 改生产分支只在 Cloudflare 控制台 **Settings → Build → Branch control** 中操作；Worker 的其他设置一律改 `cloudflare.config.ts`（见 2.1）。
 
 ### 2.1 Worker 配置同步（2026-11-08 已完成）
