@@ -3,7 +3,7 @@
  *
  * 剧情、选项与判定全部来自浏览器里运行的同一个 Python 引擎（GameClient →
  * Pyodide Worker → session_factory 会话）；本页只把快照与反馈演成画面：
- * 场景转场、逐字字幕、线索卡片、调查台和画面上的选项。不新增剧情文字。
+ * 场景转场、整段手动阅读、线索卡片、调查台和画面上的选项。不新增剧情文字。
  *
  * 默认播放《雾港旧案：未结的账》（stories/film/fog_harbor_ledger，线性分支，不上书架）；
  * ?story=<id> 可以换成其他剧本，例如旧样片 fog_harbor_film、深空影像版 deep_space_film。
@@ -19,6 +19,7 @@ import { CinematicSaveStore } from '../storage/cinematic.js';
 import { Stage, hasScene } from './stage.js';
 import { Sound } from './sound.js';
 import { Desk, unitFrom } from './units.js';
+import { readingPages } from './narrative.js';
 
 const params = new URLSearchParams(location.search);
 const STORY_ID = params.get('story') || 'fog_harbor_ledger';
@@ -94,6 +95,7 @@ let notes = { clues: [], resources: [], sceneTitle: '', sceneText: '' };
 let saves = loadSaves();     // 关键节点的标准存档（LQ 的存储），刷新后可以继续
 let lastPoint = null;        // 最近一次记下的存档点 id，用来发现新到达的存档点
 let pendingRollback = null;  // 演出结束后要回到的存档点
+let pendingRestart = false;
 let deskClosedFor = '';      // 玩家暂离的调查单元：同一单元不再自动打开
 
 function el(tag, className, text) {
@@ -103,9 +105,10 @@ function el(tag, className, text) {
   return node;
 }
 
-// ---------- 输入：点击画面或按空格跳过当前字幕 ----------
+// ---------- 输入：点击画面或按空格继续；剧情没有自动播放计时器 ----------
 
 function nudge() {
+  if (paused || desk.open) return;
   const next = poke;
   poke = null;
   if (next) next();
@@ -121,13 +124,13 @@ document.addEventListener('keydown', (event) => {
     return;
   } else if (event.key === ' ' && !event.target.closest('button')) {
     event.preventDefault();
-    nudge();
+    if (!event.repeat) nudge();
   } else if (/^[1-9]$/.test(event.key) && !$('choices').hidden) {
     $('choices').querySelectorAll('button.choice')[Number(event.key) - 1]?.click();
   }
 });
 $('frame').addEventListener('click', (event) => {
-  if (!event.target.closest('button, .desk') && $('notebook').hidden) nudge();
+  if (!event.target.closest('button, .desk') && $('notebook').hidden && !getSelection()?.toString()) nudge();
 });
 $('skip').addEventListener('click', nudge);
 
@@ -148,29 +151,39 @@ function hold(ms) {
   });
 }
 
-async function whilePaused() {
-  while (paused) await new Promise((resolve) => setTimeout(resolve, 80));
-}
-
-/** 逐字显示一行字幕，然后停留一会儿；点击可跳过。 */
-async function type(text, speaker = '') {
+/** 显示完整段落与说话人；旁白没有人物署名。 */
+function renderText({ text, speaker = '' }, waiting = false) {
   const box = $('subtitle');
   box.replaceChildren();
+  if (view) box.append(el('span', 'scene-label', view.scene_title));
   if (speaker) box.append(el('span', 'speaker', speaker));
-  const line = el('span', 'line', '');
-  box.append(line);
+  box.append(el('span', 'line', text));
+  if (waiting) box.append(el('span', 'reading-hint', '点击画面或按空格继续 ▾'));
   box.hidden = false;
-  let skipped = FAST || rushing;
-  poke = () => { skipped = true; };
-  for (const ch of text) {
-    await whilePaused();
-    if (skipped) break;
-    line.textContent += ch;
-    await new Promise((resolve) => setTimeout(resolve, /[，。！？…；：、”]/.test(ch) ? 150 : 42));
+  box.scrollTop = 0;
+}
+
+/** 只接受明确的继续操作；fast 只加速画面，不能越过剧情阅读。 */
+function waitForAdvance() {
+  if (rushing) return Promise.resolve();
+  $('frame').dataset.awaitingAdvance = 'true';
+  if (document.activeElement === document.body || document.activeElement.closest('#choices, #intro')) {
+    $('frame').focus({ preventScroll: true });
   }
-  line.textContent = text;
-  poke = null;
-  await hold(Math.min(1500 + text.length * 60, 5600));
+  return new Promise(resolve => {
+    poke = () => {
+      delete $('frame').dataset.awaitingAdvance;
+      poke = null;
+      resolve();
+    };
+  });
+}
+
+async function type(text, speaker = '') {
+  for (const page of readingPages(text, { storyId: STORY_ID, sceneId: view?.scene_id, fallbackSpeaker: speaker })) {
+    renderText(page, true);
+    await waitForAdvance();
+  }
 }
 
 function clearSubtitle() {
@@ -178,22 +191,9 @@ function clearSubtitle() {
   $('subtitle').replaceChildren();
 }
 
-/** 把场景正文切成适合字幕的短句（按换行与句号，每段不超过约 44 字）。 */
+/** 按剧本原有段落阅读，不再切成逐字或短句动画。 */
 function chunks(text) {
-  const out = [];
-  for (const paragraph of text.split('\n').map((p) => p.trim()).filter(Boolean)) {
-    let current = '';
-    for (const sentence of paragraph.split(/(?<=[。！？…])(?![”」])/)) {
-      if (current && (current + sentence).length > 44) {
-        out.push(current);
-        current = sentence;
-      } else {
-        current += sentence;
-      }
-    }
-    if (current) out.push(current);
-  }
-  return out;
+  return text.split('\n').map(p => p.trim()).filter(Boolean);
 }
 
 // ---------- 卡片与声音说明 ----------
@@ -219,7 +219,7 @@ async function warnCard(text) {
   card.replaceChildren(el('p', 'clue-kicker', '戒备'), el('p', 'clue-text', text));
   card.hidden = false;
   requestAnimationFrame(() => card.classList.add('show'));
-  await hold(2400 + text.length * 45);
+  await waitForAdvance();
   card.classList.remove('show');
   await sleep(500);
   card.hidden = true;
@@ -233,7 +233,7 @@ async function clueCard(name, text) {
   card.replaceChildren(el('p', 'clue-kicker', '获得线索'), el('h3', 'clue-name', name), el('p', 'clue-text', text));
   card.hidden = false;
   requestAnimationFrame(() => card.classList.add('show'));
-  await hold(2600 + text.length * 45);
+  await waitForAdvance();
   card.classList.remove('show');
   await sleep(500);
   card.hidden = true;
@@ -344,7 +344,7 @@ async function playBeats(beats) {
     else if (beat.kind === 'warn') await warnCard(beat.text);
     else if (beat.kind === 'ask') await interrogate(beat);
     else if (beat.kind === 'examine') {
-      for (const line of beat.lines) await type(line, `深入调查 · ${beat.name}`);
+      for (const line of beat.lines) await type(line);
     } else if (beat.kind === 'act') {
       clearSubtitle();
       actTitle = beat.title;
@@ -365,6 +365,7 @@ async function playBeats(beats) {
 
 /** 首次进入：标题卡加完整描述；再次回来：只闪一下场景名，不重播描述。 */
 async function enterScene(next) {
+  $('frame').classList.remove('ended');
   clearSubtitle();
   const revisit = seen.has(next.scene_id);
   seen.add(next.scene_id);
@@ -418,6 +419,7 @@ function latestSave() {
 }
 
 async function ending(next) {
+  $('frame').classList.add('ended');
   clearSubtitle();
   const failed = isFailure(next);
   await stage.fade(1, T(1200));
@@ -451,6 +453,7 @@ async function ending(next) {
 
 /** 换上一份会话结果的画面并直接回到选项；kicker/place 用于转场卡片。 */
 async function arrive(result, kicker, place) {
+  $('frame').classList.remove('ended');
   clearSubtitle();
   closeNotebook();
   desk.reset();
@@ -486,6 +489,7 @@ async function rewind() {
     showChoices([{ label: '从头再来', run: restart }]);
   } finally {
     busy = false;
+    runPendingRollback();
   }
 }
 
@@ -512,6 +516,7 @@ async function rollbackTo(entry, { resume = false } = {}) {
     showChoices([{ label: '从头再来', run: restart }]);
   } finally {
     busy = false;
+    runPendingRollback();
   }
 }
 
@@ -645,6 +650,9 @@ function openDesk() {
 }
 
 function showChoices(items) {
+  // 选项居中时，底部继续保留当前剧情，供玩家对照作决定。
+  const context = view && readingPages(view.text, { storyId: STORY_ID, sceneId: view.scene_id }).at(-1);
+  if (context) renderText(context);
   if (!items && view && !view.ended && unitKey(view) && unitKey(view) !== deskClosedFor) {
     // 场景里有尚未完成的调查：直接打开调查台（暂离后改为选项里的入口）。
     hideChoices();
@@ -864,6 +872,12 @@ function boot() {
 /** 演出结束后，如果玩家在演出途中选择了回到存档点，现在执行。 */
 function runPendingRollback() {
   rushing = false;
+  if (pendingRestart) {
+    pendingRestart = false;
+    pendingRollback = null;
+    restart();
+    return;
+  }
   if (!pendingRollback) return;
   const entry = pendingRollback;
   pendingRollback = null;
@@ -891,7 +905,14 @@ async function act(actionId, values) {
 }
 
 async function restart() {
-  if (busy || desk.busy) return;
+  if (desk.busy) return;
+  if (busy) {
+    pendingRestart = true;
+    rushing = true;
+    closeNotebook();
+    nudge();
+    return;
+  }
   busy = true;
   hideChoices();
   hideCard();
@@ -910,6 +931,7 @@ async function restart() {
     await present(result, null);
   } finally {
     busy = false;
+    runPendingRollback();
   }
 }
 
@@ -956,6 +978,7 @@ async function begin(resume = null) {
     await present(result, null);
   } finally {
     busy = false;
+    runPendingRollback();
   }
 }
 

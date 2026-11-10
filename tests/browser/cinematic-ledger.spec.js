@@ -1,5 +1,5 @@
 // ZC：《未结的账》只通过剧情选择游玩；事实、结局与存档由 Python 会话判定。
-import { test, expect } from '@playwright/test';
+import { test, expect } from './cinematic-driver.js';
 import { execFileSync } from 'node:child_process';
 
 const DATA = JSON.parse(execFileSync('python3', ['-B', 'tools/film_vectors.py', 'fog_harbor_ledger'],

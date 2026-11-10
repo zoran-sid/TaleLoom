@@ -1,6 +1,6 @@
-// ZC：影像模式的冒烟测试。?fast=1 跳过逐字字幕与转场等待，剧情仍由真实引擎驱动。
+// 影像模式冒烟：fast 加速转场，驱动用真实继续按钮逐段阅读。
 // 这些用例走旧样片 fog_harbor_film（?story= 指定）；《未结的账》的用例在 cinematic-ledger.spec.js。
-import { test, expect } from '@playwright/test';
+import { test, expect } from './cinematic-driver.js';
 
 test('影像版：每个选择都进入下一段，线索进笔记，一路走到结局', async ({ page }) => {
   const errors = [];
@@ -170,7 +170,7 @@ test('探索版（?story=fog_harbor）：大堂 → 账房获得线索 → 回�
   expect(errors).toEqual([]);
 });
 
-test('影像模式：手机宽度下选项在画面下方，没有横向溢出', async ({ page }) => {
+test('影像模式：手机宽度下选项在画面中央且不压底部剧情，没有横向溢出', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/cinematic.html?fast=1&story=fog_harbor_film');
   await page.locator('#begin').click();
@@ -178,7 +178,9 @@ test('影像模式：手机宽度下选项在画面下方，没有横向溢出',
   await expect(first).toBeVisible({ timeout: 90_000 });
   const frame = await page.locator('#frame').boundingBox();
   const box = await first.boundingBox();
-  expect(box.y).toBeGreaterThanOrEqual(frame.y + frame.height);
+  const subtitle = await page.locator('#subtitle').boundingBox();
+  expect(box.y).toBeGreaterThan(frame.y);
+  expect(box.y + box.height).toBeLessThanOrEqual(subtitle.y);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
