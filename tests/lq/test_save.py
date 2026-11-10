@@ -7,7 +7,7 @@ from pathlib import Path
 
 from taleloom.engine import Engine
 from taleloom.model import Command
-from taleloom.save import SaveError, load_game, save_game
+from taleloom.save import SaveError, decode_save, encode_save, load_game, save_game
 from tests.fixtures import mini_story
 
 
@@ -71,6 +71,31 @@ class SaveTest(unittest.TestCase):
     def test_no_temp_file_left_behind(self):
         save_game(self.engine.state, self.story, self.path)
         self.assertEqual([p.name for p in self.path.parent.iterdir()], ["slot.json"])
+
+    def test_rejects_malformed_investigation_progress(self):
+        invalid = [None, [], {"lamp": []}, {"lamp": {"spots": "front"}},
+                   {"lamp": {"spots": [3]}}, {"lamp": {"tries": True}},
+                   {"lamp": {"tries": -1}}, {"lamp": {"hints": 1.5}},
+                   {"lamp": {"hints": None}}, {"lamp": {"grade": 2}},
+                   {"lamp": {"last": []}}, {"lamp": {"last": {"front": 2}}}]
+        for units in invalid:
+            with self.subTest(units=units):
+                payload = encode_save(self.engine.state, self.story)
+                payload["state"]["ext"]["mystery"] = {"units": units}
+                with self.assertRaisesRegex(SaveError, "mystery.units"):
+                    decode_save(payload, self.story)
+
+    def test_preserves_valid_partial_and_retired_unit_progress(self):
+        units = {"retired": {"spots": ["front"], "tries": 2, "hints": 0,
+                              "last": {"front": "debt"}}, "done": {"grade": "full"}, "new": {}}
+        self.engine.state.ext["mystery"] = {"units": units}
+        state, _ = decode_save(encode_save(self.engine.state, self.story), self.story)
+        self.assertEqual(state.ext["mystery"]["units"], units)
+
+    def test_save_without_investigation_units_remains_valid(self):
+        self.engine.state.ext["mystery"] = {"clues": []}
+        state, _ = decode_save(encode_save(self.engine.state, self.story), self.story)
+        self.assertNotIn("units", state.ext["mystery"])
 
 
 if __name__ == "__main__":

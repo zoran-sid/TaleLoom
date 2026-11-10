@@ -56,6 +56,22 @@ class CodecTest(unittest.TestCase):
         self.assertEqual(self.session.engine.state.flags, [])
         self.assertEqual(state.random_seed, 12)
 
+    def test_invalid_unit_progress_in_current_or_nested_save_keeps_session(self):
+        self.session.dispatch(ActionRequest('choice:take', self.session.snapshot().revision))
+        before = self.session.export_save()
+        for location in ('current', 'checkpoint', 'previous'):
+            with self.subTest(location=location):
+                bad = copy.deepcopy(before)
+                state = bad['state']
+                if location == 'checkpoint':
+                    state = state['ext']['session']['checkpoints'][0]['state']
+                elif location == 'previous':
+                    state = state['ext']['session']['previous_choice']['state']
+                state['ext']['mystery'] = {'units': {'lamp': {'tries': -1}}}
+                result = self.session.restore(bad)
+                self.assertEqual(result.error_code, 'invalid_save')
+                self.assertEqual(self.session.export_save(), before)
+
     def test_old_v1_without_random_seed_defaults_to_zero(self):
         del self.payload['state']['random_seed']
         state, _ = decode_save(self.payload, self.story)

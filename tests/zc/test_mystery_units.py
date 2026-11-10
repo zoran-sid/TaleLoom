@@ -272,15 +272,13 @@ class UnitSessionTest(unittest.TestCase):
         self.assertEqual(units["lamp"]["grade"], "ok")
         self.assertEqual(units["lamp"]["spots"], ["front", "back"])
 
-    def test_malformed_unit_progress_in_save_counts_as_unstarted(self):
+    def test_malformed_unit_progress_is_rejected_without_resetting_progress(self):
+        self.act("mystery:inspect", spot="lamp/front")
+        before = self.session.export_save()
         saved = self.session.export_save()
         saved["state"]["ext"]["mystery"] = {"units": {"lamp": {"spots": "front", "tries": "x"}, "motive": 3}}
-        self.assertIsNone(self.session.restore(saved).error_code)
-        inspect = self.action("mystery:inspect")
-        self.assertEqual([o.description for o in inspect.parameters[0].options], ["", ""])
-        result = self.act("mystery:inspect", spot="lamp/front")
-        self.assertIsNone(result.error_code)
-        self.assertEqual(self.session.engine.state.ext["mystery"]["units"]["lamp"]["spots"], ["front"])
+        self.assertEqual(self.session.restore(saved).error_code, "invalid_save")
+        self.assertEqual(self.session.export_save(), before)
 
     def test_hint_texts_stay_readable_in_snapshot(self):
         self.act("mystery:hint", unit="lamp")

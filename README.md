@@ -11,12 +11,14 @@ INT6181 应用 Python 程式设计 · 小组项目。
 
 - 桌面：在 VS Code 中运行 `main.py`，弹出简洁 GUI，选择剧本后全程点击游玩。
 - 网页：访问网址直接游玩，通过 Pyodide 共用 Python 核心与剧本；桌面与网页共用存档格式。
-- 自动发布：Cloudflare 监听本仓库推送，检查与构建成功后自动部署；`main` 更新正式网址，`develop`／成员分支提供预览。
+- 自动发布：Cloudflare 监听本仓库推送，检查与构建成功后自动部署；`main` 更新正式网址，`develop`／成员分支用于开发与验收，自动预览开关见 [部署说明](https://github.com/zoran-sid/TaleLoom/blob/develop/docs/cloudflare-deploy.md)。
 - 异步协作：共享接口和固定样例先行，界面、引擎、插件、存档与素材分模块扩展。
 
 独立模块开发入口：`taleloom/ui_contract.py`、`tests/ui_fakes.py`，展示端统一用 `taleloom.session_factory.create_session` 取得会话；可运行 `python -B -m unittest tests.integration.test_ui_contract -v`。
 
-当前状态：命令行可完整游玩两个序章；网页可在线点击游玩：<https://taleloom.zoranzhou.com>；影像模式（互动影像、失败惩罚、关键节点存档）：<https://taleloom.zoranzhou.com/cinematic>，`develop` 合入后由 Cloudflare 自动部署，成员分支的预览在 `<分支名>.taleloom.zoranzhou.com`；桌面 GUI 与各成员的正式模块按分工开发中。
+当前状态：命令行可完整游玩两个序章；网页可在线点击游玩：<https://taleloom.zoranzhou.com>；影像模式（互动影像、失败惩罚、关键节点存档）：<https://taleloom.zoranzhou.com/cinematic>，发布 PR 合入 `main` 后由 Cloudflare 自动部署；自动预览当前开关状态见 [部署说明](https://github.com/zoran-sid/TaleLoom/blob/develop/docs/cloudflare-deploy.md)；桌面 GUI 与各成员的正式模块按分工开发中。
+
+《雾港旧案：未结的账》已改为通过剧情选择推进，发现与对质融入场景；九处分支已确认，音画保留现有方案。玩法、存档兼容与后续素材增强见 [剧本说明](stories/film/fog_harbor_ledger/README.md)。
 
 本地网页：安装 Node（版本见 `.node-version`）与 Python 后运行 `npm ci`，再运行 `npm run dev -- --open`。
 

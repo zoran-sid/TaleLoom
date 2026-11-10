@@ -98,6 +98,7 @@ def decode_save(payload: dict, story: Story) -> tuple[GameState, list[str]]:
             raise SaveError(f'mystery.{field} 应为字符串列表')
     if not isinstance(mystery.get('act', ''), str):
         raise SaveError('mystery.act 应为字符串')
+    _validate_unit_progress(mystery.get('units', {}))
     ending = story.scenes[state.scene].ending
     if state.ending != (ending.get('id', state.scene) if ending else None):
         raise SaveError('结局与场景不一致')
@@ -107,6 +108,28 @@ def decode_save(payload: dict, story: Story) -> tuple[GameState, list[str]]:
     if payload.get("fingerprint") != fingerprint(story):
         notes.append("提示：剧本在存档之后被修改过，部分进度可能与当前版本不一致。")
     return state, notes
+
+
+def _validate_unit_progress(units: object) -> None:
+    """检查调查进度的存储结构；允许未开始、旧剧本单元及扩展字段。"""
+    if not isinstance(units, dict):
+        raise SaveError('mystery.units 应为单元 ID 到进度对象的映射')
+    for uid, entry in units.items():
+        prefix = f'mystery.units.{uid}'
+        if not isinstance(entry, dict):
+            raise SaveError(f'{prefix} 应为进度对象')
+        spots = entry.get('spots', [])
+        if not isinstance(spots, list) or not all(isinstance(s, str) for s in spots):
+            raise SaveError(f'{prefix}.spots 应为字符串列表')
+        for field in ('tries', 'hints'):
+            value = entry.get(field, 0)
+            if type(value) is not int or value < 0:
+                raise SaveError(f'{prefix}.{field} 应为非负整数')
+        if not isinstance(entry.get('grade', ''), str):
+            raise SaveError(f'{prefix}.grade 应为字符串')
+        last = entry.get('last', {})
+        if not isinstance(last, dict) or not all(isinstance(v, str) for v in last.values()):
+            raise SaveError(f'{prefix}.last 应为槽位到选项字符串的映射')
 
 
 def atomic_write(path: str | Path, payload: dict) -> Path:
