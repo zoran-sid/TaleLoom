@@ -28,6 +28,7 @@ RUNTIME = ROOT / "web/cinematic/seed-runtime.json"
 API = "https://openspeech.bytedance.com/api/v3/tts/create"
 MODEL = "seed-audio-1.0"
 RATE_CNY_PER_MINUTE = 1.0
+MIN_PAGE_SECONDS = 1.2
 
 AMBIENCE = {
     "harbor": "1931年中国雾港夜间码头。近处海水轻拍木桩、绳索轻响，远处偶有雾笛，潮湿海风。约40秒纯环境声，空间真实，动态平稳，可循环。无人声，无音乐，无突兀事件。",
@@ -86,6 +87,22 @@ def cue_times(job: dict, subtitle: dict | None, duration: float) -> tuple[float,
     return round(ratio, 4), cues
 
 
+def clamp_cues(cues: list[float], duration: float) -> list[float]:
+    """短页至少停留 MIN_PAGE_SECONDS，避免一句还没读完就跳到下一页。"""
+    if not cues or duration <= 0:
+        return cues
+    out = []
+    previous = 0.0
+    for index, cue in enumerate(cues):
+        value = max(float(cue), (previous + MIN_PAGE_SECONDS) if index else MIN_PAGE_SECONDS)
+        if index == len(cues) - 1:
+            value = duration
+        value = min(duration, value)
+        out.append(round(value, 3))
+        previous = value
+    return out
+
+
 def runtime_manifest(saved: dict, planned: list[dict]) -> dict:
     plan = {j["id"]: j for j in planned}
     result = {"scenes": {}, "choices": {}, "ambience": {}}
@@ -97,6 +114,7 @@ def runtime_manifest(saved: dict, planned: list[dict]) -> dict:
             result["ambience"][job["place"]] = asset["file"]
             continue
         ratio, cues = cue_times(job, asset.get("subtitle"), asset.get("duration") or 0)
+        cues = clamp_cues(cues, float(asset.get("duration") or 0))
         if ratio < 0.95 or not cues:
             continue  # Human review or regeneration required before shipping inaccurate speech.
         compact = {"file": asset["file"], "cues": cues, "duration": asset["duration"]}

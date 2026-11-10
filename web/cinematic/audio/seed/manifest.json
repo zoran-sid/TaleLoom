@@ -16275,18 +16275,18 @@
         "sample_rate": 44100,
         "multilingual": true
       },
-      "duration": 49.95,
-      "original_duration": 49.95,
+      "duration": 59.74,
+      "original_duration": 59.74,
       "cost_cny": 1.124,
       "subtitle": null,
       "transcript_match": 0.9892,
-      "sha256": "03300d451cd973e0598b620b20d9ef4a7b710aab29eaaf58ae40e2d73d278b3f",
+      "sha256": "d88efe74e9b7316d1e672ab580647ed7d6450bc06e2244f034bd818e46f4858a",
       "post": {
         "filter": "loudnorm=I=-18:TP=-2:LRA=8",
         "codec": "mp3 128k",
-        "source_sha256": "e6bd20bedb3debabfe6db8810717b38a9102555a315e254860f08e1ee97478a5"
+        "source_sha256": "f61d7c1ca084e13ba0805a556c2d7ce70e7d7ca0ae0de9c029a9293e6260429e"
       },
-      "generated_at": "2026-11-11T01:50:00Z",
+      "generated_at": "2026-11-11T01:56:00Z",
       "reference": "A Yun female reference audio (fal upload)",
       "cost_usd": 0.1561,
       "reference_url": "https://v3b.fal.media/files/b/0ab1ef30/SopQ9Xbe8FCMIV4LgtLD6_ayun-female.mp3"
@@ -31394,18 +31394,18 @@
         "sample_rate": 44100,
         "multilingual": true
       },
-      "duration": 26.23,
-      "original_duration": 26.23,
+      "duration": 44.93,
+      "original_duration": 44.93,
       "cost_cny": 0.59,
       "subtitle": null,
       "transcript_match": 0.9742,
-      "sha256": "9c4a727e82d1aa4665c44f67e42876bce2c12e534351d95fca1b5a43a42eabdc",
+      "sha256": "3fd0f3d8b927ed9a0d56955423ffd994498f3b1d6b88d2e0ab9e5ff669d0d397",
       "post": {
         "filter": "loudnorm=I=-18:TP=-2:LRA=8",
         "codec": "mp3 128k",
-        "source_sha256": "ef63b22d5fa089a87b8079b0c3813ea520327346fc4e407e1237fa1cae6d3178"
+        "source_sha256": "1d00597c49144d94952f25ca5437231d7b2cc89c5346d486b6dabff3fc079360"
       },
-      "generated_at": "2026-11-11T01:50:00Z",
+      "generated_at": "2026-11-11T01:56:00Z",
       "reference": "A Yun female reference audio (fal upload)",
       "cost_usd": 0.082,
       "reference_url": "https://v3b.fal.media/files/b/0ab1ef30/SopQ9Xbe8FCMIV4LgtLD6_ayun-female.mp3"

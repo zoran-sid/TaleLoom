@@ -18,6 +18,8 @@ class SeedRuntimeTests(unittest.TestCase):
                     self.assertTrue(cues)
                     self.assertEqual(cues, sorted(cues))
                     self.assertTrue(all(0 < cue <= asset["duration"] for cue in cues))
+                    gaps = [round(cues[i + 1] - cues[i], 2) for i in range(len(cues) - 2)]
+                    self.assertTrue(all(gap >= 1.0 for gap in gaps), f"{key} 短页停留不足")
 
     def test_ambience_files_are_mapped(self):
         runtime = json.loads(RUNTIME.read_text(encoding="utf-8"))

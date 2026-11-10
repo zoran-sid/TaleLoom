@@ -59,6 +59,8 @@ document.addEventListener('taleloom:audio-progress', ({ detail }) => {
 - 10 条环境声循环已按场景重写提示并重新生成，统一 40 秒、约 −34 LUFS，替换 `web/cinematic/audio/seed/ambience_*.mp3`。
 - 火山引擎凭据在当前环境被拒（`45000000`/`45000010`），因此本次改用 fal 托管的 `bytedance/seed-audio-1.0`（同一模型）；参考音与生成记录在 `web/cinematic/audio/seed/manifest.json`，估算费用约 2 美元。
 - 场景每页结束时间重新按 Seed Audio 台词对齐；`tests/zc/test_seed_runtime.py` 校验时间单调且不超出音频。
+- 短页（如“周接道：”“她说，”）统一至少停留 1.2 秒；`seed_audio.py` 的 `clamp_cues` 与 `seed-runtime.json` 已同步，避免上一句还没结束就跳到下一页。
+- `c04_book_a`、`d04_seal` 第一次重生成时漏掉首句，已用“从第一句开始完整朗读”的提示重生成 v2，并重新对齐页时间。
 
 ## 生成与审校
 

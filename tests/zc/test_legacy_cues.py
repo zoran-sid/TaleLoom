@@ -35,6 +35,8 @@ class LegacyCueTests(unittest.TestCase):
                 self.assertEqual(cues, sorted(cues))
                 self.assertTrue(all(0 < cue <= asset["duration"] for cue in cues))
                 self.assertGreaterEqual(asset["duration"] - cues[-1], 0)
+                gaps = [round(cues[i + 1] - cues[i], 2) for i in range(len(cues) - 2)]
+                self.assertTrue(all(gap >= 1.0 for gap in gaps), f"{scene_id} 短页停留不足")
 
     def test_old_audio_files_exist(self):
         scenes = json.loads(CUES.read_text(encoding="utf-8"))["scenes"]
