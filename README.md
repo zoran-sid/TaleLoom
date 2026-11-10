@@ -18,7 +18,7 @@ INT6181 应用 Python 程式设计 · 小组项目。
 
 当前状态：命令行可完整游玩两个序章；网页可在线点击游玩：<https://taleloom.zoranzhou.com>；影像模式（互动影像、失败惩罚、关键节点存档）：<https://taleloom.zoranzhou.com/cinematic>，发布 PR 合入 `main` 后由 Cloudflare 自动部署；自动预览当前开关状态见 [部署说明](https://github.com/zoran-sid/TaleLoom/blob/develop/docs/cloudflare-deploy.md)；桌面 GUI 与各成员的正式模块按分工开发中。
 
-《雾港旧案：未结的账》已改为通过剧情选择推进，发现与对质融入场景；九处分支已确认，音画保留现有方案。玩法、存档兼容与后续素材增强见 [剧本说明](stories/film/fog_harbor_ledger/README.md)。
+《雾港旧案：未结的账》已改为通过剧情选择推进，发现与对质融入场景；九处分支已确认。序章与第一幕已加入场景级配音（旁白、对白与环境声，影像模式控制条可开关），其余幕次沿用现有声音。玩法、存档与声音记录见 [剧本说明](stories/film/fog_harbor_ledger/README.md) 和 [配音工作记录](配音工作记录.md)。
 
 本地网页：安装 Node（版本见 `.node-version`）与 Python 后运行 `npm ci`，再运行 `npm run dev -- --open`。
 

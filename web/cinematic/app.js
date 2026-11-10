@@ -18,6 +18,8 @@ import { GameClient } from '../runtime/client.js';
 import { CinematicSaveStore } from '../storage/cinematic.js';
 import { Stage, hasScene } from './stage.js';
 import { Sound } from './sound.js';
+import { AudioTrack } from './audio-track.js';
+import { SCENE_AUDIO } from './audio-assets.js';
 import { Desk, unitFrom } from './units.js';
 import { readingPages } from './narrative.js';
 
@@ -79,6 +81,7 @@ const VERBS = { 'mystery:ask': '审问', 'mystery:examine': '深入调查', 'puz
 const $ = (id) => document.getElementById(id);
 const stage = new Stage($('stage'));
 const sound = new Sound();
+const audioTrack = new AudioTrack({ map: SCENE_AUDIO });
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, T(ms)));
 const desk = new Desk($('desk'), { send: sendUnit, sound, speed: T, onClose: () => { deskClosedFor = unitKey(view); showChoices(); } });
 
@@ -372,6 +375,7 @@ async function enterScene(next) {
   await stage.fade(1, T(revisit ? 450 : 700));
   if (!revisit) sound.thud();
   setArt(next);
+  audioTrack.play(next.scene_id);
   if (revisit) {
     showCard('', next.scene_title, '');
     await stage.fade(0, T(700));
@@ -421,6 +425,7 @@ function latestSave() {
 async function ending(next) {
   $('frame').classList.add('ended');
   clearSubtitle();
+  audioTrack.stop();
   const failed = isFailure(next);
   await stage.fade(1, T(1200));
   const [art, options] = THEME.endings[next.ending_id] || (failed ? THEME.failureEnding : THEME.defaultEnding);
@@ -455,6 +460,7 @@ async function ending(next) {
 async function arrive(result, kicker, place) {
   $('frame').classList.remove('ended');
   clearSubtitle();
+  audioTrack.stop();
   closeNotebook();
   desk.reset();
   deskClosedFor = '';
@@ -809,6 +815,7 @@ function renderNotebook() {
           // 正在演出：快速播完这一段，结束后立即回到存档点
           pendingRollback = entry;
           rushing = true;
+          audioTrack.stop();
           closeNotebook();
           nudge();
           toast(`正在回到存档点 · ${entry.label}`);
@@ -829,6 +836,7 @@ function renderNotebook() {
 function openNotebook() {
   renderNotebook();
   paused = true;
+  audioTrack.suspend();
   $('notebook').hidden = false;
   $('notes-toggle').setAttribute('aria-expanded', 'true');
   $('notebook-close').focus({ preventScroll: true });
@@ -839,6 +847,8 @@ function closeNotebook() {
   $('notebook').hidden = true;
   paused = false;
   $('notes-toggle').setAttribute('aria-expanded', 'false');
+  // 合上笔记后重新播放当前场景的配音。
+  audioTrack.resume();
 }
 
 function toggleNotebook() {
@@ -906,6 +916,7 @@ async function act(actionId, values) {
 
 async function restart() {
   if (desk.busy) return;
+  audioTrack.stop();
   if (busy) {
     pendingRestart = true;
     rushing = true;
@@ -936,6 +947,7 @@ async function restart() {
 }
 
 async function opening() {
+  audioTrack.stop();
   stage.show(...THEME.opening);
   sound.setAmbience(AMBIENCE[THEME.opening[0]] || 'harbor');
   sound.setMusic(musicFor(...THEME.opening));
@@ -1006,8 +1018,21 @@ function showMute() {
 }
 $('mute').addEventListener('click', () => {
   sound.setMuted(!sound.muted);
+  audioTrack.setMuted(sound.muted);
   remember('muted', sound.muted ? '1' : '0');
   showMute();
+});
+
+function showVoice() {
+  $('voice').textContent = audioTrack.enabled ? '配音：开' : '配音：关';
+  $('voice').setAttribute('aria-pressed', String(!audioTrack.enabled));
+}
+$('voice').addEventListener('click', () => {
+  audioTrack.setEnabled(!audioTrack.enabled);
+  remember('voice', audioTrack.enabled ? '1' : '0');
+  // 重新开启配音时，立即播放当前场景的音频。
+  if (audioTrack.enabled && view) audioTrack.play(view.scene_id);
+  showVoice();
 });
 $('volume').addEventListener('input', () => {
   sound.setVolume(Number($('volume').value) / 100);
@@ -1020,7 +1045,10 @@ $('volume').addEventListener('input', () => {
     sound.setVolume(volume / 100);
   }
   sound.setMuted(recall('muted') === '1');
+  audioTrack.setMuted(sound.muted);
+  if (recall('voice') === '0') audioTrack.setEnabled(false);
   showMute();
+  showVoice();
 })();
 
 // 胶片颗粒：生成一次噪声贴图（CSP 允许 data: 图片）。
