@@ -77,5 +77,6 @@ failure 结局必须由选择进入；meta.linear 为 true 的剧本场景图无
 2. YHT／ZQO 的字段合入后，播放器改读 ending.kind、checkpoint、art，删除 ART 表、fail_ 前缀与
    “【存档点】”提示的解析；改用会话的回退能力；
 3. 与 ZRS 解决 #15；
-4. develop 验收后开 develop → main 的发布 PR，Cloudflare 生产分支切换到 main。
+4. develop 验收后开 develop → main 的发布 PR。Cloudflare 生产分支已是 main（2026-11-10 核实），无需重复切换；
+5. 《未结的账》按剧本目录的最新版说明维护：已取消交互核验，保留剧情选择；九处分支已确认，音画保留现有方案，外部素材列为后续增强。
 ```

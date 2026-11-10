@@ -1,4 +1,4 @@
-"""《雾港旧案：未结的账》影像版：剧情事实、证据时机、调查单元与存档回退。负责人：ZC。
+"""《雾港旧案：未结的账》影像版：剧情事实、证据时机、剧情选择与存档回退。负责人：ZC。
 
 剧本由 stories/film/fog_harbor_ledger/ 提供；本文件检查剧本交接表里约定的事实与次序，
 以及正式会话下的调查、回退和结局。
@@ -15,10 +15,6 @@ from tools.web_vectors import build_vectors
 
 LEDGER = STORIES / "film" / "fog_harbor_ledger"
 
-# 进入场景时允许直接记下的事实：剧本写明“记录”的公开信息与人物当面说出的话。
-MANDATED = {"paperweight_seen", "iou_mail", "ayun_waits", "tea_crack", "ayun_account", "gu_account",
-            "gu_refused", "liability_724", "pingchao", "book_refused"}
-
 
 def run(name):
     story = load_story(LEDGER)
@@ -33,11 +29,18 @@ class LedgerStoryTest(unittest.TestCase):
         cls.story = load_story(LEDGER)
         cls.vectors = {v["name"]: v for v in build_vectors([LEDGER / "story.json"])}
 
-    def test_entering_scenes_grants_only_mandated_facts(self):
-        for sid, scene in self.story.scenes.items():
-            granted = {e["add_clue"] for e in scene.on_enter if "add_clue" in e}
-            with self.subTest(scene=sid):
-                self.assertLessEqual(granted, MANDATED)
+    def test_all_routes_use_story_choices_without_evidence_quizzes(self):
+        self.assertFalse(self.story.data.get("units"))
+        for name, vector in self.vectors.items():
+            with self.subTest(route=name):
+                self.assertTrue(all(a["action_id"].startswith("choice:") for a in vector["actions"]))
+
+    def test_discoveries_are_recorded_where_the_story_describes_them(self):
+        expected = {"p02_lobby": "sleeve_intact", "a03_lamp": "two_accounts",
+                    "d02_weight": "weight_id", "d02_sleeve": "sleeve_match"}
+        for sid, clue in expected.items():
+            self.assertIn({"add_clue": clue}, self.story.scenes[sid].on_enter)
+        self.assertNotIn({"add_clue": "sleeve_match"}, self.story.scenes["d02_refuse"].on_enter)
 
     def test_cloth_is_seen_before_anyone_is_called(self):
         found = self.story.scenes["a01_found"]
@@ -47,12 +50,11 @@ class LedgerStoryTest(unittest.TestCase):
                 self.assertEqual(choice.goto, "a02_door")
         self.assertNotIn("周文", found.text.split("灰蓝布")[0].split("账房没有回答")[1])
 
-    def test_detail_records_need_their_own_look(self):
+    def test_visible_scene_details_are_recorded_without_extra_inspect_clicks(self):
         engine, _ = run("truth_later")
         clues = engine.state.ext["mystery"]["clues"]
-        self.assertIn("cloth_first", clues)
         for detail in ("wound", "cloth_detail", "weight_missing"):
-            self.assertNotIn(detail, clues, "没有查看的细节不能自动记下")
+            self.assertIn(detail, clues)
 
     def test_player_text_has_no_author_notes(self):
         banned = ("调查／推进", "作者", "进入条件", "替代路线", "通关", "if ", "flag")
@@ -64,33 +66,51 @@ class LedgerStoryTest(unittest.TestCase):
                     with self.subTest(scene=sid, word=word):
                         self.assertNotIn(word, text)
 
-    def test_snapshots_never_reveal_answers_feedback_or_locked_hints(self):
-        units = self.story.data["units"]
-        secrets = {s["text"] for u in units.values() for s in u.get("solutions", []) if s.get("text")}
-        secrets |= {f["text"] for u in units.values() for f in u.get("feedback", [])}
-        vector = self.vectors["truth"]
+    def test_snapshots_offer_story_choices_without_investigation_forms(self):
         session = create_session(self.story, seed=0)
         view = session.start().view
-        for step in vector["actions"]:
-            text = repr(view)
-            for secret in secrets:
-                self.assertNotIn(secret.split("\n")[0], text)
-            view = session.dispatch(ActionRequest(step["action_id"], view.revision, step["values"])).view
+        for step in self.vectors["truth"]["actions"]:
+            self.assertFalse({"mystery:inspect", "mystery:solve", "mystery:hint"} & {a.id for a in view.actions})
+            result = session.dispatch(ActionRequest(step["action_id"], view.revision, step["values"]))
+            self.assertTrue(result.ok, result.messages)
+            view = result.view
 
-    def test_story_choices_wait_for_unit_checks(self):
+    def test_lamp_scene_can_continue_without_quiz_submission(self):
         session = create_session(self.story, seed=0)
         view = session.start().view
-        vector = self.vectors["truth"]
-        for step in vector["actions"]:
+        for step in self.vectors["truth"]["actions"]:
             if view.scene_id == "a03_lamp":
                 break
             view = session.dispatch(ActionRequest(step["action_id"], view.revision, step["values"])).view
-        self.assertEqual(view.scene_id, "a03_lamp")
-        self.assertNotIn("choice:window", [c.id for c in view.choices])
-        blocked = session.dispatch(ActionRequest("choice:window", view.revision, {}))
-        self.assertEqual(blocked.error_code, "invalid_action")
-        solve = next(a for a in view.actions if a.id == "mystery:solve")
-        self.assertFalse(solve.enabled, "三处都没看就不能提交核对")
+        self.assertIn("choice:window", [c.id for c in view.choices])
+        result = session.dispatch(ActionRequest("choice:window", view.revision, {}))
+        self.assertTrue(result.ok)
+        self.assertEqual(result.view.scene_id, "a04_window")
+
+    def test_old_save_at_unfinished_discovery_can_leave_and_keep_scene_facts(self):
+        session = create_session(self.story, seed=0)
+        view = session.start().view
+        targets = {"p02_lobby", "a03_lamp", "b01_paper", "c01_batch", "d02_weight", "d02_sleeve"}
+        checked = set()
+        for step in self.vectors["truth"]["actions"]:
+            sid = view.scene_id
+            if sid in targets and sid not in checked:
+                payload = session.export_save()
+                mine = payload["state"]["ext"]["mystery"]
+                facts = {e["add_clue"] for e in self.story.scenes[sid].on_enter if "add_clue" in e}
+                mine["clues"] = [c for c in mine["clues"] if c not in facts]
+                mine["units"] = {"retired": {"spots": [], "tries": 1, "last": {"answer": "wrong"}}}
+                self.assertTrue(session.restore(payload).ok)
+                result = session.dispatch(ActionRequest(step["action_id"], session.snapshot().revision, {}))
+                self.assertTrue(result.ok, (sid, result.messages))
+                self.assertLessEqual(facts, {c.id for c in result.view.clues})
+                checked.add(sid)
+            else:
+                result = session.dispatch(ActionRequest(step["action_id"], view.revision, step["values"]))
+                self.assertTrue(result.ok, result.messages)
+            view = result.view
+        self.assertEqual(checked, targets)
+        self.assertEqual(view.ending_id, "truth")
 
     def test_routes_follow_the_handoff_table(self):
         expected = {
@@ -139,19 +159,16 @@ class LedgerStoryTest(unittest.TestCase):
                 return session
         self.fail("通关路线没有到达对质")
 
-    def finish_with_gaps(self, session, weak_units):
-        """完整经历四问，保留指定缺口后进入证据不足结局。"""
-        for step in self.vectors["truth_guarded"]["actions"]:
-            uid = step["values"].get("unit", "")
-            if step["action_id"] != "mystery:solve" or not uid.startswith("q_"):
-                continue
-            values = dict(step["values"])
-            if uid in weak_units:
-                values = {key: value if key == "unit" else "pending" for key, value in values.items()}
-            count = 2 if uid in weak_units else 1
-            for _ in range(count):
-                result = session.dispatch(ActionRequest("mystery:solve", session.snapshot().revision, values))
-                self.assertTrue(result.ok, result.messages)
+    def finish_with_gaps(self, session, missing):
+        """旧存档可缺少早期事实；结局按实际材料列缺项，不依赖旧答题评分。"""
+        payload = session.export_save()
+        clues = payload["state"]["ext"]["mystery"]["clues"]
+        missing_clues = {"q_time": "duty_check", "q_object": "weight_id",
+                         "q_person": "sleeve_match", "q_motive": "motive_724"}
+        for key in missing:
+            clues.remove(missing_clues[key])
+        payload["state"]["ext"]["mystery"]["units"] = {key: {"grade": "full"} for key in missing_clues}
+        self.assertTrue(session.restore(payload).ok)
         for action in ("gaps", "old_pending", "sign_zhou_gap"):
             result = session.dispatch(ActionRequest(f"choice:{action}", session.snapshot().revision, {}))
             self.assertTrue(result.ok, result.messages)
@@ -178,31 +195,31 @@ class LedgerStoryTest(unittest.TestCase):
         labels = [s.checkpoint for s in self.story.scenes.values() if s.checkpoint]
         self.assertEqual(labels, ["一 · 夜深取账", "二 · 旧账", "三 · 后厨", "四 · 对质之前", "五 · 最后签字"])
 
-    def test_checkpoint_rollback_restores_unit_progress(self):
+    def test_checkpoint_rollback_removes_later_discoveries(self):
         session = create_session(self.story, seed=0)
         view = session.start().view
         for step in self.vectors["truth"]["actions"]:
             view = session.dispatch(ActionRequest(step["action_id"], view.revision, step["values"])).view
             if view.scene_id == "d01_kitchen":
                 break
-        units = lambda: session.export_save()["state"]["ext"]["mystery"]["units"]
-        self.assertEqual(units()["sums"]["grade"], "full")
+        self.assertIn("motive_724", {c.id for c in view.clues})
         target = next(c for c in session.list_checkpoints() if c.label == "二 · 旧账")
         result = session.restore_checkpoint(target.id, view.revision)
         self.assertTrue(result.ok, result.messages)
         self.assertEqual(result.view.scene_id, "c01_batch")
-        self.assertNotIn("sums", units())
-        self.assertNotIn("batch", units())
-        self.assertEqual(units()["lamp"]["grade"], "ok", "存档点之前完成的调查保留")
+        clues = {c.id for c in result.view.clues}
+        self.assertNotIn("motive_724", clues)
+        self.assertNotIn("relief_340", clues)
+        self.assertIn("two_accounts", clues)
 
-    def test_saved_ending_restores_with_unit_progress(self):
+    def test_saved_ending_restores_without_unit_progress(self):
         for name, vector in self.vectors.items():
             with self.subTest(walkthrough=name):
                 session = create_session(self.story, seed=0)
                 session.start()
                 self.assertTrue(session.restore(vector["save"]).ok)
                 self.assertEqual(session.snapshot().ending_id, vector["ending"])
-                self.assertIn("units", session.export_save()["state"]["ext"]["mystery"])
+                self.assertNotIn("units", session.export_save()["state"]["ext"]["mystery"])
 
 
 if __name__ == "__main__":
