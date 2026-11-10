@@ -44,10 +44,10 @@
 
 ## 音画与后续素材增强
 
-当前画面与声音继续使用现有代码生成方案，运行时不依赖外部素材服务，也不需要 ElevenLabs 或图像生成凭据。
+画面继续由代码生成。声音保留现有 Web Audio 合成方案，并在序章与第一章加入三条原创配乐和五条环境声；账目调查 C01 保留三条原创小样；周文、阿芸、顾先生各有一句配音。网页运行时不连接外部生成服务。
 
 - Canvas 画面在 `web/cinematic/stage.js`，场景通过 `art` 字段选用。
-- Web Audio 声音在 `web/cinematic/sound.js`，保留环境声、配乐、拟音、静音和音量记忆、后台暂停及声音字幕。
+- Web Audio 声音在 `web/cinematic/sound.js`，保留环境声、配乐、拟音、静音和音量记忆、后台暂停及声音字幕；声音映射、小样、来源和试听状态见 [声音设计](https://github.com/zoran-sid/TaleLoom/blob/develop/docs/audio-direction.md)。
 - 后续可按需加入实录音效或插画，属于体验增强，不是当前版本的待完成依赖。引入时记录来源、许可证和文件用途，并保留现有静音、字幕及减少动态效果支持。
 
 | 可增强的素材 | 对应场景 |
@@ -65,4 +65,4 @@
 
 ZC 负责桌面与手机实际试玩、画面截图和听感检查。首次游玩仍以 30 分钟以上为目标；删除核验步骤后需要重新计时，各幕时长不能当作实测结果。自动快速通关只验证逻辑。
 
-正式发布走 `develop` → `main` 的发布 PR。Cloudflare 生产分支已核实为 `main`，当前分支构建状态见 [部署说明](../../../docs/cloudflare-deploy.md)。
+正式发布走 `develop` → `main` 的发布 PR。Cloudflare 生产分支已核实为 `main`，当前分支构建状态见 [部署说明](https://github.com/zoran-sid/TaleLoom/blob/develop/docs/cloudflare-deploy.md)。

@@ -134,7 +134,7 @@ test('声音：静音与音量会记住；转入后台时暂停，回来不叠�
         .observe(node, { childList: true, characterData: true, subtree: true });
     });
   });
-  await resumeAt(page, 'truth', [['p02_lobby', '测试 · 大堂']]);
+  await resumeAt(page, 'truth', [['b04_duty', '测试 · 值房']]);
   await page.locator('#mute').click();
   await expect(page.locator('#mute')).toHaveAttribute('aria-pressed', 'true');
   await page.locator('#volume').fill('40');
@@ -145,7 +145,7 @@ test('声音：静音与音量会记住；转入后台时暂停，回来不叠�
   const before = await sound();
   expect(before.muted).toBe(true);
   expect(before.volume).toBeCloseTo(0.4);
-  expect(before.timers, '大堂有座钟的嘀嗒声').toBeGreaterThan(0);
+  expect(before.timers, '值房有挂钟的嘀嗒声').toBeGreaterThan(0);
   const hide = (hidden) => page.evaluate((value) => {
     Object.defineProperty(document, 'hidden', { configurable: true, get: () => value });
     document.dispatchEvent(new Event('visibilitychange'));
@@ -164,7 +164,7 @@ test('声音：静音与音量会记住；转入后台时暂停，回来不叠�
   await expect(page.locator('#volume')).toHaveValue('40');
 });
 
-test('生产构建：保留代码音画，不需要外部素材服务', async ({ page }) => {
+test('生产构建：音画与试听素材均从本站加载，不调用生成服务', async ({ page }) => {
   const failed = [];
   page.on('response', (response) => { if (response.status() >= 400) failed.push(`${response.status()} ${response.url()}`); });
   await page.route('**/*', (route) => (new URL(route.request().url()).hostname === '127.0.0.1' ? route.continue() : route.abort()));
@@ -173,6 +173,40 @@ test('生产构建：保留代码音画，不需要外部素材服务', async ({
   expect(failed).toEqual([]);
   const scripts = await page.evaluate(() => [...document.scripts].map((s) => s.src).filter(Boolean));
   expect(scripts.every((src) => new URL(src).hostname === '127.0.0.1')).toBe(true);
+});
+
+test('序章与第一章：靠岸、饭桌与命案各自使用录音配乐', async ({ page }) => {
+  test.setTimeout(180_000);
+  await page.goto('/cinematic.html?fast=1');
+  await page.locator('#begin').click();
+  await ready(page);
+  await expect.poll(() => page.evaluate(() => window.__cinematic.sound.samples.active.bgm?.id)).toBe('harbor_arrival');
+  await expect.poll(() => page.evaluate(() => window.__cinematic.sound.samples.active.ambience?.id)).toBe('harbor');
+
+  await resumeAt(page, 'truth', [['p03_dinner', '测试 · 一张饭桌']]);
+  await expect.poll(() => page.evaluate(() => window.__cinematic.sound.samples.active.bgm?.id)).toBe('inn_night');
+  await expect.poll(() => page.evaluate(() => window.__cinematic.sound.samples.active.ambience?.id)).toBe('dinner');
+
+  await resumeAt(page, 'truth', [['a01_found', '测试 · 按约取账']]);
+  await expect.poll(() => page.evaluate(() => window.__cinematic.sound.samples.active.bgm?.id)).toBe('discovery');
+  await expect.poll(() => page.evaluate(() => window.__cinematic.sound.samples.active.ambience?.id)).toBe('office');
+});
+
+test('账目调查小样：录音只载入一次，切场退回合成声', async ({ page }) => {
+  const audioResponses = [];
+  page.on('response', (response) => {
+    if (response.url().endsWith('.mp3')) audioResponses.push(response);
+  });
+  await resumeAt(page, 'truth', [['b06_rewrite', '测试 · 复盘']]);
+  await drive(page, { action_id: 'choice:next_zhou' });
+  await expect.poll(() => page.evaluate(() => window.__cinematic.sound.samples.active.bgm?.id)).toBe('ledger_inquiry');
+  await expect.poll(() => page.evaluate(() => window.__cinematic.sound.samples.active.ambience?.id)).toBe('ledger_room');
+  await expect.poll(() => audioResponses.length).toBe(5);
+  expect(audioResponses.map((response) => response.status())).toEqual([200, 200, 200, 200, 200]);
+  expect(new Set(audioResponses.map((response) => response.url())).size).toBe(5);
+  await drive(page, { action_id: 'choice:next' });
+  await expect.poll(() => page.evaluate(() => window.__cinematic.sound.samples.active.bgm?.id || null)).toBe(null);
+  await expect.poll(() => page.evaluate(() => window.__cinematic.sound.music?.name)).toBe('tense');
 });
 
 test('深空影像版与旧样片仍按各自的剧本播放', async ({ page }) => {

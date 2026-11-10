@@ -1,0 +1,157 @@
+{
+  "story": "fog_harbor_ledger",
+  "section": "序章与第一章",
+  "note": "原始生成与后期参数；不含凭据。运行 python tools/audio_pipeline.py --list 查看。",
+  "assets": [
+    {
+      "id": "harbor_arrival",
+      "layer": "bgm",
+      "gain": 0.85,
+      "caption": "雾港靠岸",
+      "endpoint": "fal-ai/stable-audio-25/text-to-audio",
+      "input": {
+        "prompt": "Original restrained cinematic opening cue for a 1931 foggy Chinese harbor at nightfall. The last ferry nudges the pier, foghorns far out on the water, wet stone and rope. Sparse felt piano over low sustained cello, a lone bass clarinet, faint harmonium air, slow 58 BPM, minor mode with a fragile rising third, long silences. Intimate, humid, patient. No vocals, no drums, no jump scare, no recognizable film or game theme. Seamless sustained ending suitable for looping under Chinese text.",
+        "seconds_total": 55,
+        "num_inference_steps": 8,
+        "guidance_scale": 3,
+        "seed": 19311001
+      },
+      "post": {
+        "lufs": -24,
+        "tp": -2,
+        "lra": 7,
+        "loop": 3
+      }
+    },
+    {
+      "id": "inn_night",
+      "layer": "bgm",
+      "gain": 0.8,
+      "caption": "旅馆夜话",
+      "endpoint": "fal-ai/stable-audio-25/text-to-audio",
+      "input": {
+        "prompt": "Original restrained cinematic underscore for the dining room of a 1931 Chinese harbor inn at night. Warm but uneasy: felt piano, muted harmonium, low cello, soft double bass, a faint clock-like wooden pulse rather than drums, 64 BPM, shifting between minor and its relative major, restrained dynamics. Candlelit, intimate, conversational, with long rests. No vocals, no drums, no jump scare, no recognizable film or game theme. Loop-friendly sustained ending.",
+        "seconds_total": 55,
+        "num_inference_steps": 8,
+        "guidance_scale": 3,
+        "seed": 19311002
+      },
+      "post": {
+        "lufs": -24,
+        "tp": -2,
+        "lra": 7,
+        "loop": 3
+      }
+    },
+    {
+      "id": "discovery",
+      "layer": "bgm",
+      "gain": 0.85,
+      "caption": "命案发现",
+      "endpoint": "fal-ai/stable-audio-25/text-to-audio",
+      "input": {
+        "prompt": "Original restrained cinematic underscore for the moment a body is found in a 1931 Chinese harbor inn office. Held breath rather than shock: low sustained cello and bowed bass, sparse felt piano notes, a thin high harmonic, a quiet unstable minor-second interval, slow 54 BPM, very quiet dynamics, long gaps. No sting, no jump scare, no drums, no vocals, no recognizable film or game theme. Seamless sustained ending suitable for looping.",
+        "seconds_total": 55,
+        "num_inference_steps": 8,
+        "guidance_scale": 3,
+        "seed": 19311003
+      },
+      "post": {
+        "lufs": -24,
+        "tp": -2,
+        "lra": 7,
+        "loop": 3
+      }
+    },
+    {
+      "id": "harbor",
+      "layer": "ambience",
+      "gain": 0.65,
+      "caption": "夜港水声",
+      "endpoint": "sonilo/v1.1/text-to-sound-effects",
+      "input": {
+        "prompt": "Continuous naturalistic 1931 Chinese harbor at night: gentle water lapping against wooden pilings, low wind, a distant foghorn every so often, rope creaks, faint rain, no voices, no music, no sudden events, even level, loop-friendly field recording aesthetic.",
+        "duration": 42,
+        "audio_format": "wav"
+      },
+      "post": {
+        "lufs": -30.5,
+        "tp": -3,
+        "lra": 6,
+        "loop": 2
+      }
+    },
+    {
+      "id": "lobby",
+      "layer": "ambience",
+      "gain": 0.6,
+      "caption": "大堂炉火",
+      "endpoint": "sonilo/v1.1/text-to-sound-effects",
+      "input": {
+        "prompt": "Continuous naturalistic 1931 Chinese inn lobby at night: low fireplace crackle, a wall clock ticking, soft rain outside, old timber creaks, a faint draft, no voices, no music, no sudden events, even level, loop-friendly field recording aesthetic.",
+        "duration": 42,
+        "audio_format": "wav"
+      },
+      "post": {
+        "lufs": -30.5,
+        "tp": -3,
+        "lra": 6,
+        "loop": 2
+      }
+    },
+    {
+      "id": "dinner",
+      "layer": "ambience",
+      "gain": 0.6,
+      "caption": "一张饭桌",
+      "endpoint": "sonilo/v1.1/text-to-sound-effects",
+      "input": {
+        "prompt": "Continuous naturalistic 1931 Chinese inn dining room at night: quiet room tone, faint clink of porcelain and chopsticks, a wall clock, soft rain, wood settling, no voices, no intelligible conversation, no music, no sudden events, even level, loop-friendly field recording aesthetic.",
+        "duration": 42,
+        "audio_format": "wav"
+      },
+      "post": {
+        "lufs": -30.5,
+        "tp": -3,
+        "lra": 6,
+        "loop": 2
+      }
+    },
+    {
+      "id": "office",
+      "layer": "ambience",
+      "gain": 0.65,
+      "caption": "雨夜账房",
+      "endpoint": "sonilo/v1.1/text-to-sound-effects",
+      "input": {
+        "prompt": "Continuous naturalistic 1931 Chinese inn accounting office at night: rain against a closed wooden window, a clock ticking, faint paper shifts, a low oil lamp, old timber creaks, no voices, no music, no sudden events, even level, loop-friendly field recording aesthetic.",
+        "duration": 42,
+        "audio_format": "wav"
+      },
+      "post": {
+        "lufs": -30.5,
+        "tp": -3,
+        "lra": 6,
+        "loop": 2
+      }
+    },
+    {
+      "id": "ledger",
+      "layer": "ambience",
+      "gain": 0.6,
+      "caption": "灯下纸页",
+      "endpoint": "sonilo/v1.1/text-to-sound-effects",
+      "input": {
+        "prompt": "Continuous 42-second naturalistic room tone inside a 1931 inn accounting room at night. A steady quiet bed throughout: soft rain on a wooden window, constant low oil-lamp hum, continuous room air and faint old timber creaks, with sparse dry paper rustles distributed evenly across the whole take. No silence, no long gaps, no loud transients, no voices, no music, even level, loop-friendly field recording aesthetic.",
+        "duration": 42,
+        "audio_format": "wav"
+      },
+      "post": {
+        "lufs": -30.5,
+        "tp": -3,
+        "lra": 6,
+        "loop": 2
+      }
+    }
+  ]
+}

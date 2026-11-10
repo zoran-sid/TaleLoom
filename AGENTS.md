@@ -15,7 +15,7 @@
 - 网页目标：Pyodide 在浏览器 Web Worker 中复用 Python 核心；Cloudflare Workers Static Assets 托管。GitHub 推送由 Workers Builds 自动检查、构建、部署，main 正式发布，develop／成员分支预览。网页运行时与构建依赖单独管理，不能成为桌面依赖。
 - 成员：YHT、ZQO、ZRS、ZC、LQ。文档只用缩写，不写全名和学号。
 - 剧本内容全部原创。剧本杀资料只借鉴玩法机制，不改编情节、人物或文字。
-- 《未结的账》按 2026-11-10 调整为剧情选择推进：取消交互核验，发现与对质融入场景；保留人物反应和五种结局，不设中途失败。九处分支已确认，现有音画保留，外部素材为后续增强。以 `stories/film/fog_harbor_ledger/README.md` 为准。
+- 《未结的账》按 2026-11-10 调整为剧情选择推进：取消交互核验，发现与对质融入场景；保留人物反应和五种结局，不设中途失败。九处分支已确认。画面保留现有方案；序章与第一章已加入三条原创配乐和五条环境声，账目调查 C01 保留三条小样，周文、阿芸、顾先生各有一句角色配音，其余场景沿用 Web Audio 合成声。以 `stories/film/fog_harbor_ledger/README.md` 和 `docs/audio-direction.md` 为准。
 
 ## 3 写代码的规则
 

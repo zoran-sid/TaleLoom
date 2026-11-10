@@ -1,10 +1,14 @@
 /**
- * 影像模式的声音：全部由 WebAudio 实时合成，不加载音频文件。负责人：ZC（样片）。
+ * 影像模式声音：现有 Web Audio 合成音作为降级层，审核过的录音素材可按剧情叠加。负责人：ZC。
  *
  * 浏览器要求用户点击后才能出声，所以 start() 必须在点击事件里调用。
  * 页面转入后台时暂停整个音频环境并停掉周期性的拟音，回来时再接上，避免积压后叠加播放。
  * 重要的声音通过 onCaption 回调给出文字说明，听不见时线索仍然完整。
  */
+import { SampledLayers } from './audio-layers.js';
+import { AUDIO_ASSETS } from './audio-assets.js';
+import { ambienceLabel, musicLabel, PROCEDURAL_AMBIENCE, PROCEDURAL_MUSIC, preloadFor } from './audio-cues.js';
+import { voiceFor, voicesForScene } from './voice-cues.js';
 
 // 环境声的文字说明，切换时显示一次。
 const AMBIENCE_TEXT = {
@@ -57,6 +61,8 @@ export class Sound {
     this.hidden = false;
     this.onCaption = null;
     this.music = null;          // 当前配乐 { name, gain, timer, step }
+    this.samples = null;
+    this.narrativeVersion = 0;
     document.addEventListener('visibilitychange', () => (document.hidden ? this.suspend() : this.resume()));
   }
 
@@ -77,6 +83,11 @@ export class Sound {
     this.master = this.ctx.createGain();
     this.master.gain.value = this.level();
     this.master.connect(this.ctx.destination);
+    this.procedural = this.ctx.createGain();
+    this.procedural.gain.value = 1;
+    this.procedural.connect(this.master);
+    this.samples = new SampledLayers(this.ctx, this.master, AUDIO_ASSETS);
+    this.samples.duckTargets = [this.procedural.gain];
     const rate = this.ctx.sampleRate;
     this.noise = this.ctx.createBuffer(1, rate * 3, rate);
     const data = this.noise.getChannelData(0);
@@ -133,7 +144,7 @@ export class Sound {
   setAmbience(name) {
     if (!this.ctx || name === this.current) return;
     this.current = name;
-    const preset = AMBIENCE[name] || AMBIENCE.generic;
+    const preset = name ? AMBIENCE[name] || AMBIENCE.generic : null;
     this.preset = preset;
     if (AMBIENCE_TEXT[name]) this.caption(`环境声：${AMBIENCE_TEXT[name]}`);
     const now = this.ctx.currentTime;
@@ -143,7 +154,9 @@ export class Sound {
       const old = this.bed;
       old.gain.gain.setTargetAtTime(0, now, 0.5);
       setTimeout(() => old.stop(), 3000);
+      this.bed = null;
     }
+    if (!preset) return;
     const gain = this.ctx.createGain();
     gain.gain.setValueAtTime(0, now);
     gain.gain.setTargetAtTime(preset.level, now, 0.8);
@@ -153,7 +166,7 @@ export class Sound {
     const source = this.ctx.createBufferSource();
     source.buffer = this.noise;
     source.loop = true;
-    source.connect(filter).connect(gain).connect(this.master);
+    source.connect(filter).connect(gain).connect(this.procedural);
     source.start();
     const nodes = [source];
     if (preset.swell) {
@@ -190,7 +203,7 @@ export class Sound {
     const gain = this.ctx.createGain();
     gain.gain.setValueAtTime(level, now);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + seconds);
-    source.connect(filter).connect(gain).connect(this.master);
+    source.connect(filter).connect(gain).connect(this.procedural);
     source.start(now, Math.random() * 2, seconds + 0.02);
   }
 
@@ -206,7 +219,7 @@ export class Sound {
     gain.gain.setValueAtTime(0.0001, now);
     gain.gain.exponentialRampToValueAtTime(0.035, now + 0.02);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.36);
-    osc.connect(gain).connect(this.master);
+    osc.connect(gain).connect(this.procedural);
     osc.start(now);
     osc.stop(now + 0.4);
   }
@@ -224,7 +237,7 @@ export class Sound {
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.value = 380;
-    filter.connect(gain).connect(this.master);
+    filter.connect(gain).connect(this.procedural);
     for (const [hz, level] of [[61.7, 1], [62.4, 1], [123.5, 0.3]]) {
       const osc = this.ctx.createOscillator();
       const part = this.ctx.createGain();
@@ -247,7 +260,7 @@ export class Sound {
       osc.frequency.value = hz;
       gain.gain.setValueAtTime(level, now);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.2);
-      osc.connect(gain).connect(this.master);
+      osc.connect(gain).connect(this.procedural);
       osc.start(now);
       osc.stop(now + 2.3);
     }
@@ -263,7 +276,7 @@ export class Sound {
     osc.frequency.exponentialRampToValueAtTime(38, now + 0.4);
     gain.gain.setValueAtTime(0.22, now);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
-    osc.connect(gain).connect(this.master);
+    osc.connect(gain).connect(this.procedural);
     osc.start(now);
     osc.stop(now + 0.55);
     this.burst(0.08, 'lowpass', 300, 0.12);
@@ -281,7 +294,7 @@ export class Sound {
     osc.frequency.exponentialRampToValueAtTime(endHz, now + seconds);
     gain.gain.setValueAtTime(level, now);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + seconds);
-    osc.connect(gain).connect(this.master);
+    osc.connect(gain).connect(this.procedural);
     osc.start(now);
     osc.stop(now + seconds + 0.05);
   }
@@ -342,10 +355,59 @@ export class Sound {
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.value = 1400;
-    gain.connect(filter).connect(this.master);
+    gain.connect(filter).connect(this.procedural);
     this.music = { name, preset, gain, timer: null, step: 0 };
     this.caption(`配乐：${preset.text}`);
     this.playMusic(this.music);
+  }
+
+  /** 按引擎快照选定的声音意图播放；录音失败时继续使用现有合成声。 */
+  setNarrativeCue(cue) {
+    if (!this.ctx || !cue) return;
+    const version = ++this.narrativeVersion;
+    const music = cue.music;
+    const ambience = cue.ambience;
+    if (this.samples.active.bgm?.id !== music) this.setMusic(PROCEDURAL_MUSIC[music] || 'study');
+    if (this.samples.active.ambience?.id !== ambience) this.setAmbience(PROCEDURAL_AMBIENCE[ambience] || ambience);
+    for (const [layer, id] of [['bgm', music], ['ambience', ambience]]) {
+      const available = AUDIO_ASSETS[id]?.layer === layer ? id : null;
+      const already = this.samples.active[layer]?.id === available;
+      this.samples.setBed(layer, available).then((played) => {
+        if (version !== this.narrativeVersion || !played || !available || already) return;
+        if (layer === 'bgm') {
+          this.setMusic(null);
+          this.caption(`配乐：${musicLabel(music)}`);
+        } else {
+          this.setAmbience(null);
+          this.caption(`环境声：${ambienceLabel(ambience)}`);
+        }
+      });
+    }
+  }
+
+  /** 玩家阅读前一场景时，后台准备下一场景会用到的素材。 */
+  preloadNarrativeFor(view) {
+    if (!this.samples) return;
+    const ids = [...preloadFor(view), ...voicesForScene(view)].filter((id) => AUDIO_ASSETS[id]);
+    if (ids.length) void this.samples.preload(ids);
+  }
+
+  /** 当前文字段落若有对应的原句录音，播放该角色一句。 */
+  playVoiceFor(view, page) {
+    const id = voiceFor(view, page);
+    if (id && this.samples) void this.samples.playVoice(id);
+  }
+
+  stopVoice() {
+    this.samples?.stopVoice();
+  }
+
+  /** 引擎场景事件的拟音；录音不可用时使用已有翻纸声。 */
+  playNarrativeSfx(id) {
+    if (!this.ctx || !id) return;
+    if (id === 'ledger_paper') this.caption('翻开账页');
+    if (AUDIO_ASSETS[id]) this.samples.playSfx(id).then((played) => { if (!played && id === 'ledger_paper') this.paper(); });
+    else if (id === 'ledger_paper') this.paper();
   }
 
   playMusic(music) {

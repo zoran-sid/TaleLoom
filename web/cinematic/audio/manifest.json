@@ -1,0 +1,100 @@
+{
+  "assets": [
+    {
+      "id": "harbor_arrival",
+      "layer": "bgm",
+      "endpoint": "fal-ai/stable-audio-25/text-to-audio",
+      "request_id": "01a1c55b-1ac8-7870-acb6-05ad19d7b10e",
+      "seed": 19311001,
+      "duration": 52.0,
+      "lufs": -24.5,
+      "peak": -4.3,
+      "sha256": "df384da07f574090a16e23a2a0ffd580b0df725d155da7f06097e8521cfd52b6",
+      "generated_at": "2026-11-10T12:10:00+00:00"
+    },
+    {
+      "id": "inn_night",
+      "layer": "bgm",
+      "endpoint": "fal-ai/stable-audio-25/text-to-audio",
+      "request_id": "01a1c55b-5ce2-7173-81a9-d0abea7746f6",
+      "seed": 19311002,
+      "duration": 52.0,
+      "lufs": -24.4,
+      "peak": -11.6,
+      "sha256": "a1146211a347e595166b55acd1c45f5a5e740ee2660152162b33b4478f7e5cbe",
+      "generated_at": "2026-11-10T12:10:01+00:00"
+    },
+    {
+      "id": "discovery",
+      "layer": "bgm",
+      "endpoint": "fal-ai/stable-audio-25/text-to-audio",
+      "request_id": "01a1c55b-8db4-7e33-8651-b95bcf9a5641",
+      "seed": 19311003,
+      "duration": 52.0,
+      "lufs": -24.4,
+      "peak": -7.1,
+      "sha256": "9f53dc317edbf4109f20ec3f6e64765f833eef12451729af29ec958eef2ed8a2",
+      "generated_at": "2026-11-10T12:10:02+00:00"
+    },
+    {
+      "id": "harbor",
+      "layer": "ambience",
+      "endpoint": "sonilo/v1.1/text-to-sound-effects",
+      "request_id": "01a1c55b-c7b5-7f53-9ccb-3e44a763b86d",
+      "seed": null,
+      "duration": 39.98,
+      "lufs": -31.0,
+      "peak": -9.8,
+      "sha256": "b71743b5870d53bb08891e1385b1e46a0953b7ae31c1eb35c6a6f877b83f188c",
+      "generated_at": "2026-11-10T12:10:03+00:00"
+    },
+    {
+      "id": "lobby",
+      "layer": "ambience",
+      "endpoint": "sonilo/v1.1/text-to-sound-effects",
+      "request_id": "01a1c55c-431f-7383-9044-8f93d97a994c",
+      "seed": null,
+      "duration": 39.98,
+      "lufs": -31.0,
+      "peak": -12.6,
+      "sha256": "85e4676050901a824bbda39c1c93502e25ae792a7fc45fef5953bff6ccbed058",
+      "generated_at": "2026-11-10T12:10:04+00:00"
+    },
+    {
+      "id": "dinner",
+      "layer": "ambience",
+      "endpoint": "sonilo/v1.1/text-to-sound-effects",
+      "request_id": "01a1c55c-80f3-7872-846f-ce2a8a5d3519",
+      "seed": null,
+      "duration": 39.98,
+      "lufs": -30.9,
+      "peak": -5.3,
+      "sha256": "5492cc49bf6771cce9682b0cde2c450510bf26f396e500cfddc05d7952db2258",
+      "generated_at": "2026-11-10T12:10:05+00:00"
+    },
+    {
+      "id": "office",
+      "layer": "ambience",
+      "endpoint": "sonilo/v1.1/text-to-sound-effects",
+      "request_id": "01a1c55c-acf4-7850-a3d5-c9e220cf1993",
+      "seed": null,
+      "duration": 39.98,
+      "lufs": -33.2,
+      "peak": -3.5,
+      "sha256": "55591d09876d50d4ef426e429335f625e12ffcc2b82f4e75618ffb825ac2af88",
+      "generated_at": "2026-11-10T12:10:06+00:00"
+    },
+    {
+      "id": "ledger",
+      "layer": "ambience",
+      "endpoint": "sonilo/v1.1/text-to-sound-effects",
+      "request_id": "01a1c567-66e8-7fd3-b82c-f86c20429ce4",
+      "seed": null,
+      "duration": 39.98,
+      "lufs": -30.9,
+      "peak": -12.2,
+      "sha256": "bd41a6d73494bbaad4c773b12ea4f34f776b7401f518b7ce7b668f59dd13a573",
+      "generated_at": "2026-11-10T12:21:05+00:00"
+    }
+  ]
+}

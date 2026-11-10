@@ -18,6 +18,7 @@ import { GameClient } from '../runtime/client.js';
 import { CinematicSaveStore } from '../storage/cinematic.js';
 import { Stage, hasScene } from './stage.js';
 import { Sound } from './sound.js';
+import { cueFor, entrySfxFor } from './audio-cues.js';
 import { Desk, unitFrom } from './units.js';
 import { readingPages } from './narrative.js';
 
@@ -182,11 +183,14 @@ function waitForAdvance() {
 async function type(text, speaker = '') {
   for (const page of readingPages(text, { storyId: STORY_ID, sceneId: view?.scene_id, fallbackSpeaker: speaker })) {
     renderText(page, true);
+    sound.playVoiceFor(view, page);
     await waitForAdvance();
+    sound.stopVoice();
   }
 }
 
 function clearSubtitle() {
+  sound.stopVoice();
   $('subtitle').hidden = true;
   $('subtitle').replaceChildren();
 }
@@ -313,6 +317,12 @@ function musicFor(name, options) {
 function setArt(current) {
   const { name, options } = artFor(current);
   stage.show(name, options);
+  const cue = cueFor(current);
+  if (cue) {
+    sound.setNarrativeCue(cue);
+    sound.preloadNarrativeFor(current);
+    return;
+  }
   sound.setAmbience(AMBIENCE[name] || 'generic');
   sound.setMusic(musicFor(name, options));
 }
@@ -383,6 +393,7 @@ async function enterScene(next) {
   await hold(1800);
   hideCard();
   await stage.fade(0, T(1300));
+  sound.playNarrativeSfx(entrySfxFor(next));
   for (const line of chunks(next.text)) await type(line);
   clearSubtitle();
 }
@@ -425,8 +436,12 @@ async function ending(next) {
   await stage.fade(1, T(1200));
   const [art, options] = THEME.endings[next.ending_id] || (failed ? THEME.failureEnding : THEME.defaultEnding);
   stage.show(art, options);
-  sound.setAmbience(options.storm ? 'storm' : art === 'harbor' ? 'ending' : failed ? 'tension' : AMBIENCE[art] || 'ending');
-  sound.setMusic(SHIP ? null : ['truth', 'dawn'].includes(next.ending_id) ? 'dawn' : 'dark');
+  const cue = cueFor(next);
+  if (cue) sound.setNarrativeCue(cue);
+  else {
+    sound.setAmbience(options.storm ? 'storm' : art === 'harbor' ? 'ending' : failed ? 'tension' : AMBIENCE[art] || 'ending');
+    sound.setMusic(SHIP ? null : ['truth', 'dawn'].includes(next.ending_id) ? 'dawn' : 'dark');
+  }
   if (failed) stage.shake(900, 14);
   await stage.fade(0, T(1800));
   for (const line of chunks(next.text)) await type(line);

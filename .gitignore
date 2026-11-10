@@ -20,3 +20,7 @@ node_modules/
 dist/
 playwright-report/
 test-results/
+# 本机生成音频使用的 fal 凭据，不入库
+.fal-key
+.env
+web/cinematic/audio/raw/
