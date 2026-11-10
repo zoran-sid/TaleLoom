@@ -11,7 +11,7 @@
 <body>
   <main class="theater">
     <div class="stagebox">
-      <div class="frame" id="frame">
+      <div class="frame" id="frame" tabindex="0" aria-label="剧情画面，点击或按空格继续">
         <canvas id="stage" aria-hidden="true"></canvas>
         <div class="grain" id="grain" aria-hidden="true"></div>
         <div class="vignette" aria-hidden="true"></div>
@@ -21,6 +21,7 @@
         <div class="card" id="card" hidden></div>
         <aside class="clue" id="clue" aria-live="polite" hidden></aside>
         <div class="subtitle" id="subtitle" aria-live="polite" hidden></div>
+        <div class="choices" id="choices" hidden></div>
         <div class="meters" id="meters" hidden></div>
         <div class="hud">
           <span class="chances" id="chances" title="还可以退回上一个选择 3 次">机会 ●●●</span>
@@ -34,7 +35,6 @@
           <button class="begin secondary" id="resume" type="button" hidden>从存档点继续</button>
         </div>
       </div>
-      <div class="choices" id="choices" hidden></div>
       <aside class="desk" id="desk" aria-label="调查台" hidden></aside>
       <aside class="notebook" id="notebook" aria-label="随身笔记" hidden>
         <header class="nb-header">
@@ -46,14 +46,14 @@
       </aside>
     </div>
     <nav class="controls" aria-label="播放控制">
-      <button id="skip" type="button">跳过字幕 <kbd>空格</kbd></button>
+      <button id="skip" type="button">继续剧情 <kbd>空格</kbd></button>
       <button id="notes-btn" type="button">线索笔记 <kbd>N</kbd></button>
       <button id="mute" type="button" aria-pressed="false">声音：开</button>
       <label class="volume">音量 <input id="volume" type="range" min="0" max="100" step="5" value="80"></label>
       <button id="restart" type="button">重新开始</button>
       <a href="/">返回文字版</a>
     </nav>
-    <p class="note-line">画面与声音由代码实时生成；剧情、选项与核对结果来自同一个 Python 引擎。数字键 1–9 可直接选择，重要声音会配文字说明。</p>
+    <p class="note-line">点击画面或按空格继续剧情；数字键 1–9 选择，N 查看笔记。重要声音配有文字说明。</p>
   </main>
   <script type="module" src="/web/cinematic/app.js"></script>
 </body>

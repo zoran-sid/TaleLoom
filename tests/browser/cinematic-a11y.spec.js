@@ -102,7 +102,7 @@ test('影像模式：手机竖屏无横向溢出，选项不压字幕', async ({
     const choices = document.querySelector('#choices').getBoundingClientRect();
     return {
       overflowX: document.documentElement.scrollWidth > innerWidth,
-      overlap: choices.top < sub.bottom && sub.height > 0,
+      overlap: choices.top < sub.bottom && choices.bottom > sub.top && sub.height > 0,
       choiceHeights: [...document.querySelectorAll('#choices button')].map((b) => b.getBoundingClientRect().height),
     };
   });
