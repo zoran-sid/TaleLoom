@@ -40,10 +40,10 @@ class ExplorationTest(unittest.TestCase):
     def test_walkthrough_parses_seed_and_rejects_bad_seed(self):
         with tempfile.TemporaryDirectory() as folder:
             p = Path(folder) / 'route.txt'
-            p.write_text('# seed: 42\n# expect: out\n1\n开门\n')
+            p.write_text('# seed: 42\n# expect: out\n1\n开门\n', encoding='utf-8')
             wt = replay.load_walkthrough(p)
             self.assertEqual(wt.seed, 42)
             self.assertTrue(replay.check(mini_story(), wt).ok)
-            p.write_text('# seed: bad\n1\n')
+            p.write_text('# seed: bad\n1\n', encoding='utf-8')
             with self.assertRaisesRegex(ValueError, 'seed'):
                 replay.load_walkthrough(p)

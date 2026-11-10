@@ -7,7 +7,8 @@
   "meta": {
     "owner": "LQ",
     "genre": "线性资源冒险 · 影像版",
-    "status": "第二轮：双资源、五结局、三处关键节点"
+    "status": "第二轮：双资源、五结局、三处关键节点",
+    "linear": true
   },
   "vars": {
     "oxygen": 12,
@@ -133,7 +134,8 @@
             }
           ]
         }
-      ]
+      ],
+      "art": "bay"
     },
     {
       "id": "corridor_route",
@@ -285,7 +287,9 @@
         {
           "say": "【存档点】密封完成 · 出发前"
         }
-      ]
+      ],
+      "art": "corridor",
+      "checkpoint": "密封完成 · 出发前"
     },
     {
       "id": "toolroom_kit",
@@ -428,7 +432,8 @@
             }
           ]
         }
-      ]
+      ],
+      "art": "toolroom"
     },
     {
       "id": "energy_reserve",
@@ -601,7 +606,9 @@
         {
           "say": "【存档点】供电余量 · 能源舱"
         }
-      ]
+      ],
+      "art": "energy",
+      "checkpoint": "供电余量 · 能源舱"
     },
     {
       "id": "comms_signal",
@@ -785,7 +792,8 @@
             }
           ]
         }
-      ]
+      ],
+      "art": "comms"
     },
     {
       "id": "observatory_echo",
@@ -922,7 +930,8 @@
             }
           ]
         }
-      ]
+      ],
+      "art": "observatory"
     },
     {
       "id": "comms_transmit",
@@ -1062,7 +1071,8 @@
             }
           ]
         }
-      ]
+      ],
+      "art": "comms"
     },
     {
       "id": "airlock_seal",
@@ -1220,7 +1230,9 @@
         {
           "say": "【存档点】撤离准备 · 气闸前"
         }
-      ]
+      ],
+      "art": "airlock",
+      "checkpoint": "撤离准备 · 气闸前"
     },
     {
       "id": "airlock_emergency",
@@ -1330,7 +1342,8 @@
             }
           ]
         }
-      ]
+      ],
+      "art": "airlock"
     },
     {
       "id": "space_depart",
@@ -1467,7 +1480,8 @@
             }
           ]
         }
-      ]
+      ],
+      "art": "space"
     },
     {
       "id": "space_escape",
@@ -1475,8 +1489,10 @@
       "text": "逃生舱划过星光。你保住了自己的生命，也记住了那句没有解释完的警告。返航信标越来越近，回声留在了身后。",
       "ending": {
         "id": "escape",
-        "title": "活着回家"
-      }
+        "title": "活着回家",
+        "kind": "normal"
+      },
+      "art": "space"
     },
     {
       "id": "space_truth",
@@ -1484,8 +1500,10 @@
       "text": "地球站回复：“原始记录与船员姓名已保存。”你把逃生舱对准归航方向。那些没有被写进日志的人，终于等到了一位愿意听完的值班员。",
       "ending": {
         "id": "truth",
-        "title": "有人听见"
-      }
+        "title": "有人听见",
+        "kind": "normal"
+      },
+      "art": "space"
     },
     {
       "id": "space_rescue",
@@ -1493,8 +1511,10 @@
       "text": "接驳船按照定位靠近，保持着足够安全的距离。你带着仍有余量的面罩进入接驳舱。没有解开回声的谜，也是一种把生命交给明天的选择。",
       "ending": {
         "id": "rescue",
-        "title": "接驳灯"
-      }
+        "title": "接驳灯",
+        "kind": "normal"
+      },
+      "art": "space"
     },
     {
       "id": "bay_failure_oxygen",
@@ -1502,8 +1522,10 @@
       "text": "最后一格氧气消失，面罩不再响起气流声。资源耗尽使任务立即失败。回到上一个选择或较早的存档点，重新安排补给与路线。",
       "ending": {
         "id": "fail_oxygen",
-        "title": "氧气耗尽"
-      }
+        "title": "氧气耗尽",
+        "kind": "failure"
+      },
+      "art": "bay"
     },
     {
       "id": "energy_failure_power",
@@ -1511,8 +1533,10 @@
       "text": "备用电量降到零。氧气还在，控制系统却已停止响应：这次任务因为供电耗尽而失败。回退后保留供电余量，别把过载当作修复。",
       "ending": {
         "id": "fail_power",
-        "title": "电量耗尽"
-      }
+        "title": "电量耗尽",
+        "kind": "failure"
+      },
+      "art": "energy"
     }
   ]
 }

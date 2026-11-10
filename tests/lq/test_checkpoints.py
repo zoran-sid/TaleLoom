@@ -7,6 +7,7 @@ from unittest.mock import patch
 from taleloom.storage import FileSaveStore, CheckpointStore
 from taleloom.session_factory import create_session
 from taleloom.ui_contract import StorageError, ActionRequest
+from taleloom.loader import parse_story
 from tests.fixtures import mini_story
 
 
@@ -33,6 +34,54 @@ class CheckpointStoreTest(unittest.TestCase):
         other.import_bundle(bundle)
         self.assertEqual(other.read_entries(), entries)
         self.assertTrue(self.session.restore(entries[0]['save']).ok)
+
+    def test_reopening_file_and_checkpoint_bundle_preserves_used_rewind_budget(self):
+        story = parse_story({
+            'format_version': 1, 'id': 'rewind', 'title': '回退存档测试', 'start': 'a',
+            'scenes': [
+                {'id': 'a', 'title': '起点', 'text': '', 'checkpoint': '起点',
+                 'choices': [{'id': 'next', 'text': '前进', 'goto': 'b'}]},
+                {'id': 'b', 'title': '门前', 'text': '', 'checkpoint': '门前',
+                 'choices': [{'id': 'fail', 'text': '冒险', 'goto': 'f'}]},
+                {'id': 'f', 'title': '失败', 'text': '',
+                 'ending': {'id': 'fail_test', 'title': '失败', 'kind': 'failure'}},
+            ],
+        })
+        session = create_session(story, seed=6181, rewind_limit=2)
+        view = session.start().view
+        view = session.dispatch(ActionRequest('choice:next', view.revision)).view
+        for _ in range(2):
+            view = session.dispatch(ActionRequest('choice:fail', view.revision)).view
+            result = session.rewind(view.revision)
+            self.assertTrue(result.ok)
+            view = result.view
+        result = session.restore_checkpoint('b', view.revision)
+        self.assertTrue(result.ok)
+        payload = session.export_save()
+        self.files.write('rewind-quick', payload)
+        store = CheckpointStore(self.files, story.id)
+        store.write_entries([{'label': '门前', 'scene': '门前', 'turn': result.view.turn,
+                              'at': 1, 'save': payload}])
+        fresh = CheckpointStore(FileSaveStore(self.temp.name), story.id)
+        imported = CheckpointStore(FileSaveStore(Path(self.temp.name) / 'imported'), story.id)
+        imported.import_bundle(fresh.export_bundle())
+        copies = [FileSaveStore(self.temp.name).read('rewind-quick'),
+                  fresh.read_entries()[0]['save'], imported.read_entries()[0]['save']]
+        for saved in copies:
+            restored = create_session(story, seed=0, rewind_limit=9)
+            restored.start()
+            result = restored.restore(saved)
+            self.assertTrue(result.ok)
+            view = result.view
+            self.assertEqual((view.mistakes, view.rewinds, view.rewind_limit, view.rewinds_remaining),
+                             (2, 1, 2, 0))
+            self.assertEqual([p.id for p in restored.list_checkpoints()], ['a', 'b'])
+            view = restored.dispatch(ActionRequest('choice:fail', view.revision)).view
+            self.assertEqual(restored.rewind(view.revision).error_code, 'rewind_exhausted')
+            result = restored.restore_checkpoint('a', view.revision)
+            self.assertTrue(result.ok)
+            self.assertEqual([p.id for p in restored.list_checkpoints()], ['a'])
+            self.assertEqual(result.view.rewinds_remaining, 0)
 
     def test_invalid_bundle_and_failed_write_keep_old_checkpoint(self):
         self.store.write_entries([self.entry])
