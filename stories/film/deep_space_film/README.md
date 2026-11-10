@@ -44,7 +44,8 @@ flowchart TD
 - 等到氧气耗尽、未密封就打开外舱门，使氧气归零；切断备用电源或持续过载，使电量归零。立即进入 `fail_oxygen` / `fail_power`，不会以资源 0 的普通场景继续游戏。
 - 接入独立电芯恢复生命维持时，先支付该选择的正常成本，再增加氧气和电量各 6；电芯消耗。工具包保留用于气闸修复。
 - 查看笔记/快照不扣资源；本版没有概率事件，同一条选择路线结果固定。脚本仍声明 seed=6181，兼容回放工具。
-- 失败惩罚暂沿用播放器：`fail_` 前缀；回到上一个选择消耗一次机会，全局 3 次。回到关键节点不扣机会，但后续进度/节点作废。规则由 ZC 播放器及后续 ZQO 会话实现，剧本不私设第二套机会计数。
+- 失败结局明确声明 `ending.kind: "failure"`，同时保留 `fail_` ID 兼容旧端；普通结局声明 `normal`。回到上一个选择消耗一次机会，全局默认 3 次；回到关键节点不扣机会，但后续进度/节点作废。规则由 ZQO 正式会话实现，剧本不私设第二套机会计数。
+- `meta.linear: true` 启用无回路校验；每个场景的 `art` 声明现有飞船画面键，与场景 ID 的前缀一致，无需新增画面。
 
 ## 五个结局及通关脚本
 
@@ -60,13 +61,13 @@ flowchart TD
 
 ## 三个关键节点
 
-| 场景 | 临时存档点名称 | 保留的决策 |
+| 场景 | 存档点名称 | 保留的决策 |
 | --- | --- | --- |
 | `corridor_route` | 密封完成 · 出发前 | 是否搜集工具与电芯 |
 | `energy_reserve` | 供电余量 · 能源舱 | 是否恢复生命维持，如何分配供电 |
 | `airlock_seal` | 撤离准备 · 气闸前 | 可靠修复或耗电旁路 |
 
-目前使用 `on_enter: [{"say": "【存档点】名称"}]`。名称唯一；后续 YHT/ZQO 正式字段 contract 合入时再迁移，不预先添加尚未支持的 checkpoint/art/ending.kind。
+三个节点均声明正式 `checkpoint` 字段，名称唯一。同步保留同名的 `on_enter: [{"say": "【存档点】名称"}]` 提示供仍解析提示的桌面控制器兼容；正式会话优先读取字段，不会多建一个存档点。
 
 ## 存储接入与跨端
 
@@ -78,7 +79,9 @@ LQ 后端已在 `web/storage/cinematic.js` 和 `taleloom/storage.py` 提供同�
 
 网页：`CinematicSaveStore(storyId).readEntries()/writeEntries(entries)`；桌面：`CheckpointStore(FileSaveStore(folder), story_id).read_entries()/write_entries(entries)`。两者支持容器导入导出；每个 entry.save 也能单独交给会话恢复。一次原子替换整个容器，用于回退后裁剪，保留旧档并报告写入失败。浏览器兼容旧影像存档键，迁移失败时仍可读取旧数据。
 
-**播放器调用、通用集成/浏览器测试由 ZC 在 [issue #26](https://github.com/zoran-sid/TaleLoom/issues/26) 接入。** LQ 遵照本轮“只改自己的文件”，未修改 `web/cinematic/`、桌面 GUI 或共享类型；不能把后端测试通过记作影像页面已经使用正式存储。
+ZC 播放器现已调用 `CinematicSaveStore` 与正式会话的存档点/回退接口，桌面已使用文件存储。标准 v1 存档原样携带 `state.ext.session`，包括已使用机会、回退次数、节点和选择前状态；存储不会重置已写入的次数。LQ 以构造剧本验证文件槽、节点容器及恢复后的次数与分支裁剪，并以 JS 存储测试验证嵌套数据完整保留。
+
+**播放器错误提示、真实深空浏览器回归和 CI 探索接入继续由 ZC 在 [issue #26](https://github.com/zoran-sid/TaleLoom/issues/26) 跟进。** LQ 遵照“只改自己的文件”，不修改 `web/cinematic/`、桌面控制器或共享类型；实际页面验收结果写在 PR，不以存储单元测试代替。
 
 ## 验证入口
 
@@ -90,4 +93,4 @@ python -B -m unittest discover -s tests/lq -t .
 npm run test:storage
 ```
 
-探索器现枚举文字版和 `stories/film/`。真实影像集成测试的雾港硬编码及 CI 探索目录由 #26 交 ZC 修正，结果以 PR 的实际验证记录为准，不跳过失败检查。
+探索器现枚举文字版和 `stories/film/`。真实影像集成测试的雾港硬编码已由 ZC 修正；CI 探索目录与深空浏览器回归仍见 #26，结果以 PR 的实际验证记录为准，不跳过失败检查。
