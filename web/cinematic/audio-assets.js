@@ -11,6 +11,7 @@ import a02 from './audio/a02_door.mp3';
 import a03 from './audio/a03_lamp.mp3';
 import a04 from './audio/a04_window.mp3';
 import seed from './seed-runtime.json';
+import legacy from './legacy-cues.json';
 
 const seedFiles = import.meta.glob('./audio/seed/*.mp3', { eager: true, query: '?url', import: 'default' });
 const seedUrl = (file) => seedFiles[`./audio/seed/${file}`];
@@ -21,7 +22,7 @@ export const SCENE_AUDIO = {
   a01_found: a01, a02_door: a02, a03_lamp: a03, a04_window: a04,
 };
 
-export const SCENE_CUES = {};
+export const SCENE_CUES = { ...legacy.scenes };
 export const CHOICE_AUDIO = {};
 export const AMBIENCE_AUDIO = {};
 for (const [sceneId, asset] of Object.entries(seed.scenes)) {
