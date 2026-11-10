@@ -9,12 +9,13 @@
     "prepare:web": "python3 -B tools/build_web.py",
     "dev": "npm run prepare:web && vite --host 127.0.0.1",
     "build": "npm run prepare:web && cf build",
-    "test:web": "npm run test:storage && playwright test",
+    "test:web": "npm run test:storage && npm run test:cinematic && playwright test",
     "check:deploy": "python3 -B tools/check_web.py && npm run build && npm run test:web && cf deploy --prebuilt --mode production --dry-run",
     "build:cloudflare": "npm ci && python3 -B tools/check_web.py && npm run build && cf deploy --prebuilt --mode production --dry-run",
     "deploy": "cf deploy --prebuilt --mode production",
     "deploy:preview": "cf previews deploy",
-    "test:storage": "node --test tests/lq/storage.test.mjs"
+    "test:storage": "node --test tests/lq/storage.test.mjs",
+    "test:cinematic": "node --test tests/lq/narrative.test.mjs"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "2.0.0-beta.v.12",

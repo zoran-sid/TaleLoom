@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './cinematic-driver.js';
 
 // ZRS 发现的问题（已由 ZC 修复）：选项的键盘焦点曾与静息态完全一致。
 // 现在 .choice:focus-visible 有一圈琥珀色轮廓，与鼠标悬停区分开。
