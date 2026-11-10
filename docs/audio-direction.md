@@ -1,6 +1,6 @@
 # 《未结的账》声音设计
 
-本方案以 Python 会话快照的 `story_id`、`scene_id`、`ending_id` 为声音事件依据。`web/cinematic/audio-cues.js` 是可扩展的剧本声音映射；`sound.js` 保留原有 Web Audio 合成、静音、音量记忆、后台暂停和字幕。录音素材统一登记在 `audio-assets.js`，通过独立的 `audio-layers.js` 播放。资源加载失败时继续播放原有合成声。未改动动画、Canvas 或人物 UI。
+本方案以 Python 会话快照的 `story_id`、`scene_id`、`ending_id` 为声音事件依据。逐场景的选角、音乐与对白提示词见 [序章与第一章声音提示词](audio-prompt-fog-harbor.md)。`web/cinematic/audio-cues.js` 是可扩展的剧本声音映射；`sound.js` 保留原有 Web Audio 合成、静音、音量记忆、后台暂停和字幕。录音素材统一登记在 `audio-assets.js`，通过独立的 `audio-layers.js` 播放。资源加载失败时继续播放原有合成声。未改动动画、Canvas 或人物 UI。
 
 ## 全剧情绪路线
 
