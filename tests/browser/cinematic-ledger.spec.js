@@ -145,7 +145,7 @@ test('声音：静音与音量会记住；转入后台时暂停，回来不叠�
   const before = await sound();
   expect(before.muted).toBe(true);
   expect(before.volume).toBeCloseTo(0.4);
-  expect(before.timers, '大堂有座钟的嘀嗒声').toBeGreaterThan(0);
+  expect(before.timers, '大堂使用录制环境声时不再叠加程序环境声').toBe(0);
   const hide = (hidden) => page.evaluate((value) => {
     Object.defineProperty(document, 'hidden', { configurable: true, get: () => value });
     document.dispatchEvent(new Event('visibilitychange'));
@@ -158,7 +158,8 @@ test('声音：静音与音量会记住；转入后台时暂停，回来不叠�
   expect((await sound()).timers, '回来后不叠加').toBe(before.timers);
   await hide(false);
   expect((await sound()).timers).toBe(before.timers);
-  expect(await page.evaluate(() => window.__caps.some((c) => c.includes('环境声')))).toBe(true);
+  await page.evaluate(() => window.__cinematic.sound.foghorn());
+  expect(await page.evaluate(() => window.__caps.some((c) => c.includes('雾笛')))).toBe(true);
   await page.reload();
   await expect(page.locator('#mute')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#volume')).toHaveValue('40');

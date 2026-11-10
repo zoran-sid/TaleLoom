@@ -1,9 +1,9 @@
 /**
- * 影像模式的配音轨：播放预生成的场景配音（Seed Audio 生成的 MP3）。
+ * 影像模式的配音轨：播放预生成的场景和选择反馈 MP3。
  *
- * 每个场景一个完整音频，里面旁白与对白的顺序和 readingPages 完全一致；
- * 进入场景时自动播放对应音频，换场、静音、打开笔记、重开或回退时停止。
- * 没有对应音频的场景（其他剧本或本剧后续幕次）静默跳过，不影响画面与文字。
+ * 每个录音覆盖一段完整文字，旁白与对白的顺序和 readingPages 一致；
+ * 字幕开始时播放对应音频；播放进度可驱动字幕翻页。
+ * 没有对应音频的文字保持手动阅读，不影响画面与剧情。
  *
  * 本文件只含 AudioTrack 类，不直接 import 音频，map 与 Audio 构造器均可注入，
  * 便于在 Node 中单元测试；真实的场景→音频映射见 audio-assets.js。
@@ -14,13 +14,15 @@ export class AudioTrack {
    * @param audioCtor 返回带 play/pause 的音频元素的工厂（可注入）
    * @param root 浏览器 window，用于能力检测与后台事件
    */
-  constructor({ map = {}, audioCtor = null, root = null } = {}) {
+  constructor({ map = {}, audioCtor = null, root = null, onProgress = null } = {}) {
     const win = root || (typeof window !== 'undefined' ? window : undefined);
     this.map = map;
     this.audioCtor = audioCtor || (win && typeof win.Audio === 'function' ? (src) => new win.Audio(src) : null);
+    this.onProgress = onProgress;
     this.supported = Boolean(this.audioCtor);
     this.enabled = true;   // 配音开关
     this.muted = false;    // 主静音联动
+    this.volume = 0.8;
     this.current = null;   // 当前场景 id
     this.el = null;        // 当前音频元素
     this.suspendedScene = null;
@@ -35,17 +37,25 @@ export class AudioTrack {
   /** 播放某场景的配音；同一场景不重复加载，无音频的场景停止当前播放。 */
   play(sceneId) {
     const src = this.map[sceneId];
-    if (!this.supported || !this.enabled || this.muted || !src) {
+    if (!this.supported || !src) {
       this.stop();
       return;
     }
     if (sceneId === this.current && this.el) {
-      this._safePlay();
+      if (this.enabled && !this.muted) this._safePlay();
+      return;
+    }
+    if (!this.enabled || this.muted) {
+      this.stop();
       return;
     }
     this.release();
     this.el = this.audioCtor(src);
+    this.el.volume = this.volume;
     this.current = sceneId;
+    this.progressListener = () => this.onProgress?.({ id: this.current, time: this.el?.currentTime || 0,
+      duration: this.el?.duration || 0 });
+    this.el.addEventListener?.('timeupdate', this.progressListener);
     this._safePlay();
   }
 
@@ -56,11 +66,44 @@ export class AudioTrack {
     if (result && typeof result.catch === 'function') result.catch(() => {});
   }
 
+  /** 监听当前音频达到指定比例；返回取消监听函数。未加载音频时由玩家手动翻页。 */
+  watchFraction(fraction, callback) {
+    const el = this.el;
+    if (!el || !Number.isFinite(fraction) || typeof el.addEventListener !== 'function') return () => {};
+    let finished = false;
+    const cleanup = () => {
+      finished = true;
+      el.removeEventListener('timeupdate', check);
+      el.removeEventListener('durationchange', check);
+      el.removeEventListener('ended', check);
+    };
+    const check = () => {
+      if (finished || this.el !== el || !Number.isFinite(el.duration) || el.duration <= 0) return;
+      if (el.ended || el.currentTime >= el.duration * fraction) {
+        cleanup();
+        callback();
+      }
+    };
+    el.addEventListener('timeupdate', check);
+    el.addEventListener('durationchange', check);
+    el.addEventListener('ended', check);
+    queueMicrotask(check);
+    return cleanup;
+  }
+
+  seekFraction(fraction) {
+    if (this.el && Number.isFinite(fraction) && Number.isFinite(this.el.duration) && this.el.duration > 0) {
+      this.el.currentTime = Math.min(this.el.duration, Math.max(0, fraction) * this.el.duration);
+    }
+  }
+
   release() {
     if (this.el) {
+      if (this.progressListener) this.el.removeEventListener?.('timeupdate', this.progressListener);
       try { this.el.pause(); } catch { /* 已释放 */ }
       this.el = null;
     }
+    this.progressListener = null;
     this.current = null;
   }
 
@@ -71,25 +114,31 @@ export class AudioTrack {
 
   setEnabled(enabled) {
     this.enabled = enabled;
-    if (!enabled) this.stop();
+    if (!enabled && this.el) this.el.pause();
+    else if (enabled && !this.muted) this._safePlay();
   }
 
   setMuted(muted) {
     this.muted = muted;
-    if (muted) this.stop();
+    if (muted && this.el) this.el.pause();
+    else if (!muted && this.enabled) this._safePlay();
+  }
+
+  setVolume(volume) {
+    this.volume = Math.min(1, Math.max(0, volume));
+    if (this.el) this.el.volume = this.volume;
   }
 
   suspend() {
-    // 记下场景，resume 时接着重播这一段。
     this.suspendedScene = this.current;
-    this.release();
+    if (this.el) this.el.pause();
   }
 
   resume() {
     if (this.suspendedScene) {
       const sceneId = this.suspendedScene;
       this.suspendedScene = null;
-      this.play(sceneId);
+      if (this.el && this.current === sceneId && this.enabled && !this.muted) this._safePlay();
     }
   }
 }

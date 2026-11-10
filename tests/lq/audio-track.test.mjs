@@ -6,9 +6,15 @@ function makeCtor() {
   const elements = [];
   const ctor = (src) => {
     const el = {
-      src, playCalls: 0, paused: true,
-      play: () => { el.playCalls += 1; return Promise.resolve(); },
+      src, playCalls: 0, paused: true, duration: 100, currentTime: 0, listeners: new Map(),
+      play: () => { el.playCalls += 1; el.paused = false; return Promise.resolve(); },
       pause: () => { el.paused = true; },
+      addEventListener: (name, fn) => {
+        if (!el.listeners.has(name)) el.listeners.set(name, new Set());
+        el.listeners.get(name).add(fn);
+      },
+      removeEventListener: (name, fn) => { el.listeners.get(name)?.delete(fn); },
+      emit: (name) => { for (const fn of el.listeners.get(name) || []) fn(); },
     };
     elements.push(el);
     return el;
@@ -84,26 +90,65 @@ test('配音关闭后不发声，重新开启才播放', () => {
   assert.equal(elements.length, 1);
 });
 
-test('主静音时停止且不播放', () => {
+test('主静音暂停配音，取消静音从原进度继续', () => {
   const { ctor, elements } = makeCtor();
   const t = new AudioTrack({ map: MAP, audioCtor: ctor });
   t.play('p01_dock');
+  elements[0].currentTime = 40;
   t.setMuted(true);
-  assert.equal(t.current, null);
+  assert.equal(t.current, 'p01_dock');
+  assert.equal(elements[0].paused, true);
   t.play('p01_dock');
   assert.equal(elements.length, 1); // 静音期间不再创建
+  t.setMuted(false);
+  assert.equal(elements[0].paused, false);
+  assert.equal(elements[0].currentTime, 40);
 });
 
-test('suspend 记下场景并释放，resume 重新播放', () => {
+test('suspend 暂停，resume 从原进度继续', () => {
   const { ctor, elements } = makeCtor();
   const t = new AudioTrack({ map: MAP, audioCtor: ctor });
   t.play('p01_dock');
+  elements[0].currentTime = 30;
   t.suspend();
-  assert.equal(t.current, null);
+  assert.equal(t.current, 'p01_dock');
   assert.equal(t.suspendedScene, 'p01_dock');
+  assert.equal(elements[0].paused, true);
   t.resume();
   assert.equal(t.current, 'p01_dock');
-  assert.equal(elements.length, 2);
+  assert.equal(elements.length, 1);
+  assert.equal(elements[0].currentTime, 30);
+});
+
+test('字幕监听随播放进度触发一次，手动跳过可同步音频进度', () => {
+  const { ctor, elements } = makeCtor();
+  const t = new AudioTrack({ map: MAP, audioCtor: ctor });
+  t.play('p01_dock');
+  let pages = 0;
+  const cancel = t.watchFraction(0.5, () => { pages += 1; });
+  elements[0].currentTime = 49;
+  elements[0].emit('timeupdate');
+  assert.equal(pages, 0);
+  elements[0].currentTime = 50;
+  elements[0].emit('timeupdate');
+  elements[0].emit('ended');
+  assert.equal(pages, 1);
+  cancel();
+  t.seekFraction(0.8);
+  assert.equal(elements[0].currentTime, 80);
+});
+
+test('播放进度事件为后续动画提供场景和时间，停止后不再发出', () => {
+  const { ctor, elements } = makeCtor();
+  const events = [];
+  const t = new AudioTrack({ map: MAP, audioCtor: ctor, onProgress: event => events.push(event) });
+  t.play('p01_dock');
+  elements[0].currentTime = 3;
+  elements[0].emit('timeupdate');
+  assert.deepEqual(events, [{ id: 'p01_dock', time: 3, duration: 100 }]);
+  t.stop();
+  elements[0].emit('timeupdate');
+  assert.equal(events.length, 1);
 });
 
 test('play 返回被拒绝的 Promise 时不抛错', () => {

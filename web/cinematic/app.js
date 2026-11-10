@@ -3,7 +3,7 @@
  *
  * 剧情、选项与判定全部来自浏览器里运行的同一个 Python 引擎（GameClient →
  * Pyodide Worker → session_factory 会话）；本页只把快照与反馈演成画面：
- * 场景转场、整段手动阅读、线索卡片、调查台和画面上的选项。不新增剧情文字。
+ * 场景转场、配音跟随阅读、线索卡片、调查台和画面上的选项。不新增剧情文字。
  *
  * 默认播放《雾港旧案：未结的账》（stories/film/fog_harbor_ledger，线性分支，不上书架）；
  * ?story=<id> 可以换成其他剧本，例如旧样片 fog_harbor_film、深空影像版 deep_space_film。
@@ -19,7 +19,8 @@ import { CinematicSaveStore } from '../storage/cinematic.js';
 import { Stage, hasScene } from './stage.js';
 import { Sound } from './sound.js';
 import { AudioTrack } from './audio-track.js';
-import { SCENE_AUDIO } from './audio-assets.js';
+import { AmbientTrack } from './ambient-track.js';
+import { SCENE_AUDIO, SCENE_CUES, CHOICE_AUDIO, AMBIENCE_AUDIO } from './audio-assets.js';
 import { Desk, unitFrom } from './units.js';
 import { readingPages } from './narrative.js';
 
@@ -81,7 +82,11 @@ const VERBS = { 'mystery:ask': '审问', 'mystery:examine': '深入调查', 'puz
 const $ = (id) => document.getElementById(id);
 const stage = new Stage($('stage'));
 const sound = new Sound();
-const audioTrack = new AudioTrack({ map: SCENE_AUDIO });
+const audioTrack = new AudioTrack({ map: SCENE_AUDIO, onProgress: detail => {
+  document.dispatchEvent(new CustomEvent('taleloom:audio-progress', { detail }));
+} });
+const ambientTrack = new AmbientTrack({ map: AMBIENCE_AUDIO });
+ambientTrack.onError = (name) => sound.setAmbience(name);
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, T(ms)));
 const desk = new Desk($('desk'), { send: sendUnit, sound, speed: T, onClose: () => { deskClosedFor = unitKey(view); showChoices(); } });
 
@@ -100,6 +105,13 @@ let lastPoint = null;        // 最近一次记下的存档点 id，用来发现
 let pendingRollback = null;  // 演出结束后要回到的存档点
 let pendingRestart = false;
 let deskClosedFor = '';      // 玩家暂离的调查单元：同一单元不再自动打开
+let sceneReading = null;     // 当前正在跟随整段场景配音的字幕
+
+function syncDucking() {
+  const speaking = Boolean(sceneReading && audioTrack.el && audioTrack.enabled && !audioTrack.muted && !paused);
+  ambientTrack.setDucked(speaking);
+  sound.setDucked(speaking);
+}
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -108,7 +120,7 @@ function el(tag, className, text) {
   return node;
 }
 
-// ---------- 输入：点击画面或按空格继续；剧情没有自动播放计时器 ----------
+// ---------- 输入：点击画面或按空格跳过当前页；有配音时也按时间戳翻页 ----------
 
 function nudge() {
   if (paused || desk.open) return;
@@ -161,31 +173,77 @@ function renderText({ text, speaker = '' }, waiting = false) {
   if (view) box.append(el('span', 'scene-label', view.scene_title));
   if (speaker) box.append(el('span', 'speaker', speaker));
   box.append(el('span', 'line', text));
-  if (waiting) box.append(el('span', 'reading-hint', '点击画面或按空格继续 ▾'));
+  if (waiting) box.append(el('span', 'reading-hint', sceneReading && audioTrack.el && audioTrack.enabled && !audioTrack.muted ? '配音播放中 · 点击可跳过 ▾' : '点击画面或按空格继续 ▾'));
   box.hidden = false;
   box.scrollTop = 0;
+  document.dispatchEvent(new CustomEvent('taleloom:reading-page', {
+    detail: { sceneId: view?.scene_id || '', text, speaker, audioId: sceneReading?.sceneId || null },
+  }));
 }
 
-/** 只接受明确的继续操作；fast 只加速画面，不能越过剧情阅读。 */
-function waitForAdvance() {
+/** 允许玩家跳页；配音可按进度自动翻页，fast 只加速画面转场。 */
+function waitForAdvance(audioFraction = null) {
   if (rushing) return Promise.resolve();
   $('frame').dataset.awaitingAdvance = 'true';
   if (document.activeElement === document.body || document.activeElement.closest('#choices, #intro')) {
     $('frame').focus({ preventScroll: true });
   }
   return new Promise(resolve => {
-    poke = () => {
+    let unwatch = () => {};
+    const done = (manual) => {
+      if (manual && audioFraction !== null) audioTrack.seekFraction(audioFraction);
+      unwatch();
+      if (sceneReading) sceneReading.rebind = null;
       delete $('frame').dataset.awaitingAdvance;
       poke = null;
       resolve();
     };
+    poke = () => done(true);
+    if (audioFraction !== null) {
+      sceneReading.rebind = () => {
+        unwatch();
+        unwatch = audioTrack.watchFraction(audioFraction, () => done(false));
+      };
+      sceneReading.rebind();
+    }
+  });
+}
+
+/** 素材时间点与当前字幕页一一对应；剧本改动时按字数安全回退。 */
+function pageEndFractions(pages, cue) {
+  if (cue && Array.isArray(cue.cues) && cue.cues.length === pages.length && Number.isFinite(cue.duration) && cue.duration > 0
+      && cue.cues.every(time => Number.isFinite(time))) {
+    return cue.cues.map(time => Math.min(1, Math.max(0, time / cue.duration)));
+  }
+  const total = pages.reduce((sum, page) => sum + page.text.length, 0);
+  let read = 0;
+  return pages.map(page => {
+    read += page.text.length;
+    return total ? read / total : 1;
   });
 }
 
 async function type(text, speaker = '') {
-  for (const page of readingPages(text, { storyId: STORY_ID, sceneId: view?.scene_id, fallbackSpeaker: speaker })) {
-    renderText(page, true);
-    await waitForAdvance();
+  const pages = readingPages(text, { storyId: STORY_ID, sceneId: view?.scene_id, fallbackSpeaker: speaker });
+  const clip = CHOICE_AUDIO[JSON.stringify([view?.scene_id, text.trim()])];
+  const fractions = pageEndFractions(pages, clip);
+  if (clip) {
+    sceneReading = { sceneId: clip.id, fraction: 0 };
+    audioTrack.play(clip.id);
+    syncDucking();
+  }
+  try {
+    for (const [index, page] of pages.entries()) {
+      if (clip) sceneReading.fraction = index ? fractions[index - 1] : 0;
+      renderText(page, true);
+      await waitForAdvance(clip ? fractions[index] : null);
+    }
+  } finally {
+    if (clip) {
+      audioTrack.stop();
+      sceneReading = null;
+      syncDucking();
+    }
   }
 }
 
@@ -244,7 +302,12 @@ async function clueCard(name, text) {
 
 /** 重要声音的文字说明：静音或听不见时也知道发生了什么。 */
 let soundCaptions = [];
+const shownAmbienceCaptions = new Set();
 sound.onCaption = (text) => {
+  if (text.startsWith('环境声：')) {
+    if (shownAmbienceCaptions.has(text)) return;
+    shownAmbienceCaptions.add(text);
+  }
   const node = $('sound-caption');
   // 同一镜头的环境声与配乐可能同时开始，两条说明都应可读。
   if (node.hidden || text.startsWith('环境声：')) soundCaptions = [];
@@ -313,10 +376,14 @@ function musicFor(name, options) {
   return { harbor: 'calm', dinner: 'calm', lobby: 'calm', ledger: 'study', dutyroom: 'study', kitchen: 'tense', doorway: 'tense' }[name] || 'study';
 }
 
+function setAmbience(name) {
+  sound.setAmbience(ambientTrack.set(name) ? null : name);
+}
+
 function setArt(current) {
   const { name, options } = artFor(current);
   stage.show(name, options);
-  sound.setAmbience(AMBIENCE[name] || 'generic');
+  setAmbience(AMBIENCE[name] || 'generic');
   sound.setMusic(musicFor(name, options));
 }
 
@@ -325,7 +392,7 @@ async function interrogate(beat) {
   await stage.fade(1, T(450));
   const who = { 顾先生: 'gu', 周文: 'zhou', 阿芸: 'ayun' }[beat.who] || 'zhou';
   stage.show('portrait', { suspect: who, place: view.scene_id });
-  sound.setAmbience('portrait');
+  setAmbience('portrait');
   $('caption').textContent = `审问 · ${beat.topic}`;
   $('caption').hidden = false;
   await stage.fade(0, T(800));
@@ -375,7 +442,6 @@ async function enterScene(next) {
   await stage.fade(1, T(revisit ? 450 : 700));
   if (!revisit) sound.thud();
   setArt(next);
-  audioTrack.play(next.scene_id);
   if (revisit) {
     showCard('', next.scene_title, '');
     await stage.fade(0, T(700));
@@ -387,8 +453,24 @@ async function enterScene(next) {
   await hold(1800);
   hideCard();
   await stage.fade(0, T(1300));
-  for (const line of chunks(next.text)) await type(line);
-  clearSubtitle();
+  const pages = chunks(next.text).flatMap(line => readingPages(line, { storyId: STORY_ID, sceneId: next.scene_id }));
+  const cue = SCENE_CUES[next.scene_id];
+  const fractions = pageEndFractions(pages, cue);
+  sceneReading = { sceneId: next.scene_id, fraction: 0 };
+  audioTrack.play(next.scene_id);
+  syncDucking();
+  try {
+    for (const [index, page] of pages.entries()) {
+      sceneReading.fraction = index ? fractions[index - 1] : 0;
+      renderText(page, true);
+      await waitForAdvance(fractions[index] ?? null);
+    }
+  } finally {
+    sceneReading = null;
+    audioTrack.stop();
+    syncDucking();
+    clearSubtitle();
+  }
 }
 
 function isFailure(current) {
@@ -430,7 +512,7 @@ async function ending(next) {
   await stage.fade(1, T(1200));
   const [art, options] = THEME.endings[next.ending_id] || (failed ? THEME.failureEnding : THEME.defaultEnding);
   stage.show(art, options);
-  sound.setAmbience(options.storm ? 'storm' : art === 'harbor' ? 'ending' : failed ? 'tension' : AMBIENCE[art] || 'ending');
+  setAmbience(options.storm ? 'storm' : art === 'harbor' ? 'ending' : failed ? 'tension' : AMBIENCE[art] || 'ending');
   sound.setMusic(SHIP ? null : ['truth', 'dawn'].includes(next.ending_id) ? 'dawn' : 'dark');
   if (failed) stage.shake(900, 14);
   await stage.fade(0, T(1800));
@@ -837,6 +919,7 @@ function openNotebook() {
   renderNotebook();
   paused = true;
   audioTrack.suspend();
+  syncDucking();
   $('notebook').hidden = false;
   $('notes-toggle').setAttribute('aria-expanded', 'true');
   $('notebook-close').focus({ preventScroll: true });
@@ -849,6 +932,7 @@ function closeNotebook() {
   $('notes-toggle').setAttribute('aria-expanded', 'false');
   // 合上笔记后重新播放当前场景的配音。
   audioTrack.resume();
+  syncDucking();
 }
 
 function toggleNotebook() {
@@ -949,7 +1033,7 @@ async function restart() {
 async function opening() {
   audioTrack.stop();
   stage.show(...THEME.opening);
-  sound.setAmbience(AMBIENCE[THEME.opening[0]] || 'harbor');
+  setAmbience(AMBIENCE[THEME.opening[0]] || 'harbor');
   sound.setMusic(musicFor(...THEME.opening));
   await stage.fade(0, T(2200));
   setTimeout(() => (SHIP ? sound.beep() : sound.foghorn()), T(600));
@@ -1019,6 +1103,13 @@ function showMute() {
 $('mute').addEventListener('click', () => {
   sound.setMuted(!sound.muted);
   audioTrack.setMuted(sound.muted);
+  ambientTrack.setMuted(sound.muted);
+  if (!sound.muted && sceneReading && !audioTrack.el) {
+    audioTrack.play(sceneReading.sceneId);
+    audioTrack.seekFraction(sceneReading.fraction);
+    sceneReading.rebind?.();
+  }
+  syncDucking();
   remember('muted', sound.muted ? '1' : '0');
   showMute();
 });
@@ -1030,12 +1121,21 @@ function showVoice() {
 $('voice').addEventListener('click', () => {
   audioTrack.setEnabled(!audioTrack.enabled);
   remember('voice', audioTrack.enabled ? '1' : '0');
-  // 重新开启配音时，立即播放当前场景的音频。
-  if (audioTrack.enabled && view) audioTrack.play(view.scene_id);
+  if (audioTrack.enabled && sceneReading) {
+    if (!audioTrack.el) {
+      audioTrack.play(sceneReading.sceneId);
+      audioTrack.seekFraction(sceneReading.fraction);
+    }
+    sceneReading.rebind?.();
+  }
+  syncDucking();
   showVoice();
 });
 $('volume').addEventListener('input', () => {
-  sound.setVolume(Number($('volume').value) / 100);
+  const volume = Number($('volume').value) / 100;
+  sound.setVolume(volume);
+  audioTrack.setVolume(volume);
+  ambientTrack.setVolume(volume);
   remember('volume', $('volume').value);
 });
 (() => {
@@ -1043,9 +1143,12 @@ $('volume').addEventListener('input', () => {
   if (recall('volume') !== null && Number.isFinite(volume)) {
     $('volume').value = String(volume);
     sound.setVolume(volume / 100);
+    audioTrack.setVolume(volume / 100);
+    ambientTrack.setVolume(volume / 100);
   }
   sound.setMuted(recall('muted') === '1');
   audioTrack.setMuted(sound.muted);
+  ambientTrack.setMuted(sound.muted);
   if (recall('voice') === '0') audioTrack.setEnabled(false);
   showMute();
   showVoice();
