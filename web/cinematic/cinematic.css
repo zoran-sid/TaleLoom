@@ -66,24 +66,38 @@ html, body {
 /* 字幕 */
 .subtitle {
   position: absolute;
-  left: 8%;
-  right: 8%;
-  bottom: 8%;
-  text-align: center;
+  left: 4%;
+  right: 4%;
+  bottom: 3%;
+  z-index: 2;
+  min-height: 24%;
+  max-height: 29%;
+  padding: 14px 22px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: rgba(5, 5, 8, 0.82);
+  border: 1px solid rgba(241, 233, 216, 0.36);
+  border-radius: 8px;
+  color: #fff;
+  text-align: left;
   font-family: var(--serif);
-  font-size: clamp(15px, 2.15cqi, 30px);
+  font-size: clamp(18px, 2.1cqi, 30px);
   line-height: 1.6;
   letter-spacing: 0.04em;
   text-shadow: 0 2px 6px #000, 0 0 18px rgba(0, 0, 0, 0.9);
-  pointer-events: none;
+  pointer-events: auto;
 }
+.subtitle .line { display: block; white-space: pre-wrap; color: #fff; overflow-wrap: anywhere; }
+.scene-label { display: block; margin-bottom: 6px; font: 12px var(--sans); color: #c6c3bd; letter-spacing: 0.12em; }
+.reading-hint { display: block; margin-top: 8px; font: 12px var(--sans); color: #d2d0ca; text-align: right; }
 .subtitle .speaker {
   display: block;
   margin-bottom: 0.3em;
-  color: var(--amber);
+  color: #f3ad6a;
   font-family: var(--sans);
-  font-size: 0.58em;
-  letter-spacing: 0.3em;
+  font-size: clamp(18px, 1.7cqi, 24px);
+  font-weight: 600;
+  letter-spacing: 0.12em;
 }
 
 .caption {
@@ -125,6 +139,9 @@ html, body {
   text-indent: 0.32em;
   text-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
 }
+.frame.ended .card { top: 6%; bottom: auto; height: 22%; }
+.frame.ended .card-title { font-size: clamp(24px, 4cqi, 50px); margin: 0.2em 0; }
+.frame.ended .choices { top: 31%; }
 
 /* 线索卡 */
 .clue {
@@ -196,12 +213,15 @@ button { font: inherit; }
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 5%;
+  top: 15%;
+  bottom: 35%;
+  z-index: 3;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 0.7em;
-  padding: 0 6%;
+  padding: 0 8%;
   opacity: 0;
   transform: translateY(8px);
   transition: opacity 0.6s ease, transform 0.6s ease;
@@ -217,25 +237,28 @@ button { font: inherit; }
 }
 .choice-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  grid-template-columns: 1fr;
   gap: 0.6em;
-  width: min(100%, 980px);
-  max-height: 46vh;
+  width: min(100%, 800px);
+  max-height: 100%;
+  padding: 5px;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .choice {
   display: flex;
   align-items: center;
   gap: 0.8em;
   padding: 0.75em 1em;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: rgba(8, 8, 10, 0.72);
+  min-height: 48px;
+  border: 2px solid rgba(241, 233, 216, 0.4);
+  border-radius: 8px;
+  background: rgba(8, 8, 10, 0.82);
   backdrop-filter: blur(6px);
-  color: var(--paper);
-  text-align: left;
+  color: #fff;
+  text-align: center;
   font-family: var(--serif);
-  font-size: clamp(13px, 1.15vw, 17px);
+  font-size: clamp(16px, 1.7cqi, 23px);
   cursor: pointer;
   transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
 }
@@ -268,6 +291,8 @@ button { font: inherit; }
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(8, 8, 10, 0.82);
+  max-height: 100%;
+  overflow-y: auto;
 }
 .field { display: flex; flex-direction: column; gap: 0.3em; font-size: 13px; color: var(--amber-dim); }
 .field select {
@@ -433,7 +458,7 @@ button { font: inherit; }
 .sound-caption {
   position: absolute;
   left: 3%;
-  bottom: 3%;
+  top: 10%;
   margin: 0;
   padding: 0.3em 0.8em;
   border-radius: 4px;
@@ -562,12 +587,11 @@ kbd { font: inherit; opacity: 0.6; }
 
 button, a { touch-action: manipulation; }
 
-/* 窄屏：选项放到画面下方，避免遮住字幕 */
+/* 窄屏保持中央选项与底部剧情分区，选项过多时在中央列表滚动。 */
 @media (max-width: 760px) {
   .theater { justify-content: flex-start; padding: 16px; }
   .stagebox, .controls { width: 100%; }
-  .choices { position: static; margin-top: 12px; padding: 0; }
-  .choice-list { max-height: none; }
+  .choices { padding: 0 5%; }
   .clue { width: 52%; }
   .notebook { position: fixed; inset: 0; width: auto; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
   .desk { position: static; padding: 0; margin-top: 12px; background: none; }
@@ -578,16 +602,12 @@ button, a { touch-action: manipulation; }
 /* 竖屏手机：方形画面铺满屏宽，按场景重点裁切；字幕带底部渐隐，控制条收紧 */
 @media (max-width: 760px) and (orientation: portrait) {
   .theater { padding: env(safe-area-inset-top) 0 calc(12px + env(safe-area-inset-bottom)); gap: 10px; }
-  .frame { aspect-ratio: 1 / 1; border-radius: 0; box-shadow: none; }
+  .frame { aspect-ratio: 3 / 4; min-height: 520px; border-radius: 0; box-shadow: none; }
   .subtitle {
-    left: 0;
-    right: 0;
-    bottom: 0;
-    padding: 2.2em 16px 14px;
-    font-size: 16px;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.78) 42%);
+    padding: 12px 14px;
+    font-size: 18px;
   }
-  .subtitle .speaker { font-size: 11px; }
+  .subtitle .speaker { font-size: 18px; }
   .card-title { font-size: 30px; }
   .card-kicker, .card-place, .caption, .intro-kicker { font-size: 11px; }
   .clue { top: 14%; left: 6%; right: 6%; width: auto; font-size: 13px; }
@@ -599,7 +619,7 @@ button, a { touch-action: manipulation; }
   .desk { padding: 0 16px; }
   .desk-sheet { padding: 0.9em 1em; }
   .prompt { font-size: 13px; }
-  .choice { font-size: 15px; padding: 0.8em 0.9em; }
+  .choice { font-size: 18px; padding: 0.7em 0.9em; }
   .controls { padding: 0 16px; gap: 6px; }
   .controls button, .controls a { padding: 0.4em 0.75em; font-size: 12px; }
   .controls kbd { display: none; }
@@ -611,10 +631,15 @@ button, a { touch-action: manipulation; }
   .theater { padding: 0 env(safe-area-inset-right) 0 env(safe-area-inset-left); gap: 4px; justify-content: flex-start; }
   .stagebox, .controls { width: 100%; }
   .frame { aspect-ratio: auto; height: calc(100svh - 40px); border-radius: 0; box-shadow: none; }
-  .choices { position: absolute; bottom: 4%; padding: 0 5%; }
-  .choice-list { max-height: 58svh; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-  .choice { font-size: 14px; padding: 0.55em 0.8em; }
-  .subtitle { font-size: 16px; bottom: 6%; }
+  .choices { top: 12%; bottom: 36%; gap: 4px; padding: 0 12%; }
+  .choice-list { gap: 6px; padding: 4px; }
+  .choice { min-height: 44px; font-size: 18px; line-height: 1.1; padding: 0.3em 0.8em; }
+  .frame.ended .choice-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .frame.ended .prompt { display: none; }
+  .subtitle { font-size: 18px; padding: 8px 14px; line-height: 1.45; }
+  .subtitle .speaker { font-size: 18px; margin-bottom: 2px; }
+  .scene-label { font-size: 11px; margin-bottom: 3px; }
+  .reading-hint { font-size: 11px; margin-top: 4px; }
   .controls { flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding: 2px 8px; }
   .controls button, .controls a { flex: none; padding: 0.3em 0.8em; font-size: 12px; }
   .controls kbd, .note-line { display: none; }

@@ -18,7 +18,7 @@ async function toFirstChoice(page) {
   throw new Error('没有等到第一个选择');
 }
 
-test('影像模式：空格可跳过字幕，数字键可选择', async ({ page }) => {
+test('影像模式：空格可继续剧情，数字键可选择', async ({ page }) => {
   await toFirstChoice(page);
   const before = await page.evaluate(() => document.querySelector('#notes-count').textContent
     + '|' + document.querySelector('#choices').textContent.length);
