@@ -76,3 +76,26 @@ test('升级写入失败仍能读取旧影像存档，并明确报告只读状�
   assert.deepEqual(store.readEntries(), [checkpoint()]);
   assert.match(store.migrationWarning, /导出/);
 });
+
+test('刷新与容器导入导出完整保留正式会话的回退次数和嵌套状态', () => {
+  const storage = memory(), entry = checkpoint();
+  const state = structuredClone(entry.save.state);
+  entry.save.state.ext = { session: { version: 1, rewind_limit: 3, mistakes: 2,
+    rewinds: 1, checkpoints: [{ id: 'bay_start', label: '开场', state }],
+    previous_choice: { state: structuredClone(state), checkpoints: [] } } };
+  const expected = structuredClone(entry);
+  new BrowserSaveStore('film', storage).write('quick', entry.save);
+  new CinematicSaveStore('film', storage).writeEntries([entry]);
+  entry.save.state.ext.session.mistakes = 0;
+  const fresh = new CinematicSaveStore('film', storage);
+  const imported = new CinematicSaveStore('film', memory());
+  imported.importBundle(fresh.exportBundle());
+  const { saved_at, ...quick } = new BrowserSaveStore('film', storage).read('quick');
+  assert.ok(!Number.isNaN(Date.parse(saved_at)));
+  assert.deepEqual(quick, expected.save);
+  assert.deepEqual(fresh.readEntries(), [expected]);
+  assert.deepEqual(imported.readEntries(), [expected]);
+  const outside = imported.readEntries();
+  outside[0].save.state.ext.session.previous_choice.state.scene = 'changed';
+  assert.deepEqual(imported.readEntries(), [expected]);
+});
