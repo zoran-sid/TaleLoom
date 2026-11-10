@@ -305,7 +305,7 @@ class MysteryMechanic(Mechanic):
 
     # ---- 调查单元 ----
     def _unit_entry(self, ctx: Context, uid: str) -> dict[str, Any]:
-        """取得可写的单元进度；存档里格式不对的部分按未开始处理。"""
+        """取得可写的单元进度；补齐未开始的字段，外部存档由 save 校验。"""
         mine = self._mine(ctx)
         units = mine.get("units")
         if not isinstance(units, dict):
