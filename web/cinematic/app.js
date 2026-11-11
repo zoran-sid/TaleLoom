@@ -959,8 +959,8 @@ async function opening() {
   stage.show(...THEME.opening);
   sound.setAmbience(AMBIENCE[THEME.opening[0]] || 'harbor');
   sound.setMusic(musicFor(...THEME.opening));
-  // 新开场的视频已表现港口，不再叠加原本的长开场等待。
-  if (transitionFor(STORY_ID, 'p01_dock') && sceneVideosEnabled()) {
+  // 有开场视频的剧本直接进入首个场景。
+  if (transitionFor(STORY_ID, SHIP ? 'bay_wake' : 'p01_dock') && sceneVideosEnabled()) {
     await stage.fade(0, T(450));
     return;
   }
