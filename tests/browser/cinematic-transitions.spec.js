@@ -1,7 +1,9 @@
 import { test, expect } from './cinematic-driver.js';
 import { execFileSync } from 'node:child_process';
+import process from 'node:process';
 
-const data = JSON.parse(execFileSync('python3', ['-B', 'tools/film_vectors.py', 'fog_harbor_ledger'],
+const PYTHON = process.env.PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
+const data = JSON.parse(execFileSync(PYTHON, ['-B', 'tools/film_vectors.py', 'fog_harbor_ledger'],
   { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }));
 const actions = data.vectors.find(vector => vector.name === 'truth').actions;
 
