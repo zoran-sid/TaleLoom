@@ -14,6 +14,13 @@ export default defineConfig({
         main: fileURLToPath(new URL('./index.html', import.meta.url)),
         cinematic: fileURLToPath(new URL('./cinematic.html', import.meta.url)),
       },
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/gsap')) {
+            return 'vendor-gsap';
+          }
+        },
+      },
     },
   },
 });

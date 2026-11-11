@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
+import process from 'node:process';
 
-const vectors = JSON.parse(execFileSync('python3', ['-B', 'tools/web_vectors.py'], { encoding: 'utf8' }));
+const PYTHON = process.env.PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
+const vectors = JSON.parse(execFileSync(PYTHON, ['-B', 'tools/web_vectors.py'], { encoding: 'utf8' }));
 const idle = (page) => expect(page.locator('#app')).toHaveAttribute('aria-busy', 'false', { timeout: 90_000 });
 async function start(page, storyId, resume = false) {
   await page.goto('/');

@@ -1,8 +1,10 @@
 // ZC：《未结的账》只通过剧情选择游玩；事实、结局与存档由 Python 会话判定。
 import { test, expect } from './cinematic-driver.js';
 import { execFileSync } from 'node:child_process';
+import process from 'node:process';
 
-const DATA = JSON.parse(execFileSync('python3', ['-B', 'tools/film_vectors.py', 'fog_harbor_ledger'],
+const PYTHON = process.env.PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
+const DATA = JSON.parse(execFileSync(PYTHON, ['-B', 'tools/film_vectors.py', 'fog_harbor_ledger'],
   { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }));
 const VECTORS = Object.fromEntries(DATA.vectors.map((v) => [v.name, v]));
 const KEY = 'taleloom:v1:fog_harbor_ledger:checkpoints';
