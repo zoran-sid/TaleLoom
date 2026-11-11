@@ -19,6 +19,8 @@ test('影像版：每个选择都进入下一段，线索进笔记，一路走�
   await expect(page.locator('#notes-count')).toHaveText('2');
   await record();
   await pick(/翻开桌上的账本/);
+  // 等逐段阅读结束，避免自动点击继续按钮和手动打开笔记同时发生。
+  await expect(choices.getByRole('button', { name: /上楼搜他的客房/ })).toBeVisible();
   await expect(page.locator('#notes-count')).toHaveText('4');
   await page.getByRole('button', { name: /线索笔记/ }).click();
   await expect(page.locator('#notebook')).toContainText('对不上的数目');
@@ -86,6 +88,8 @@ test('影像版：关键节点自动存档，可以从笔记回到存档点，�
   const pick = (name) => choices.getByRole('button', { name }).click();
   await pick(/推开账房的门/);
   await pick(/翻开桌上的账本/);
+  // 等逐段阅读结束，避免自动点击继续按钮和手动打开笔记同时发生。
+  await expect(choices.getByRole('button', { name: /上楼搜他的客房/ })).toBeVisible();
   await expect(page.locator('#notes-count')).toHaveText('4');
   await page.getByRole('button', { name: /线索笔记/ }).click();
   const saves = page.locator('.nb-save');
