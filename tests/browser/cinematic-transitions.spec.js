@@ -73,3 +73,40 @@ test('减少动态效果设置跳过视频，保留现有场景阅读', async ({
   expect(requested).toBe(false);
   await expect(page.locator('#choices')).toBeVisible();
 });
+
+test('深空回声在四个剧情节点播放视频，撤离后由玩家选择结局', async ({ page }) => {
+  test.setTimeout(300_000);
+  const ship = JSON.parse(execFileSync('python3', ['-B', 'tools/film_vectors.py', 'deep_space_film'],
+    { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }));
+  const route = ship.vectors.find(vector => vector.name === 'truth').actions;
+
+  await page.addInitScript(() => {
+    window.shipTransitions = [];
+    document.addEventListener('ended', event => {
+      if (event.target.id === 'scene-transition') {
+        window.shipTransitions.push(new URL(event.target.currentSrc).pathname);
+      }
+    }, true);
+  });
+  await page.goto('/cinematic.html?story=deep_space_film&fast=1&transitions=1');
+  await page.locator('#begin').click();
+  const ready = () => page.waitForFunction(() => window.__cinematic?.ready(), null, { timeout: 60_000 });
+  const played = () => page.evaluate(() => window.shipTransitions);
+  await ready();
+  const expected = [expect.stringContaining('echo-bay-wake')];
+  expect(await played()).toEqual(expected);
+  const arrival = {
+    'choice:kit': 'echo-energy-reserve',
+    'choice:send': 'echo-airlock-seal',
+    'choice:repair': 'echo-space-depart',
+  };
+  for (const action of route.slice(0, -1)) {
+    await page.locator(`#choices button[data-action="${action.action_id}"]`).click();
+    await ready();
+    const clip = arrival[action.action_id];
+    if (clip) expected.push(expect.stringContaining(clip));
+    expect(await played()).toEqual(expected);
+  }
+  await expect(page.locator('#scene-transition')).toBeHidden();
+  await expect(page.locator('#choices button[data-action="choice:truth"]')).toBeVisible();
+});
