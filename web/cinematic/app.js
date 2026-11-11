@@ -20,6 +20,7 @@ import { Stage, hasScene } from './stage.js';
 import { Sound } from './sound.js';
 import { Desk, unitFrom } from './units.js';
 import { readingPages } from './narrative.js';
+import { playTransition, transitionFor } from './transitions.js';
 
 const params = new URLSearchParams(location.search);
 const STORY_ID = params.get('story') || 'fog_harbor_ledger';
@@ -89,6 +90,7 @@ let view = null;
 let busy = false;
 let actTitle = THEME.firstAct;
 let poke = null;
+let stopTransition = null;
 let paused = false;          // 打开笔记时暂停字幕与转场计时
 let seen = new Set();        // 已经播过描述的场景，回来时不再重播
 let notes = { clues: [], resources: [], sceneTitle: '', sceneText: '' };
@@ -363,6 +365,11 @@ async function playBeats(beats) {
   clearSubtitle();
 }
 
+function sceneVideosEnabled() {
+  return (!FAST || params.get('transitions') === '1')
+    && !rushing && !paused && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 /** 首次进入：标题卡加完整描述；再次回来：只闪一下场景名，不重播描述。 */
 async function enterScene(next) {
   $('frame').classList.remove('ended');
@@ -379,10 +386,22 @@ async function enterScene(next) {
     hideCard();
     return;
   }
+  const clip = transitionFor(STORY_ID, next.scene_id);
+  let played = false;
+  if (clip && sceneVideosEnabled()) {
+    played = await playTransition($('scene-transition'), clip, {
+      onPlaying: () => stage.fade(0, T(650)),
+      setSkip: (stop) => {
+        if (poke === stopTransition) poke = stop;
+        stopTransition = stop;
+      },
+      fadeTime: T(430),
+    });
+  }
   showCard(actTitle, next.scene_title, THEME.place);
-  await hold(1800);
+  await hold(played ? 400 : 1800);
   hideCard();
-  await stage.fade(0, T(1300));
+  if (!played) await stage.fade(0, T(1300));
   for (const line of chunks(next.text)) await type(line);
   clearSubtitle();
 }
@@ -829,6 +848,7 @@ function renderNotebook() {
 function openNotebook() {
   renderNotebook();
   paused = true;
+  stopTransition?.();
   $('notebook').hidden = false;
   $('notes-toggle').setAttribute('aria-expanded', 'true');
   $('notebook-close').focus({ preventScroll: true });
@@ -939,6 +959,11 @@ async function opening() {
   stage.show(...THEME.opening);
   sound.setAmbience(AMBIENCE[THEME.opening[0]] || 'harbor');
   sound.setMusic(musicFor(...THEME.opening));
+  // 新开场的视频已表现港口，不再叠加原本的长开场等待。
+  if (transitionFor(STORY_ID, 'p01_dock') && sceneVideosEnabled()) {
+    await stage.fade(0, T(450));
+    return;
+  }
   await stage.fade(0, T(2200));
   setTimeout(() => (SHIP ? sound.beep() : sound.foghorn()), T(600));
   showCard('TaleLoom 织境 · 影像模式', THEME.title, THEME.subtitle ? `${THEME.subtitle} · ${THEME.place}` : THEME.place);
