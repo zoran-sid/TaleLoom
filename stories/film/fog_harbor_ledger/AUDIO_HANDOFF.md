@@ -4,7 +4,7 @@
 
 ## 播放规则
 
-- 序章和第一幕原有的八条整场 MP3 仍可播放。配音从第一张字幕出现时开始，字幕按音频播放进度自动翻页；点击可跳过当前页，同时把音频移到下一页。八条旧整场录音已用 Whisper 转写按剧本原文对齐出每页结束时间（`legacy-cues.json`），不再按字数估算。
+- 全剧 50 个场景都使用 Seed Audio 1.0 的录音。序章和第一幕的八条旧整场录音已在 2026-11-12 重做并删除，音色与后面各幕统一。配音从第一张字幕出现时开始，字幕按音频播放进度自动翻页；点击可跳过当前页，同时把音频移到下一页。
 - 新录音由 Seed Audio 1.0 返回的字级字幕生成每页结束时间。原文与识别字幕匹配度低于 0.95 的录音不进入游戏。暂停笔记、切后台、静音及重新开启配音时保留当前播放位置。
 - 录制的环境声覆盖同名代码环境声；加载失败会恢复代码环境声。环境声提示每种只显示一次。配音时环境声自动压低，主音量与静音同时控制配音和环境声。
 - 场景文字、选择反馈和说话人仍来自 Python 剧本与会话。前端只按场景 ID 和原文匹配素材；原文变动后，旧素材不会误配到新句子。
@@ -18,7 +18,7 @@
 | `taleloom:reading-page` | `sceneId`, `text`, `speaker`, `audioId` | 一张文字页出现时切换镜头或人物状态 |
 | `taleloom:audio-progress` | `id`, `time`, `duration`（秒） | 用真实播放时间驱动动作和口型；`id` 是场景 ID 或选择反馈音频 ID |
 
-新素材的每页结束时间见 `web/cinematic/seed-runtime.json`；八条旧素材见 `web/cinematic/legacy-cues.json`。动画应以播放事件和场景 ID 为准。点击跳页后，音频进度会跳到下一页；关闭配音或换场后，旧音频不再发送进度事件。动画实现不需要改动 Python 剧本、存档或声音生成工具。
+每页结束时间见 `web/cinematic/seed-runtime.json`。动画应以播放事件和场景 ID 为准。点击跳页后，音频进度会跳到下一页；关闭配音或换场后，旧音频不再发送进度事件。动画实现不需要改动 Python 剧本、存档或声音生成工具。
 
 ### 接入示例
 
@@ -45,7 +45,7 @@ document.addEventListener('taleloom:audio-progress', ({ detail }) => {
 
 | 段落 | 场景 ID | 动画重点 |
 | --- | --- | --- |
-| 序章与第一幕 | `p01_*` 至 `p04_*`、`a01_*` 至 `a04_*` | 抵港、旅馆、饭桌、命案发现；八条旧录音按对齐时间翻页，口型宜使用低精度表现 |
+| 序章与第一幕 | `p01_*` 至 `p04_*`、`a01_*` 至 `a04_*` | 抵港、旅馆、饭桌、命案发现 |
 | 调查 | `b01_*` 至 `d04_*` | 纸片、账簿、袖口、值房与证词；用文字页事件切近景，保留玩家主动翻页空间 |
 | 对质与结局 | `e01_*` 至 `f05_*` | 人物戒备、自白或否认，以及五种结局的情绪区别；按场景 ID 区分分支 |
 
@@ -73,3 +73,12 @@ document.addEventListener('taleloom:audio-progress', ({ detail }) => {
 本次获批的批量生成及两轮重做合计约 **40.14 元**，低于批准的 **60 元**上限；此前小样费用另记在清单中，实际结算以火山账单为准。`python3 tools/seed_audio.py --list` 现在显示待生成数为零。生成工具支持 `--max-cost-cny` 限额，并为每个进行中的请求预留最多 2 元。
 
 服务资料：[接口与字幕字段](https://docs.volcengine.com/docs/doubao-voice/audio-generation-http?lang=zh)、[模型时长与文本限制](https://docs.volcengine.com/docs/doubao-voice/model-list?lang=zh)、[计费](https://docs.volcengine.com/docs/DoubaoVoice/Billinginstructions-21?lang=zh)、[生成式模型服务条款](https://docs.volcengine.com/docs/DoubaoVoice/Generativemodelservicespecificterms-1?lang=zh)。正式公开分发前，项目负责人应按账号的服务订单确认生成音频的使用地区和授权条件。
+
+## 序章与第一幕重做、配乐（2026-11-12）
+
+- **八场重做**：`p01`–`p04`、`a01`–`a04` 用 fal 托管的 `bytedance/seed-audio-1.0` 重新生成（`python3 tools/seed_audio.py --provider fal --generate --kind scene`），提示词与后 42 场同一套人物声线；有阿芸台词的两场带女声参考音，复测音高约 242 Hz。旧的 `web/cinematic/audio/*.mp3`、`legacy-cues.json` 及其测试已删除。
+- **页时间**：fal 只返回音频，逐词时间由本机 Whisper（small）转写后与剧本原文对齐。八场匹配度 0.85–0.94，差异是同音字和数字读法（如“陈／臣”“584／五百八十四”），没有漏句；这类素材的入库门槛为 0.80，低于门槛的不进入网页。
+- **配乐**：原先贯穿全程的配乐是代码合成的和弦，现在换成五段 Seed Audio 生成的器乐循环（舒缓、思索、紧张、沉郁、天亮，各 40 秒、约 −28 LUFS，文件 `music_*.mp3`）。它们与环境声一样循环、在配音时自动压低，受主音量和静音控制；素材加载失败时退回合成配乐。检查过响度一致、没有人声。
+- **费用**：八场约 8.7 分钟，五段配乐约 3.3 分钟，按 fal 每分钟 0.1875 美元计约 2.3 美元；每条记录在 `manifest.json`。
+- **仍需人工试听**：上述检查都是客观指标（文字匹配、音高、响度），配音的情绪和配乐是否好听需要 ZC 试听确认。
+- 早先用 fal 重做的五场没有字幕，页时间已记入 `manifest.json` 的 `cues`，`--refresh` 不会再把它们丢掉。

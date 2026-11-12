@@ -13,6 +13,11 @@
     <div class="stagebox">
       <div class="frame" id="frame" tabindex="0" aria-label="剧情画面，点击或按空格继续">
         <canvas id="stage" aria-hidden="true"></canvas>
+        <div class="backdrop" id="backdrop" aria-hidden="true" hidden>
+          <img alt="" decoding="async">
+          <video muted playsinline loop preload="auto"></video>
+        </div>
+        <div class="curtain" id="curtain" aria-hidden="true"></div>
         <video id="scene-transition" muted playsinline preload="metadata" aria-hidden="true" hidden></video>
         <div class="grain" id="grain" aria-hidden="true"></div>
         <div class="vignette" aria-hidden="true"></div>
