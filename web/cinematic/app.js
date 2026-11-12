@@ -8,7 +8,9 @@
  * 默认播放《雾港旧案：未结的账》（stories/film/fog_harbor_ledger，线性分支，不上书架）；
  * ?story=<id> 可以换成其他剧本，例如旧样片 fog_harbor_film、深空影像版 deep_space_film。
  *
- * 画面读快照的 art（例如 portrait_zhou_cold：人物特写、周文、冷淡）；结局类型读
+ * 影像版的画面是 MiniMax 生成的场景镜头（backdrops.js，按场景 ID 选用）；没有镜头的
+ * 剧本或素材加载失败时，用 stage.js 的代码画面，按快照的 art 选（例如
+ * portrait_zhou_cold：人物特写、周文、冷淡）。结局类型读
  * ending_kind。失败结局可以用会话的“回到上一个选择”（整局机会数由会话给出）；
  * 会话在进入带 checkpoint 的场景时记下存档点，本页把它们导出成标准存档，存进
  * web/storage/cinematic.js（LQ），刷新后可以从存档点继续；笔记里可以回到任一存档点。
@@ -20,10 +22,11 @@ import { Stage, hasScene } from './stage.js';
 import { Sound } from './sound.js';
 import { AudioTrack } from './audio-track.js';
 import { AmbientTrack } from './ambient-track.js';
-import { SCENE_AUDIO, SCENE_CUES, CHOICE_AUDIO, AMBIENCE_AUDIO } from './audio-assets.js';
+import { SCENE_AUDIO, SCENE_CUES, CHOICE_AUDIO, AMBIENCE_AUDIO, MUSIC_AUDIO } from './audio-assets.js';
 import { Desk, unitFrom } from './units.js';
 import { readingPages } from './narrative.js';
 import { playTransition, transitionFor } from './transitions.js';
+import { Backdrop } from './backdrops.js';
 
 const params = new URLSearchParams(location.search);
 const STORY_ID = params.get('story') || 'fog_harbor_ledger';
@@ -55,6 +58,8 @@ const THEMES = {
   },
 };
 const THEME = SHIP ? THEMES.ship : STORY_ID === 'fog_harbor_ledger' ? THEMES.ledger : THEMES.fog;
+// 开场画面用首个场景的镜头。
+const START_SCENE = SHIP ? 'bay_wake' : STORY_ID === 'fog_harbor_ledger' ? 'p01_dock' : 'lobby';
 // 结局 → 画面：失败结局各有专门的画面，其余在港口（天亮或夜里有船离开）。
 THEME.endings ||= {
   truth: ['harbor', { dawn: true, boat: 'arrive', focus: [980, 470] }],
@@ -88,7 +93,20 @@ const audioTrack = new AudioTrack({ map: SCENE_AUDIO, onProgress: detail => {
 } });
 const ambientTrack = new AmbientTrack({ map: AMBIENCE_AUDIO });
 ambientTrack.onError = (name) => sound.setAmbience(name);
+// 录制的配乐循环；没有素材或加载失败时用 sound.js 合成的配乐。
+const musicTrack = new AmbientTrack({ map: MUSIC_AUDIO });
+musicTrack.onError = (name) => sound.setMusic(name);
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, T(ms)));
+const motionAllowed = () => !FAST && !paused && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+const backdrop = new Backdrop($('backdrop'), { motion: motionAllowed });
+// 黑场淡入淡出同时盖住场景镜头：幕布与画布用同一时长。
+const fadeCanvas = stage.fade.bind(stage);
+stage.fade = (to, ms) => {
+  const curtain = $('curtain');
+  curtain.style.transitionDuration = `${Math.max(1, ms)}ms`;
+  curtain.style.opacity = String(to);
+  return fadeCanvas(to, ms);
+};
 const desk = new Desk($('desk'), { send: sendUnit, sound, speed: T, onClose: () => { deskClosedFor = unitKey(view); showChoices(); } });
 
 let client = null;
@@ -112,6 +130,7 @@ let sceneReading = null;     // 当前正在跟随整段场景配音的字幕
 function syncDucking() {
   const speaking = Boolean(sceneReading && audioTrack.el && audioTrack.enabled && !audioTrack.muted && !paused);
   ambientTrack.setDucked(speaking);
+  musicTrack.setDucked(speaking);
   sound.setDucked(speaking);
 }
 
@@ -292,6 +311,9 @@ async function warnCard(text) {
 async function clueCard(name, text) {
   sound.bell();
   stage.flash();
+  $('backdrop').classList.remove('flash');
+  void $('backdrop').offsetWidth;
+  $('backdrop').classList.add('flash');
   const card = $('clue');
   card.replaceChildren(el('p', 'clue-kicker', '获得线索'), el('h3', 'clue-name', name), el('p', 'clue-text', text));
   card.hidden = false;
@@ -382,17 +404,29 @@ function setAmbience(name) {
   sound.setAmbience(ambientTrack.set(name) ? null : name);
 }
 
+function setMusic(name) {
+  sound.setMusic(musicTrack.set(name) ? null : name);
+}
+
+/** 有场景镜头时显示镜头并让画布停在黑场；没有或加载失败时用代码画面。 */
+function showPicture(sceneId, name, options) {
+  const drawn = () => stage.show(name, options);
+  if (backdrop.show(STORY_ID, sceneId, drawn)) stage.show('black');
+  else drawn();
+}
+
 function setArt(current) {
   const { name, options } = artFor(current);
-  stage.show(name, options);
+  showPicture(current.scene_id, name, options);
   setAmbience(AMBIENCE[name] || 'generic');
-  sound.setMusic(musicFor(name, options));
+  setMusic(musicFor(name, options));
 }
 
 async function interrogate(beat) {
   clearSubtitle();
   await stage.fade(1, T(450));
   const who = { 顾先生: 'gu', 周文: 'zhou', 阿芸: 'ayun' }[beat.who] || 'zhou';
+  backdrop.hide();
   stage.show('portrait', { suspect: who, place: view.scene_id });
   setAmbience('portrait');
   $('caption').textContent = `审问 · ${beat.topic}`;
@@ -530,9 +564,9 @@ async function ending(next) {
   const failed = isFailure(next);
   await stage.fade(1, T(1200));
   const [art, options] = THEME.endings[next.ending_id] || (failed ? THEME.failureEnding : THEME.defaultEnding);
-  stage.show(art, options);
+  showPicture(next.scene_id, art, options);
   setAmbience(options.storm ? 'storm' : art === 'harbor' ? 'ending' : failed ? 'tension' : AMBIENCE[art] || 'ending');
-  sound.setMusic(SHIP ? null : ['truth', 'dawn'].includes(next.ending_id) ? 'dawn' : 'dark');
+  setMusic(SHIP ? null : ['truth', 'dawn'].includes(next.ending_id) ? 'dawn' : 'dark');
   if (failed) stage.shake(900, 14);
   await stage.fade(0, T(1800));
   for (const line of chunks(next.text)) await type(line);
@@ -938,6 +972,7 @@ function openNotebook() {
   renderNotebook();
   paused = true;
   stopTransition?.();
+  backdrop.pause();
   audioTrack.suspend();
   syncDucking();
   $('notebook').hidden = false;
@@ -949,6 +984,7 @@ function closeNotebook() {
   if ($('notebook').hidden) return;
   $('notebook').hidden = true;
   paused = false;
+  backdrop.resume();
   $('notes-toggle').setAttribute('aria-expanded', 'false');
   // 合上笔记后重新播放当前场景的配音。
   audioTrack.resume();
@@ -1052,11 +1088,11 @@ async function restart() {
 
 async function opening() {
   audioTrack.stop();
-  stage.show(...THEME.opening);
+  showPicture(START_SCENE, ...THEME.opening);
   setAmbience(AMBIENCE[THEME.opening[0]] || 'harbor');
-  sound.setMusic(musicFor(...THEME.opening));
+  setMusic(musicFor(...THEME.opening));
   // 有开场视频的剧本直接进入首个场景。
-  if (transitionFor(STORY_ID, SHIP ? 'bay_wake' : 'p01_dock') && sceneVideosEnabled()) {
+  if (transitionFor(STORY_ID, START_SCENE) && sceneVideosEnabled()) {
     await stage.fade(0, T(450));
     return;
   }
@@ -1129,6 +1165,7 @@ $('mute').addEventListener('click', () => {
   sound.setMuted(!sound.muted);
   audioTrack.setMuted(sound.muted);
   ambientTrack.setMuted(sound.muted);
+  musicTrack.setMuted(sound.muted);
   if (!sound.muted && sceneReading && !audioTrack.el) {
     audioTrack.play(sceneReading.sceneId);
     audioTrack.seekFraction(sceneReading.fraction);
@@ -1161,6 +1198,7 @@ $('volume').addEventListener('input', () => {
   sound.setVolume(volume);
   audioTrack.setVolume(volume);
   ambientTrack.setVolume(volume);
+  musicTrack.setVolume(volume);
   remember('volume', $('volume').value);
 });
 (() => {
@@ -1170,10 +1208,12 @@ $('volume').addEventListener('input', () => {
     sound.setVolume(volume / 100);
     audioTrack.setVolume(volume / 100);
     ambientTrack.setVolume(volume / 100);
+    musicTrack.setVolume(volume / 100);
   }
   sound.setMuted(recall('muted') === '1');
   audioTrack.setMuted(sound.muted);
   ambientTrack.setMuted(sound.muted);
+  musicTrack.setMuted(sound.muted);
   if (recall('voice') === '0') audioTrack.setEnabled(false);
   showMute();
   showVoice();

@@ -13,10 +13,16 @@ Bundled into the cinematic page (web/cinematic/units.js) for investigation anima
 License: https://gsap.com/standard-license
 Source: https://www.npmjs.com/package/gsap/v/3.15.0
 
-Cinematic art and sound: drawn on Canvas and synthesized with Web Audio by this
-project's own code (web/cinematic/stage.js, sound.js); no image or audio files
-are loaded. Fallback when Canvas or Web Audio is unavailable: subtitles,
-sound captions and the notebook still carry every clue.
+Cinematic footage: scene transitions and backdrop loops in web/cinematic/media/
+were generated with MiniMax H3 from this project's original script; task ids,
+prompts and costs are recorded in web/cinematic/media/manifest.json and README.md.
+Cinematic audio: voice, ambience and music in web/cinematic/audio/seed/ were
+generated with Bytedance Seed Audio 1.0 (Volcengine and fal); prompts, costs and
+hashes are recorded in manifest.json there. Use of generated media follows the
+terms of the generating accounts.
+Fallbacks drawn and synthesized by this project's own code (stage.js, sound.js)
+are used when a clip or recording is missing or fails to load; subtitles, sound
+captions and the notebook still carry every clue.
 
 Build-only tools (not served as game runtime):
 Vite — MIT; Cloudflare CLI and Vite plugin — MIT; Playwright — Apache-2.0.

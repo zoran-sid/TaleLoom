@@ -1,0 +1,150 @@
+{
+  "shots": {
+    "lobby-counter": {
+      "id": "lobby-counter",
+      "task_id": "462499881235012",
+      "model": "MiniMax-H3",
+      "resolution": "768P",
+      "duration": 5,
+      "ratio": "16:9",
+      "prompt": "二维手绘动画电影画面，赛璐璐上色配厚涂背景，线条清晰。一九三一年深秋，中国浙东沿海雾港小岛上的旧式木结构旅馆。青灰色夜雾与暖琥珀色煤油灯光形成对比。画风、线条和色调与参考图1保持一致。固定机位，镜头不移动、不变焦，只有灯焰、雾气、尘埃等轻微的持续动态。画面中不出现任何文字、字幕、水印。旅馆大堂夜景。深色木柜台上摊着一本寄存簿、两张行李签和一条干毛巾，柜台旁立着一把滴水的油纸伞。画面深处的铸铁炉里炉火偏弱，火光轻轻跳动；墙上一座老座钟的钟摆缓慢摆动。柜台后没有人。",
+      "references": [
+        "tools/minimax_refs/fog-style.jpg"
+      ],
+      "cost_cny": 2.5,
+      "generated_at": "2026-11-12T07:19:48Z",
+      "file": "lobby-counter.mp4",
+      "poster": "lobby-counter.jpg",
+      "raw_duration": 5.17,
+      "loop_duration": 4.47,
+      "sha256": "0282981dd73348c92f2ba46be9a1df3aebd7ba8ea8d1d6599302b256f932e970",
+      "raw_sha256": "2562ee7f56fb504de190dcdb71d746b3ae5b884b943620d1e8197479fafc9e67",
+      "post": {
+        "loop": "xfade 0.7s tail into head",
+        "codec": "h264 crf 25, no audio"
+      }
+    },
+    "zhou-portrait": {
+      "id": "zhou-portrait",
+      "task_id": "462499462869630",
+      "model": "MiniMax-H3",
+      "resolution": "768P",
+      "duration": 5,
+      "ratio": "16:9",
+      "prompt": "二维手绘动画电影画面，赛璐璐上色配厚涂背景，线条清晰。一九三一年深秋，中国浙东沿海雾港小岛上的旧式木结构旅馆。青灰色夜雾与暖琥珀色煤油灯光形成对比。画风、线条和色调与参考图1保持一致。固定机位，镜头不移动、不变焦，只有灯焰、雾气、尘埃等轻微的持续动态。画面中不出现任何文字、字幕、水印。人物半身近景。周文，二十九岁的中国账房先生，短发，戴一副圆框眼镜，面容斯文克制，穿一件灰蓝色棉布长衫，袖口向里折着。他站在账桌旁，一只手按着一本薄账册，神情平静而拘谨，镜片上有一点灯光的反光，目光平视镜头。背景是煤油灯和成排的账簿。只有他一个人，动作很小。",
+      "references": [
+        "tools/minimax_refs/fog-style.jpg"
+      ],
+      "cost_cny": 2.5,
+      "generated_at": "2026-11-12T07:19:48Z",
+      "file": "zhou-portrait.mp4",
+      "poster": "zhou-portrait.jpg",
+      "raw_duration": 5.17,
+      "loop_duration": 4.47,
+      "sha256": "5b9d8f78ce4dff3fcdd7115b30b3b22529ae4faf13f53d7312563ce6ea5c2192",
+      "raw_sha256": "a5ad0f57b2ac873342b3b0988363f4ff8f89de222299b5eca48b896b4c2a1116",
+      "post": {
+        "loop": "xfade 0.7s tail into head",
+        "codec": "h264 crf 25, no audio"
+      }
+    },
+    "dinner-table": {
+      "id": "dinner-table",
+      "task_id": "462569833181435",
+      "model": "MiniMax-H3",
+      "resolution": "768P",
+      "duration": 5,
+      "ratio": "16:9",
+      "prompt": "二维手绘动画电影画面，赛璐璐上色配厚涂背景，线条清晰。一九三一年深秋，中国浙东沿海雾港小岛上的旧式木结构旅馆。青灰色夜雾与暖琥珀色煤油灯光形成对比。画风、线条和色调与参考图1保持一致；参考图1只用于画风，不要照搬其中的物件和构图。固定机位，镜头不移动、不变焦，只有灯焰、雾气、尘埃等轻微的持续动态。画面中不出现任何文字、字幕、水印。旅馆饭厅夜景。一盏吊着的煤油灯下，一张旧方桌上摆着几碗热汤、一碟鱼和几双筷子，热气缓缓上升。桌边坐着四个人，只看见背影和肩膀的轮廓，没有人的正脸。窗外是浓雾。汤面的热气和灯焰轻轻晃动。",
+      "references": [
+        "tools/minimax_refs/fog-style.jpg"
+      ],
+      "cost_cny": 2.5,
+      "generated_at": "2026-11-12T12:06:13Z",
+      "file": "dinner-table.mp4",
+      "poster": "dinner-table.jpg",
+      "raw_duration": 5.17,
+      "loop_duration": 4.47,
+      "sha256": "b9b6c1f6aefc0b80d5a3446fda691c55ffed1204d1ef5970b034f627f6698d2c",
+      "raw_sha256": "79e940d2d19e2af2848cade70ab90846fb24f23b60b77418350228d1c3fbbedb",
+      "post": {
+        "loop": "xfade 0.7s tail into head",
+        "codec": "h264 crf 25, no audio"
+      }
+    },
+    "office-doorway": {
+      "id": "office-doorway",
+      "task_id": "462570083143915",
+      "model": "MiniMax-H3",
+      "resolution": "768P",
+      "duration": 5,
+      "ratio": "16:9",
+      "prompt": "二维手绘动画电影画面，赛璐璐上色配厚涂背景，线条清晰。一九三一年深秋，中国浙东沿海雾港小岛上的旧式木结构旅馆。青灰色夜雾与暖琥珀色煤油灯光形成对比。画风、线条和色调与参考图1保持一致；参考图1只用于画风，不要照搬其中的物件和构图。固定机位，镜头不移动、不变焦，只有灯焰、雾气、尘埃等轻微的持续动态。画面中不出现任何文字、字幕、水印。夜里的旅馆走廊，从走廊看向虚掩的账房门。三个人站在门槛外的背影：一个梳发髻、系围裙的年轻女子扶着门框，一个穿灰蓝长衫的青年，一个穿深色外套的中年男子。门缝里漏出晃动的灯光和一缕雾气，没有人走进门内。人物只是静静站着，衣角被穿堂风轻轻吹动。",
+      "references": [
+        "tools/minimax_refs/fog-style.jpg"
+      ],
+      "cost_cny": 2.5,
+      "generated_at": "2026-11-12T12:05:43Z",
+      "file": "office-doorway.mp4",
+      "poster": "office-doorway.jpg",
+      "raw_duration": 5.17,
+      "loop_duration": 4.47,
+      "sha256": "a0ef96595c9f6d910ff34ed57e09fd4d0872ae02cc2d1a98c6360c69022463bc",
+      "raw_sha256": "f7989987a896a87cbe1f9602b707552e83640245e7692d997c360c02a3f0e2b0",
+      "post": {
+        "loop": "xfade 0.7s tail into head",
+        "codec": "h264 crf 25, no audio"
+      }
+    },
+    "torn-page": {
+      "id": "torn-page",
+      "task_id": "462570410594885",
+      "model": "MiniMax-H3",
+      "resolution": "768P",
+      "duration": 5,
+      "ratio": "16:9",
+      "prompt": "二维手绘动画电影画面，赛璐璐上色配厚涂背景，线条清晰。一九三一年深秋，中国浙东沿海雾港小岛上的旧式木结构旅馆。青灰色夜雾与暖琥珀色煤油灯光形成对比。画风、线条和色调与参考图1保持一致；参考图1只用于画风，不要照搬其中的物件和构图。固定机位，镜头不移动、不变焦，只有灯焰、雾气、尘埃等轻微的持续动态。画面中不出现任何文字、字幕、水印。账桌特写，俯视角度。煤油灯旁摊开一本线装凭据簿，其中一页被撕去一大块，只剩一条参差的窄边；旁边放着一只没有封口的旧信封。半扇后窗吹进来的雾气让灯焰偏向一边，被撕开的纸边微微颤动。画面里没有人，也没有手。",
+      "references": [
+        "tools/minimax_refs/fog-style.jpg"
+      ],
+      "cost_cny": 2.5,
+      "generated_at": "2026-11-12T12:06:13Z",
+      "file": "torn-page.mp4",
+      "poster": "torn-page.jpg",
+      "raw_duration": 5.17,
+      "loop_duration": 4.47,
+      "sha256": "b9d408f79058cf688468f1e0e2e634d5ab961b3da4054b382450e778c2ca5213",
+      "raw_sha256": "7c3f3baae62742ed2f27893b60661e536d53d8a9a7a26e07430427449d168c30",
+      "post": {
+        "loop": "xfade 0.7s tail into head",
+        "codec": "h264 crf 25, no audio"
+      }
+    },
+    "notes-columns": {
+      "id": "notes-columns",
+      "task_id": "462570124194017",
+      "model": "MiniMax-H3",
+      "resolution": "768P",
+      "duration": 5,
+      "ratio": "16:9",
+      "prompt": "二维手绘动画电影画面，赛璐璐上色配厚涂背景，线条清晰。一九三一年深秋，中国浙东沿海雾港小岛上的旧式木结构旅馆。青灰色夜雾与暖琥珀色煤油灯光形成对比。画风、线条和色调与参考图1保持一致；参考图1只用于画风，不要照搬其中的物件和构图。固定机位，镜头不移动、不变焦，只有灯焰、雾气、尘埃等轻微的持续动态。画面中不出现任何文字、字幕、水印。账桌特写，俯视角度。煤油灯下并排摆着三叠手写的记录纸，一支毛笔搁在砚台边，旁边是一本合上的核账册和一只封缄过的牛皮纸公文袋。灯焰轻轻跳动，纸角被微风掀起又落下。画面里没有人，也没有手，纸上的字迹模糊不可辨认。",
+      "references": [
+        "tools/minimax_refs/fog-style.jpg"
+      ],
+      "cost_cny": 2.5,
+      "generated_at": "2026-11-12T12:05:58Z",
+      "file": "notes-columns.mp4",
+      "poster": "notes-columns.jpg",
+      "raw_duration": 5.17,
+      "loop_duration": 4.47,
+      "sha256": "ff93305cc1b509b15e6f1d0fd9a8456c598bd3f38f541ab31b59ca4a60269eb8",
+      "raw_sha256": "6c3f569adf05e993f68c5ac70d75925068829c5261c9bb588bdac5b18264efb3",
+      "post": {
+        "loop": "xfade 0.7s tail into head",
+        "codec": "h264 crf 25, no audio"
+      }
+    }
+  },
+  "rejected": [],
+  "spent_cny": 15.0
+}

@@ -23,3 +23,21 @@
 | echo-energy-reserve.mp4 | energy_reserve | 能源舱内待机的供电设备 | 462271916868222 |
 | echo-airlock-seal.mp4 | airlock_seal | 紧闭的气闸舱门及控制面板 | 462272171450979 |
 | echo-space-depart.mp4 | space_depart | 逃生舱离开回声号 | 462271754805500 |
+
+## 场景背景镜头（2026-11-12）
+
+代码绘制的场景画面改由 MiniMax H3 生成的背景镜头承担（5 秒、768P、16:9，画风以已有转场的一帧作参考）。镜头去掉音轨、首尾交叉淡化成无缝循环，同名 `.jpg` 是循环的第一帧。场景与镜头的对应关系在 `web/cinematic/backdrops.json`，提示词在 `tools/minimax_shots.json`，任务号、费用与文件哈希在本目录 `manifest.json`，生成工具是 `tools/minimax_video.py`。
+
+| 文件 | 使用场景 | 画面 | 生成任务 |
+| --- | --- | --- | --- |
+| lobby-counter.mp4 | p02_lobby、d03–d04 | 大堂柜台、寄存簿、炉火与座钟 | 462499881235012 |
+| zhou-portrait.mp4 | 周文出场的场景 | 周文半身近景：灰蓝长衫、圆框眼镜 | 462499462869630 |
+| dinner-table.mp4 | p03_dinner | 吊灯下的饭桌与四个背影 | 462569833181435 |
+| office-doorway.mp4 | a02_door | 账房门外三个人的背影 | 462570083143915 |
+| torn-page.mp4 | a03_lamp、b01_paper、c02_724 | 灯下被撕去一块的凭据簿与信封 | 462570410594885 |
+| notes-columns.mp4 | b06_rewrite、c05_tonight | 账桌上分列的记录纸 | 462570124194017 |
+
+- 已有的 12 段转场不变；转场播完后画面停在它的最后一帧（同名 `.jpg`）。
+- 账户余额在第 6 段后用完，清单里其余 26 个镜头没有生成，本批合计花费 15.0 元。未生成的镜头按 `backdrops.json` 的 `alternates` 改用内容相符的已有镜头；没有合适镜头的场景（顾先生与阿芸的特写、清晨码头、旧样片的后院等、飞船的走廊等）保留 `stage.js` 的代码画面。
+- 以后充值后运行 `python3 tools/minimax_video.py --generate --max-cost-cny <上限>` 即可补齐，播放器不用改。
+- 快速模式、暂停、页面在后台或系统“减少动态效果”时只显示静帧；素材加载失败时退回代码画面。
