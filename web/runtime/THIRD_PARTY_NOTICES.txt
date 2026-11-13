@@ -13,6 +13,12 @@ Bundled into the cinematic page (web/cinematic/units.js) for investigation anima
 License: https://gsap.com/standard-license
 Source: https://www.npmjs.com/package/gsap/v/3.15.0
 
+Noto Serif SC (weight 900) — SIL Open Font License 1.1 (OFL-1.1)
+Self-hosted title typeface on the text pages, bundled unmodified from the
+@fontsource/noto-serif-sc 5.3.1 npm package.
+License: https://openfontlicense.org/open-font-license-official-text/
+Source: https://www.npmjs.com/package/@fontsource/noto-serif-sc/v/5.3.1
+
 Cinematic footage: scene transitions and backdrop loops in web/cinematic/media/
 were generated with MiniMax H3 from this project's original script; task ids,
 prompts and costs are recorded in web/cinematic/media/manifest.json and README.md.
