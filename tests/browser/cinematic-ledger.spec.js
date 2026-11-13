@@ -1,8 +1,10 @@
 // ZC：《未结的账》只通过剧情选择游玩；事实、结局与存档由 Python 会话判定。
 import { test, expect } from './cinematic-driver.js';
 import { execFileSync } from 'node:child_process';
+import process from 'node:process';
 
-const DATA = JSON.parse(execFileSync('python3', ['-B', 'tools/film_vectors.py', 'fog_harbor_ledger'],
+const PYTHON = process.env.PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
+const DATA = JSON.parse(execFileSync(PYTHON, ['-B', 'tools/film_vectors.py', 'fog_harbor_ledger'],
   { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }));
 const VECTORS = Object.fromEntries(DATA.vectors.map((v) => [v.name, v]));
 const KEY = 'taleloom:v1:fog_harbor_ledger:checkpoints';
@@ -145,7 +147,7 @@ test('声音：静音与音量会记住；转入后台时暂停，回来不叠�
   const before = await sound();
   expect(before.muted).toBe(true);
   expect(before.volume).toBeCloseTo(0.4);
-  expect(before.timers, '大堂有座钟的嘀嗒声').toBeGreaterThan(0);
+  expect(before.timers, '大堂使用录制环境声时不再叠加程序环境声').toBe(0);
   const hide = (hidden) => page.evaluate((value) => {
     Object.defineProperty(document, 'hidden', { configurable: true, get: () => value });
     document.dispatchEvent(new Event('visibilitychange'));
@@ -158,7 +160,8 @@ test('声音：静音与音量会记住；转入后台时暂停，回来不叠�
   expect((await sound()).timers, '回来后不叠加').toBe(before.timers);
   await hide(false);
   expect((await sound()).timers).toBe(before.timers);
-  expect(await page.evaluate(() => window.__caps.some((c) => c.includes('环境声')))).toBe(true);
+  await page.evaluate(() => window.__cinematic.sound.foghorn());
+  expect(await page.evaluate(() => window.__caps.some((c) => c.includes('雾笛')))).toBe(true);
   await page.reload();
   await expect(page.locator('#mute')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#volume')).toHaveValue('40');

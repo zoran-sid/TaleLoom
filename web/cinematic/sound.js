@@ -1,5 +1,5 @@
 /**
- * 影像模式的声音：全部由 WebAudio 实时合成，不加载音频文件。负责人：ZC（样片）。
+ * 影像模式的程序音效层：通过 WebAudio 实时生成配乐、环境声与拟音。
  *
  * 浏览器要求用户点击后才能出声，所以 start() 必须在点击事件里调用。
  * 页面转入后台时暂停整个音频环境并停掉周期性的拟音，回来时再接上，避免积压后叠加播放。
@@ -57,6 +57,7 @@ export class Sound {
     this.hidden = false;
     this.onCaption = null;
     this.music = null;          // 当前配乐 { name, gain, timer, step }
+    this.ducked = false;
     document.addEventListener('visibilitychange', () => (document.hidden ? this.suspend() : this.resume()));
   }
 
@@ -93,6 +94,14 @@ export class Sound {
   setVolume(volume) {
     this.volume = Math.min(1, Math.max(0, volume));
     if (this.master) this.master.gain.setTargetAtTime(this.level(), this.ctx.currentTime, 0.08);
+  }
+
+  /** 人声播放时轻压配乐，避免旁白被和弦盖住。 */
+  setDucked(value) {
+    this.ducked = value;
+    if (this.music && this.ctx) {
+      this.music.gain.gain.setTargetAtTime(this.music.preset.level * (value ? 0.28 : 1), this.ctx.currentTime, 0.25);
+    }
   }
 
   /** 页面转入后台：停掉周期拟音并暂停音频环境。 */
@@ -133,7 +142,7 @@ export class Sound {
   setAmbience(name) {
     if (!this.ctx || name === this.current) return;
     this.current = name;
-    const preset = AMBIENCE[name] || AMBIENCE.generic;
+    const preset = name === null ? null : AMBIENCE[name] || AMBIENCE.generic;
     this.preset = preset;
     if (AMBIENCE_TEXT[name]) this.caption(`环境声：${AMBIENCE_TEXT[name]}`);
     const now = this.ctx.currentTime;
@@ -143,7 +152,9 @@ export class Sound {
       const old = this.bed;
       old.gain.gain.setTargetAtTime(0, now, 0.5);
       setTimeout(() => old.stop(), 3000);
+      this.bed = null;
     }
+    if (!preset) return;
     const gain = this.ctx.createGain();
     gain.gain.setValueAtTime(0, now);
     gain.gain.setTargetAtTime(preset.level, now, 0.8);
@@ -338,7 +349,7 @@ export class Sound {
     if (!preset) return;
     const gain = this.ctx.createGain();
     gain.gain.setValueAtTime(0, now);
-    gain.gain.setTargetAtTime(preset.level, now, 1.5);
+    gain.gain.setTargetAtTime(preset.level * (this.ducked ? 0.28 : 1), now, 1.5);
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.value = 1400;

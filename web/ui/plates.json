@@ -1,0 +1,32 @@
+{
+  "stories": {
+    "fog_harbor": {
+      "world": "fog",
+      "scenes": {
+        "lobby": "lobby-counter",
+        "office": "office-night",
+        "kitchen": "water-vat",
+        "zhou_room": "old-ledger",
+        "backyard": "dock-opening",
+        "dock": "dock-opening",
+        "gathering": "dinner-table",
+        "end_truth": "final-signature",
+        "end_dawn": "dawn-table"
+      }
+    },
+    "deep_space": {
+      "world": "deep",
+      "scenes": {
+        "cryo": "echo-bay-wake",
+        "energy": "echo-energy-reserve",
+        "airlock": "echo-airlock-seal",
+        "end_escape": "echo-space-depart",
+        "end_truth": "echo-space-depart"
+      }
+    }
+  },
+  "films": {
+    "fog_harbor_ledger": { "world": "fog", "still": "dock-opening" },
+    "deep_space_film": { "world": "deep", "still": "echo-space-depart" }
+  }
+}

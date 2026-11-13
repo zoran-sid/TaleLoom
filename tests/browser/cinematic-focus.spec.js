@@ -51,7 +51,8 @@ test('影像模式：fast=1 时转场卡应退场', async ({ page }) => {
   await page.goto('/cinematic.html?fast=1');
   await page.locator('#begin').click();
   await page.waitForFunction(() => window.__cinematic?.ready(), null, { timeout: 90_000 });
-  const state = await page.evaluate(() => ({ card: document.querySelector('#card').hidden, shown: window.__subs.length }));
-  expect(state.card, '转场卡应已退场').toBe(true);
-  expect(state.shown, '应至少显示过一句字幕').toBeGreaterThan(0);
+  // ready 只表示可以操作；转场卡在 700ms 后才真正隐藏，等它退场再断言。
+  await expect(page.locator('#card')).toBeHidden({ timeout: 10_000 });
+  const shown = await page.evaluate(() => window.__subs.length);
+  expect(shown, '应至少显示过一句字幕').toBeGreaterThan(0);
 });

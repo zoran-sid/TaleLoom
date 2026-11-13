@@ -1,7 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
+import process from 'node:process';
+import { openSaves } from './ui-driver.js';
 
-const vectors = JSON.parse(execFileSync('python3', ['-B', 'tools/web_vectors.py'], { encoding: 'utf8' }));
+const PYTHON = process.env.PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
+const vectors = JSON.parse(execFileSync(PYTHON, ['-B', 'tools/web_vectors.py'], { encoding: 'utf8' }));
 const idle = (page) => expect(page.locator('#app')).toHaveAttribute('aria-busy', 'false', { timeout: 90_000 });
 async function start(page, storyId, resume = false) {
   await page.goto('/');
@@ -39,6 +42,7 @@ for (const vector of vectors) {
     await expect(page.locator('#chapter')).toHaveAttribute('data-ending', vector.ending);
     await expect(page.locator('#ending')).toBeVisible();
     await expect(page.locator('#choices button')).toHaveCount(0);
+    await openSaves(page);
     await page.locator('#save').click();
     await idle(page);
     const saved = await page.evaluate((id) => JSON.parse(localStorage.getItem(`taleloom:v1:${id}`)), vector.story_id);
@@ -54,6 +58,7 @@ test('保存后刷新可继续，损坏和跨剧本存档保留当前进度', as
   await start(page, 'fog_harbor');
   await act(page, { action_id: 'choice:office', values: {} });
   await act(page, { action_id: 'choice:ledger', values: {} });
+  await openSaves(page);
   await page.locator('#save').click();
   await idle(page);
   await start(page, 'fog_harbor', true);
@@ -67,6 +72,7 @@ test('保存后刷新可继续，损坏和跨剧本存档保留当前进度', as
     await expect(page.locator('#turn')).toHaveText(before);
   }
   const downloadPromise = page.waitForEvent('download');
+  await openSaves(page);
   await page.locator('#export').click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toBe('taleloom-fog_harbor.json');
@@ -100,6 +106,7 @@ test('运行时下载失败可重试', async ({ page }) => {
 test('浏览器存储失败提供导出入口', async ({ page }) => {
   await page.addInitScript(() => { Storage.prototype.setItem = () => { throw new Error('quota'); }; });
   await start(page, 'fog_harbor');
+  await openSaves(page);
   await page.locator('#save').click();
   await idle(page);
   await expect(page.locator('#status')).toContainText('请导出存档');
