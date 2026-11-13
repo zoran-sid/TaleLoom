@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openSaves } from './ui-driver.js';
 
 // 测试替身页面：不下载 Pyodide，用同一套渲染代码验证动作、参数、错误与结局。
 const idle = (page) => expect(page.locator('#app')).toHaveAttribute('aria-busy', 'false');
@@ -71,6 +72,7 @@ test('测试替身：保存、继续与损坏存档保留进度', async ({ page 
   page.on('dialog', (dialog) => dialog.accept());
   await open(page);
   await act(page, 'choice:take');
+  await openSaves(page);
   await page.locator('#save').click();
   await idle(page);
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('taleloom:v1:ui_demo')));

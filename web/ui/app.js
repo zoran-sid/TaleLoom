@@ -10,6 +10,7 @@ import {
   FixtureSession, RemoteSession, FIXTURE_STORY, fixtureRequested,
 } from './session.js';
 import { readSave, writeSave, describeSaves } from '../storage/index.js';
+import { worldOf, drawWorld, drawFilm, scenePlateKey, drawScenePlate } from './art.js';
 
 function hasSave(storyId, slot = 'quick') {
   try {
@@ -32,6 +33,16 @@ let catalog = [];
 let dirty = false;
 let retry = null;
 let fixture = false;
+let sceneKey = null;
+let plateKey = null;
+let resourceValues = new Map();
+
+/** 重新触发一次样式动画（翻页、配图切换、数值变化）。 */
+function replay(node, name) {
+  node.classList.remove(name);
+  void node.offsetWidth;
+  node.classList.add(name);
+}
 
 function element(tag, text, className) {
   const node = document.createElement(tag);
@@ -101,7 +112,10 @@ function renderLibrary() {
   for (const [index, story] of catalog.entries()) {
     const row = element('article', undefined, 'story');
     row.dataset.story = story.id;
-    row.append(element('span', String(index + 1).padStart(2, '0'), 'story-number'));
+    const world = worldOf(story.id);
+    if (world) row.dataset.world = world;
+    row.style.setProperty('--i', String(index));
+    const thumb = drawWorld(element('div', undefined, 'story-thumb'), world, story.title);
     const detail = element('div');
     detail.append(element('p', story.genre, 'genre'), element('h3', story.title),
       element('p', descriptions[story.id] || '选择你的行动，探索故事的走向。'));
@@ -112,13 +126,13 @@ function renderLibrary() {
     } catch (error) {
       status(error.message);
     }
-    row.append(detail, buttons);
+    row.append(thumb, detail, buttons);
     $('stories').append(row);
   }
-  for (const film of FILMS) $('stories').append(cinematicRow(film));
+  $('films').replaceChildren(...FILMS.map(cinematicCard));
 }
 
-/** 影像版剧本不在书架目录里（不在桌面和命令行出现），这里各给一个入口。 */
+/** 影像版剧本不在书架目录里（不在桌面和命令行出现），在影像模式推荐位各给一个入口。 */
 const FILMS = [
   { id: 'fog_harbor_ledger', href: '/cinematic', genre: '互动影像 · 推理搜证', title: '雾港旧案：未结的账',
     text: '一九三一年的雾港旅馆：查看现场、核对账目、比对证词，在天亮前把问题说完整。' },
@@ -126,19 +140,17 @@ const FILMS = [
     text: '氧气和电量都在下降：在耗尽之前找到离开回声号的办法，选错会付出代价。' },
 ];
 
-/** 影像模式入口：不是会话剧本，只链到 /cinematic，不读取存档。 */
-function cinematicRow(film) {
-  const row = element('article', undefined, 'story story-cinematic');
-  row.dataset.cinematic = film.id;
-  row.append(element('span', '影', 'story-number'));
-  const detail = element('div');
-  detail.append(element('p', film.genre, 'genre'), element('h3', film.title), element('p', film.text));
-  const buttons = element('div', undefined, 'story-buttons');
-  const link = element('a', '进入影像模式 →', 'cinematic-link primary');
+/** 影像模式入口：不是会话剧本，只链到 /cinematic，不读取存档。题图是版画处理后的剧照。 */
+function cinematicCard(film) {
+  const card = element('article', undefined, 'film reveal');
+  card.dataset.cinematic = film.id;
+  const world = worldOf(film.id);
+  if (world) card.dataset.world = world;
+  const link = element('a', '进入影像模式 →', 'cinematic-link');
   link.href = film.href;
-  buttons.append(link);
-  row.append(detail, buttons);
-  return row;
+  card.append(drawFilm(element('div', undefined, 'film-plate'), film.id),
+    element('p', film.genre, 'genre'), element('h3', film.title), element('p', film.text, 'film-text'), link);
+  return card;
 }
 
 async function start(storyId, resume = false) {
@@ -163,11 +175,18 @@ async function start(storyId, resume = false) {
   if (payload) result = await session.restore(payload);
   $('library').hidden = true;
   $('game').hidden = false;
+  const world = worldOf(storyId);
+  if (world) $('game').dataset.world = world;
+  else delete $('game').dataset.world;
+  sceneKey = null;
+  plateKey = null;
+  resourceValues = new Map();
+  window.scrollTo(0, 0);
   render(result);
   dirty = payload === null || result.error_code !== null;
   status(result.error_code === null ? '' : result.messages.join('\n'));
   retry = null;
-  $('scene-title').focus();
+  $('scene-title').focus({ preventScroll: true });
 }
 
 function render(result) {
@@ -179,6 +198,12 @@ function render(result) {
   $('chapter').textContent = view.ended ? `结局 · ${view.ending_title || view.ending_id}` : '故事进行中';
   $('chapter').dataset.ending = view.ending_id || '';
   $('turn').textContent = `第 ${view.turn} 回合`;
+  renderScenePlate();
+  const nextScene = `${view.story_id}/${view.scene_id}/${view.ended}`;
+  if (nextScene !== sceneKey) {
+    sceneKey = nextScene;
+    replay(document.querySelector('.page'), 'turning');
+  }
 
   $('choices').replaceChildren();
   $('choice-section').hidden = view.ended || !view.choices.length;
@@ -268,16 +293,41 @@ function renderNotes(id, items, empty) {
   }
 }
 
+/** 场景配图：有对应剧照用版画处理后的剧照，否则用故事的几何版画；未登记的故事不显示。 */
+function renderScenePlate() {
+  const key = scenePlateKey(view.story_id, view.scene_id);
+  if (key === plateKey) return;
+  plateKey = key;
+  const plate = $('scene-plate');
+  plate.hidden = key === null;
+  if (key === null) return;
+  drawScenePlate(plate, view.story_id, key);
+  replay(plate, 'fresh');
+}
+
 function renderResources(resources) {
   $('resources').replaceChildren();
+  const seen = new Map();
   for (const resource of resources) {
     const row = element('div', undefined, 'resource');
     row.dataset.resource = resource.id;
-    row.append(element('span', resource.label),
-      element('strong', resource.maximum === null || resource.maximum === undefined
-        ? String(resource.value) : `${resource.value} / ${resource.maximum}`));
+    const limited = resource.maximum !== null && resource.maximum !== undefined;
+    const value = element('strong', limited ? `${resource.value} / ${resource.maximum}` : String(resource.value));
+    if (resourceValues.has(resource.id) && resourceValues.get(resource.id) !== resource.value) value.className = 'changed';
+    seen.set(resource.id, resource.value);
+    row.append(element('span', resource.label), value);
+    if (limited && resource.maximum > 0) {
+      const fill = Math.max(0, Math.min(1, resource.value / resource.maximum));
+      const meter = element('div', undefined, 'meter');
+      const bar = element('i');
+      bar.style.setProperty('--fill', String(fill));
+      meter.append(bar);
+      row.classList.toggle('low', fill <= 0.25);
+      row.append(meter);
+    }
     $('resources').append(row);
   }
+  resourceValues = seen;
 }
 
 function act(actionId, values = {}) {
@@ -304,6 +354,8 @@ function home() {
   closeSession();
   view = null;
   dirty = false;
+  $('save-menu').open = false;
+  $('save-list').hidden = true;
   $('game').hidden = true;
   $('library').hidden = false;
   status();
@@ -313,6 +365,18 @@ function home() {
 function restart() {
   if (confirm('重新开始当前故事？已保存的存档会保留。')) run(() => start(view.story_id));
 }
+
+// 存档菜单：点菜单以外的地方或按 Esc 收起。
+document.addEventListener('click', (event) => {
+  const menu = $('save-menu');
+  if (menu.open && !menu.contains(event.target)) menu.open = false;
+});
+document.addEventListener('keydown', (event) => {
+  const menu = $('save-menu');
+  if (event.key !== 'Escape' || !menu.open) return;
+  menu.open = false;
+  menu.querySelector('summary').focus();
+});
 
 $('save-list-button').onclick = () => run(async () => {
   const rows = describeSaves(view.story_id);
@@ -395,5 +459,7 @@ window.addEventListener('beforeunload', (event) => {
   }
 });
 
+drawWorld($('plate-fog'), 'fog');
+drawWorld($('plate-deep'), 'deep');
 fixture = fixtureRequested();
 run(loadCatalog);

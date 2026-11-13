@@ -9,7 +9,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%232e3934'/%3E%3Ctext x='16' y='46' fill='%23f4f1ea' font-size='40' font-family='serif'%3ET%3C/text%3E%3C/svg%3E">
 </head>
 <body>
-  <header class="masthead">
+  <header class="masthead wrap">
     <a class="wordmark" href="/" aria-label="TaleLoom 织境首页">TaleLoom <span>织境</span></a>
     <nav class="masthead-links" aria-label="站点导航">
       <a class="cinematic-entry" href="/cinematic">影像模式</a>
@@ -17,40 +17,63 @@
     </nav>
   </header>
   <main id="app">
-    <div id="status-panel" class="status-panel" hidden>
-      <p id="status" role="status" aria-live="polite"></p>
-      <button id="retry" hidden>重试加载</button>
+    <div class="wrap">
+      <div id="status-panel" class="status-panel" hidden>
+        <p id="status" role="status" aria-live="polite"></p>
+        <button id="retry" hidden>重试加载</button>
+      </div>
     </div>
     <section id="library" aria-labelledby="library-title">
-      <div class="intro">
-        <p class="kicker">从一个选择，走进故事</p>
-        <h1 id="library-title">翻开下一页。</h1>
-        <p class="intro-copy">雾里的旅馆，失去联络的飞船。<br>读一段故事，留下你的选择。</p>
+      <div class="wrap">
+        <div class="intro">
+          <div class="intro-text">
+            <p class="kicker">从一个选择，走进故事</p>
+            <h1 id="library-title" aria-label="翻开下一页。"><span class="ch">翻</span><span class="ch">开</span><br><span class="ch">下</span><span class="ch">一</span><span class="ch">页</span><span class="ch">。</span></h1>
+            <p class="intro-copy">雾里的旅馆，失去联络的飞船。<br>读一段故事，留下你的选择。</p>
+            <a class="intro-cta" href="#shelf">选择你的故事 ↓</a>
+          </div>
+          <div class="plates" aria-hidden="true">
+            <div class="plate-slot slot-fog" data-world="fog"><div id="plate-fog"></div><p class="slip">雾港旧案</p></div>
+            <div class="plate-slot slot-deep" data-world="deep"><div id="plate-deep"></div><p class="slip">深空回声</p></div>
+          </div>
+        </div>
+        <div class="shelf-heading" id="shelf"><h2>选择你的故事</h2><span>两部原创序章</span></div>
+        <div id="stories" class="stories"></div>
+        <p class="library-note">点击选项即可游玩。进度可保存在本机，也可导出带走。</p>
       </div>
-      <div class="shelf-heading"><h2>选择你的故事</h2><span>两部原创序章</span></div>
-      <div id="stories" class="stories"></div>
-      <p class="library-note">点击选项即可游玩。进度可保存在本机，也可导出带走。</p>
+      <section class="cinema" aria-labelledby="cinema-title">
+        <div class="wrap">
+          <h2 id="cinema-title" class="reveal">影像模式</h2>
+          <div id="films" class="films"></div>
+        </div>
+      </section>
     </section>
-    <section id="game" hidden aria-labelledby="scene-title">
+    <section id="game" class="wrap" hidden aria-labelledby="scene-title">
       <nav class="game-nav" aria-label="游戏操作">
         <button id="home" class="text-button">← 返回书架</button>
         <span id="story-title"></span>
-        <div class="save-controls">
-          <label>存档位置 <select id="save-slot" aria-label="存档位置">
-            <option value="quick">快速存档</option><option value="1">存档 1</option>
-            <option value="2">存档 2</option><option value="3">存档 3</option>
-            <option value="auto">自动存档</option></select></label>
-          <button id="save-list-button">存档列表</button>
-          <button id="save">保存进度</button>
-          <button id="load">读取存档</button>
-          <button id="export">导出</button>
-          <button id="import">导入</button>
-          <input id="import-file" type="file" accept="application/json,.json" hidden>
-        </div>
+        <details id="save-menu" class="save-menu">
+          <summary>存档</summary>
+          <div class="save-panel">
+            <label class="save-slot">存档位置 <select id="save-slot" aria-label="存档位置">
+              <option value="quick">快速存档</option><option value="1">存档 1</option>
+              <option value="2">存档 2</option><option value="3">存档 3</option>
+              <option value="auto">自动存档</option></select></label>
+            <div class="save-actions">
+              <button id="save" class="primary">保存进度</button>
+              <button id="load">读取存档</button>
+              <button id="save-list-button">存档列表</button>
+              <button id="export">导出</button>
+              <button id="import">导入</button>
+            </div>
+            <pre id="save-list" role="status" hidden></pre>
+            <input id="import-file" type="file" accept="application/json,.json" hidden>
+          </div>
+        </details>
       </nav>
-      <pre id="save-list" role="status" hidden></pre>
       <div class="reading-layout">
         <article class="page">
+          <div id="scene-plate" class="scene-plate" hidden aria-hidden="true"></div>
           <div class="chapter-line"><span id="chapter">故事进行中</span><span id="turn"></span></div>
           <h1 id="scene-title" tabindex="-1"></h1>
           <div id="scene-text" class="prose"></div>
@@ -76,7 +99,7 @@
       </div>
     </section>
   </main>
-  <footer><span>TaleLoom · 织境</span><span>故事由你推进</span><a href="/THIRD_PARTY_NOTICES.txt">开源说明</a></footer>
+  <footer class="wrap"><span>TaleLoom · 织境</span><span>故事由你推进</span><a href="/THIRD_PARTY_NOTICES.txt">开源说明</a></footer>
   <noscript>请启用 JavaScript，以加载故事与游戏界面。</noscript>
   <script type="module" src="/web/ui/app.js"></script>
 </body>
