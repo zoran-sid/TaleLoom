@@ -44,9 +44,9 @@
 
 ## 音画与后续素材增强
 
-画面继续由代码生成。序章与第一幕使用随仓库提供的场景级配音（旁白、对白与环境声，MP3），可在影像模式控制条开关；其余场景沿用 Web Audio 合成声。生成方式、资产清单与限制见 [配音工作记录](../../../配音工作记录.md)。
+场景画面使用 MiniMax 生成的背景镜头和转场（见 `web/cinematic/media/README.md`），尚无镜头的场景保留代码画面。全剧 50 个场景都有 Seed Audio 配音，文字随播放进度自动翻页；环境声与配乐使用录制素材，缺少素材时保留代码合成的声音。播放规则、生成记录和动画事件接口见 [声音与动画交接](AUDIO_HANDOFF.md)；早期版本记录见 [配音工作记录](../../../配音工作记录.md)。
 
-- Canvas 画面在 `web/cinematic/stage.js`，场景通过 `art` 字段选用。
+- 场景镜头由 `web/cinematic/backdrops.js` 按场景 ID 选用；Canvas 画面在 `web/cinematic/stage.js`，通过 `art` 字段选用，作为没有镜头时的画面。
 - Web Audio 声音在 `web/cinematic/sound.js`，保留环境声、配乐、拟音、静音和音量记忆、后台暂停及声音字幕。
 - 后续可按需加入实录音效或插画，属于体验增强，不是当前版本的待完成依赖。引入时记录来源、许可证和文件用途，并保留现有静音、字幕及减少动态效果支持。
 
@@ -65,4 +65,4 @@
 
 ZC 负责桌面与手机实际试玩、画面截图和听感检查。首次游玩仍以 30 分钟以上为目标；删除核验步骤后需要重新计时，各幕时长不能当作实测结果。自动快速通关只验证逻辑。
 
-正式发布走 `develop` → `main` 的发布 PR。Cloudflare 生产分支已核实为 `main`，当前分支构建状态见 [部署说明](../../../docs/cloudflare-deploy.md)。
+正式发布走 `develop` → `main` 的发布 PR。Cloudflare 生产分支已核实为 `main`，当前分支构建状态见 [部署说明](https://github.com/zoran-sid/TaleLoom/blob/develop/docs/cloudflare-deploy.md)。
