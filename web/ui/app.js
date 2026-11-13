@@ -459,6 +459,9 @@ window.addEventListener('beforeunload', (event) => {
   }
 });
 
+// 标题字体随站点自托管，按字分片，浏览器只下载用到的分片。字体声明很长，
+// 单独异步加载，不拖慢首屏样式；加载前标题先用系统宋体显示。
+import('@fontsource/noto-serif-sc/900.css').catch(() => {});
 drawWorld($('plate-fog'), 'fog');
 drawWorld($('plate-deep'), 'deep');
 fixture = fixtureRequested();
