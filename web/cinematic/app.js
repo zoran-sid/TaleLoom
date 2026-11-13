@@ -25,7 +25,7 @@ import { AmbientTrack } from './ambient-track.js';
 import { SCENE_AUDIO, SCENE_CUES, CHOICE_AUDIO, AMBIENCE_AUDIO, MUSIC_AUDIO } from './audio-assets.js';
 import { Desk, unitFrom } from './units.js';
 import { readingPages } from './narrative.js';
-import { playTransition, transitionFor } from './transitions.js';
+import { dropPrimedTransition, openingStill, playTransition, primeTransition, transitionFor } from './transitions.js';
 import { Backdrop } from './backdrops.js';
 
 const params = new URLSearchParams(location.search);
@@ -478,6 +478,18 @@ async function playBeats(beats) {
   clearSubtitle();
 }
 
+/** 转场视频的跳过与淡出设置；点击画面或按空格可以跳过。 */
+function transitionHooks(onPlaying = () => {}) {
+  return {
+    onPlaying,
+    setSkip: (stop) => {
+      if (poke === stopTransition) poke = stop;
+      stopTransition = stop;
+    },
+    fadeTime: T(430),
+  };
+}
+
 function sceneVideosEnabled() {
   return (!FAST || params.get('transitions') === '1')
     && !rushing && !paused && !matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -501,15 +513,14 @@ async function enterScene(next) {
   }
   const clip = transitionFor(STORY_ID, next.scene_id);
   let played = false;
-  if (clip && sceneVideosEnabled()) {
-    played = await playTransition($('scene-transition'), clip, {
-      onPlaying: () => stage.fade(0, T(650)),
-      setSkip: (stop) => {
-        if (poke === stopTransition) poke = stop;
-        stopTransition = stop;
-      },
-      fadeTime: T(430),
-    });
+  if (openingPlay) {
+    // 开场视频在点击「开始」时已经从开始页的定格画面接着播放，这里等它播完。
+    const running = openingPlay;
+    openingPlay = null;
+    stage.fade(0, T(650));
+    played = await running;
+  } else if (clip && sceneVideosEnabled()) {
+    played = await playTransition($('scene-transition'), clip, transitionHooks(() => stage.fade(0, T(650))));
   }
   showCard(actTitle, next.scene_title, THEME.place);
   await hold(played ? 400 : 1800);
@@ -544,6 +555,19 @@ document.querySelector('#intro h1').textContent = THEME.title;
 document.querySelector('#intro .intro-sub').textContent = THEME.subtitle ? `${THEME.subtitle} · ${THEME.place}` : THEME.place;
 $('chances').hidden = !THEME.chances;
 updateChances(null);
+
+// 开始页停在开场视频的第一帧；能播视频时把视频本身垫在下面，点击开始后原地接着播放。
+const OPENING_CLIP = transitionFor(STORY_ID, START_SCENE);
+const OPENING_STILL = openingStill(STORY_ID);
+let openingPlay = null;
+if (OPENING_STILL) {
+  $('intro').style.setProperty('--intro-still', `url("${OPENING_STILL}")`);
+  $('intro').classList.add('with-still');
+  if (OPENING_CLIP && sceneVideosEnabled()) {
+    primeTransition($('scene-transition'), OPENING_CLIP, OPENING_STILL);
+    $('intro').classList.add('over-clip');
+  }
+}
 
 // ---------- 画面内的数值资源（氧气、电量等）；0/1 的状态（如戒心）只放在笔记里 ----------
 
@@ -1120,6 +1144,7 @@ async function begin(resume = null) {
   $('intro').classList.add('gone');
   try {
     if (resume) {
+      dropPrimedTransition($('scene-transition'));
       const result = await boot();
       view = result.view;
       return await rollbackTo(resume, { resume: true });
@@ -1127,6 +1152,9 @@ async function begin(resume = null) {
     busy = true;
     saves = [];
     writeSaves();
+    if ($('scene-transition').dataset.primed) {
+      openingPlay = playTransition($('scene-transition'), OPENING_CLIP, transitionHooks());
+    }
     const intro = opening();
     let result;
     try {
