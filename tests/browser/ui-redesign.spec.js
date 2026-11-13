@@ -13,6 +13,7 @@ for (const width of [390, 1280]) {
     await expect(page.locator('#plate-deep svg')).toHaveCount(1);
     await expect(page.locator('[data-story="ui_demo"] .story-thumb')).toBeVisible();
     await expect(page.locator('[data-cinematic="fog_harbor_ledger"] .plate-still img')).toHaveCount(1);
+    await expect(page.locator('.howto .feature')).toHaveCount(4);
     const metrics = await page.evaluate(() => {
       const title = document.querySelector('#library-title').getBoundingClientRect();
       return { right: title.right, overflow: document.documentElement.scrollWidth > innerWidth };
