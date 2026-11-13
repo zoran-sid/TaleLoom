@@ -280,17 +280,26 @@ function chunks(text) {
 
 // ---------- 卡片与声音说明 ----------
 
+// 转场卡的淡入帧与隐藏定时器各只留一份：fast／快进时停留不到一帧，
+// 上一次 showCard 排的淡入帧可能晚于 hideCard 才执行，把卡片重新点亮并挡住隐藏。
+let cardFrame = 0;
+let cardTimer = 0;
+
 function showCard(kicker, title, place) {
   const card = $('card');
+  cancelAnimationFrame(cardFrame);
+  clearTimeout(cardTimer);
   card.replaceChildren(el('p', 'card-kicker', kicker), el('h2', 'card-title', title), el('p', 'card-place', place));
   card.hidden = false;
-  requestAnimationFrame(() => card.classList.add('show'));
+  cardFrame = requestAnimationFrame(() => card.classList.add('show'));
 }
 
 function hideCard() {
   const card = $('card');
+  cancelAnimationFrame(cardFrame);
+  clearTimeout(cardTimer);
   card.classList.remove('show');
-  setTimeout(() => { if (!card.classList.contains('show')) card.hidden = true; }, T(700));
+  cardTimer = setTimeout(() => { card.hidden = true; }, T(700));
 }
 
 /** 嫌疑人起了戒心：红色提示卡，配低沉的一声。 */
