@@ -1,0 +1,230 @@
+\documentclass[11pt,a4paper,fontset=mac]{ctexart}
+
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{fancyvrb}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+\definecolor{ink}{HTML}{3A2A1A}
+\ctexset{
+  section/format = \Large\bfseries\color{ink}\raggedright,
+  subsection/format = \large\bfseries\color{ink}\raggedright,
+}
+\setlist{itemsep=2pt, topsep=4pt}
+\renewcommand{\arraystretch}{1.25}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\fvset{fontsize=\small, frame=single, framesep=6pt, rulecolor=\color{black!30}}
+
+\title{\textbf{TaleLoom 织境 · ZC 个人工作报告}\\[4pt]
+  \large 推理插件、《雾港旧案》剧本、影像模式与网页发布}
+\author{INT6181 应用 Python 程式设计 · 小组项目 \quad 成员：ZC}
+\date{2026 年 11 月 9 日}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+TaleLoom 是一个数据驱动的文字冒险引擎：剧情写在 JSON 剧本里，玩法写成可插拔的机制插件，同一个 Python 核心同时供命令行、桌面窗口和网页使用。本报告记录 ZC 在项目中完成的部分：推理插件 \texttt{mystery}，剧本 A《雾港旧案》的文字版与两部影像版，网页上的影像模式播放器，浏览器运行 Python 的桥接与 Cloudflare 自动发布，以及组内的整合、审阅与发布。文中的数字均取自仓库记录和实际运行过的测试；没有实测的内容会单独注明。
+\end{abstract}
+
+\section{负责范围}
+
+小组五人按模块分工，文档中只使用缩写。ZC 负责的文件与测试目录如下。
+
+\begin{table}[h]
+\centering
+\begin{tabularx}{\linewidth}{@{}p{3.2cm}L@{}}
+\toprule
+模块 & 文件 \\
+\midrule
+推理插件 & \texttt{taleloom/mechanics/mystery.py} \\
+剧本 A & \texttt{stories/fog\_harbor/}、\texttt{stories/film/fog\_harbor\_film/}、\texttt{stories/film/fog\_harbor\_ledger/} \\
+影像模式 & \texttt{cinematic.html}、\texttt{web/cinematic/}（播放器、画面、声音、调查台） \\
+网页运行时与工具 & \texttt{web/runtime/}、\texttt{tools/}、CI 与 Cloudflare 配置 \\
+整合 & \texttt{main.py}、\texttt{taleloom/session\_factory.py}、临时会话 \texttt{legacy\_session.py} \\
+测试 & \texttt{tests/zc/}、\texttt{tests/integration/}、\texttt{tests/browser/} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+工作时间为 2026 年 11 月 7 日至 9 日。develop 分支上共有 72 个非合并提交，其中 41 个以 ZC 的身份提交（含 Codex 在交接后完成的三个修复，见第 8 节）。ZC 发起并合并的 PR 有 10 个：\#1、\#3、\#4、\#5、\#6、\#10、\#23、\#24、\#25、\#32。
+
+\section{推理插件 \texttt{mystery}}
+
+推理插件给剧本 A 提供“搜证—推理—指认”的玩法。引擎核心只认识场景、选项、条件和效果；插件通过注册新的条件、效果与玩家命令扩展玩法，不修改引擎。插件不调用 \texttt{print} 或 \texttt{input}，也不读写文件，输出全部经引擎的输出对象返回，因此命令行、桌面和网页可以共用。
+
+\subsection{线索、搜证、审问与分幕}
+
+\begin{itemize}
+  \item \textbf{线索笔记}：效果 \texttt{add\_clue} 记录线索，同一条线索只记一次；查看笔记不消耗回合。
+  \item \textbf{深入搜证}：已获得的线索可以再调查一次，条件满足时得到下一级线索；条件不满足时给出提示，不推进回合。
+  \item \textbf{审问}：向在场的人提问，或出示线索解锁新的证词；重复提问只重读回答，不重复触发效果。
+  \item \textbf{分幕}：效果 \texttt{start\_act} 只会向后推进，进入新的一幕时播放幕间文字。
+  \item \textbf{带理由的指认}：指认时同时说明动机、手段与关键证据，按答对的理由数量进入不同档次的结局。
+\end{itemize}
+
+图形界面需要的操作由 \texttt{build\_actions} 从当前状态生成，候选只包含玩家已经知道或当前可用的内容，不会提示正确答案。读取这些候选不改变存档，也不推进回合。
+
+\subsection{调查单元}
+
+为《未结的账》，插件新增了“调查单元”（剧本中的 \texttt{units} 数据段）。每个单元有若干观察点和若干待填的栏位，玩家先查看，再提交答案，由 Python 判定：
+
+\begin{enumerate}
+  \item 单元只在指定场景、条件成立且尚未完成时开放；
+  \item 观察点首次查看时应用效果（例如记下线索），重复查看只重读，不重复发放；
+  \item 查看满规定的数量后才能提交；
+  \item 答案按 \texttt{solutions} 从上到下匹配，答错记一次尝试，并按 \texttt{feedback} 给出针对对象或依据的反馈，可以重试；
+  \item 写了 \texttt{confirm} 的弱答案第一次只给提醒，再次提交同一答案才按该档次完成；
+  \item 提示分三层：先说看哪里，再说比较什么，最后给具体做法。
+\end{enumerate}
+
+下面是“灯下残页”单元的一部分（省略了观察点文字）：
+
+\begin{Verbatim}
+"lamp": {
+  "name": "灯下残页", "scenes": ["a03_lamp"],
+  "slots": [{"id": "front", "label": "正面这行字", "options": [...]},
+            {"id": "back",  "label": "纸背的浅字", "options": [...]}],
+  "distinct": true,
+  "duplicate": "两面标题不同，先核对它们分别属于哪笔账。",
+  "solutions": [{"answer": {"front": "debt", "back": "supply",
+                            "letter": "gone"}, "effects": [...]}],
+  "hints": ["正面窄边、纸背和信封，三处都要看。", "...", "..."]
+}
+\end{Verbatim}
+
+快照只包含栏位和选项，不包含答案、反馈和未解锁的提示。新增条件 \texttt{solved}（可带档次，例如 \texttt{q\_time:full}）和 \texttt{inspected} 让剧本按调查结果分支。对应的命令行命令是“细看”“核对”“提示”，网页动作是 \texttt{mystery:inspect}、\texttt{mystery:solve} 与 \texttt{mystery:hint}，都经过同一个会话接口。
+
+\subsection{剧本校验}
+
+插件自带校验：线索、幕、场景、单元、栏位和选项的引用是否存在，答案是否指向真实选项，条件与效果名是否已注册。剧本写错时报告位置和原因，而不是在运行时抛出异常。
+
+\section{剧本 A：《雾港旧案》}
+
+剧本 A 设定在 1931 年的雾港旅馆。剧本杀资料只借鉴了玩法机制，人物、案情和文字都是原创。
+
+\begin{table}[h]
+\centering
+\begin{tabularx}{\linewidth}{@{}p{3.7cm}ccL@{}}
+\toprule
+剧本 & 场景 & 结局 & 特点 \\
+\midrule
+《雾港旧案》文字版 & 16 & 5 & 书架与桌面可玩；搜证、审问、分幕、带理由指认 \\
+《雾港旧案 · 影像版》 & 33 & 8 & 第二轮样片；线性分支，含 3 个中途失败结局与嫌疑人戒备 \\
+《未结的账》影像版 & 50 & 5 & 剧本初稿由 Codex 撰写；22 个调查步骤、49 条线索、5 个存档点、8 条通关脚本 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+《未结的账》由 ZC 把剧本初稿转换成可运行的数据。初稿里有几处分支没有写触发条件（例如顾先生何时拒绝陈述、周文何时拒绝展开袖口、自白版与否认版的条件），实现时先按合理方式处理，并在剧本目录的说明文件里列出 9 个待剧本负责人确认的问题。剧本要求“进入场景不自动给出尚未发现的细节”，集成测试逐个场景检查进入时发放的线索都属于剧本写明的公开事实。
+
+影像版的场景图要求无回路：每个推进剧情的选项都进入下一段，场景内的追问只给反馈。剧本中“可按任意顺序阅读”的两段，用两组场景分别实现两种顺序。
+
+\section{影像模式}
+
+影像模式（\texttt{/cinematic}）把同一个 Python 会话的快照演成画面。剧情、选项和核对结果都来自会话；网页只负责转场、逐字字幕、线索卡片、调查台和声音，不新增剧情文字，也不决定对错。
+
+\subsection{画面}
+
+画面全部用 Canvas 实时绘制，使用 $1600\times900$ 的虚拟画布，按屏幕比例裁切，并为每个画面指定裁切时的重点区域，手机竖屏和横屏都能看到主体。目前有港口、大堂、账房、后厨、人物特写、阁楼、飞船舱段等 24 个画面；为《未结的账》新增了饭桌、值房、账桌特写，以及案发前的账房。
+
+剧本场景用 \texttt{art} 字段指定画面键，键名以画面名开头，后面的词是选项，例如 \texttt{portrait\_\allowbreak zhou\_\allowbreak cold\_\allowbreak kitchen} 表示周文的特写、神情冷淡、后厨的火光。这样播放器里不再需要按场景写映射表。
+
+\subsection{声音}
+
+声音全部由 Web Audio 实时合成，不加载音频文件：
+
+\begin{itemize}
+  \item 每个场景有环境声（风浪、座钟、灶火、雨声等）；
+  \item 配乐分舒缓、思索、紧张、沉郁、天亮五种，随画面切换并淡入淡出；
+  \item 调查时有翻纸、落笔、落章、水声和“核对未通过”等拟音；
+  \item 可以静音和调音量，设置保存在本机；页面转入后台时暂停整个音频环境并停掉周期性拟音，回到前台后不会把错过的声音叠在一起播放；
+  \item 重要声音在画面左下角配文字说明，听不见声音时线索仍然完整。
+\end{itemize}
+
+\subsection{调查台}
+
+调查台用 GSAP 3.15.0 制作动画（标准免费许可，已写入第三方说明），根据快照里的调查动作生成界面：
+
+\begin{itemize}
+  \item 观察点是按钮，已查看的打勾，可以重读；
+  \item 分类与选择题用单选或多选按钮，可以用方向键操作；
+  \item 排先后的题目可以拖动卡片，也可以点击依次放入，键盘用 Enter 放入、↑↓ 调整、Delete 移回；
+  \item 提交后由 Python 判定；只有会话返回“核对完成”才播放落章动画，答错时显示反馈并保留已填的答案；
+  \item 跳过动画不会跳过判定；系统设置“减少动态效果”时动画时长为零，结果不变。
+\end{itemize}
+
+\subsection{失败惩罚与存档点}
+
+第二轮任务要求“选错有代价、可以回退”。旧样片设有 3 个中途失败结局，失败后可以用会话的“回到上一个选择”，整局共 3 次机会。会话在进入带 \texttt{checkpoint} 的场景时记下存档点，播放器把它导出成标准存档，存进 LQ 负责的影像存档存储；刷新后可以从存档点继续，笔记里可以回到任一存档点，之后的存档点随之作废。
+
+《未结的账》的剧本明确要求“一次说错不会提前结束整部故事”，因此没有设中途失败结局，选错的代价体现为人物戒备、材料缺失和结局不同。这一点与第二轮的任务描述不一致，已作为待确认问题交给剧本负责人。
+
+\section{网页运行时与自动发布}
+
+\begin{itemize}
+  \item \textbf{浏览器运行 Python}：Pyodide 在 Web Worker 中加载打包后的 Python 核心与剧本，页面通过固定格式的 JSON 消息调用 \texttt{start}、\texttt{action}、\texttt{restore}、\texttt{export}，以及新增的 \texttt{checkpoints}、\texttt{restore\_checkpoint}、\texttt{rewind}。网页输入不会被当作 Python 代码执行；每个请求带会话标识和画面版本，过期或重复的请求由会话拒绝，原进度保留。
+  \item \textbf{安全设置}：页面使用严格的内容安全策略，脚本、样式和运行环境都从本站加载，没有外部请求。
+  \item \textbf{自动发布}：仓库推送后由 Cloudflare Workers Builds 自动检查、构建并部署。正式网址是 \url{https://taleloom.zoranzhou.com}；每个成员分支另有预览地址，形如 \url{zc-ledger-film.taleloom.zoranzhou.com}。构建过程不需要用管理员权限安装浏览器组件。
+  \item \textbf{持续集成}：GitHub Actions 按成员分别运行模块测试，另有剧本校验与通关回放、Python 3.10 和 3.13 全量测试，以及网页构建、浏览器测试与部署演练。develop 和 main 都要求经 PR 合并并通过这些检查。
+\end{itemize}
+
+\section{整合、审阅与发布}
+
+ZC 同时承担组长与整合工作：
+
+\begin{itemize}
+  \item 搭建引擎骨架和两个剧本的序章，写分工、接口约定和协作流程；
+  \item 定义图形界面与网页共用的会话接口，让桌面和网页都通过 \texttt{create\_session} 取得会话；
+  \item 审阅并合并第二轮成员 PR：YHT 的正式剧本字段（\#29）、ZQO 的存档点与回退（\#28）、ZRS 的影像入口与桌面回退（\#31）、LQ 的《深空回声 · 影像版》与存档存储（\#27）；合并前在 \#27 修复了一个只适用于雾港剧本的集成测试；
+  \item 把审阅中发现的问题写成 issue（\#11 至 \#18），交由对应成员修复；
+  \item 撰写第二轮任务与各成员的开工提示词；
+  \item 修复 ZRS 在测试中指出的两个问题：选项的键盘焦点不可见，以及快速模式下转场卡不退场。
+\end{itemize}
+
+\section{测试与验证}
+
+\begin{table}[h]
+\centering
+\begin{tabularx}{\linewidth}{@{}p{4.2cm}L@{}}
+\toprule
+项目 & 结果 \\
+\midrule
+\texttt{tests/zc/} & 102 个测试函数，覆盖插件、调查单元、网页桥接与打包 \\
+\texttt{tests/integration/} & 62 个测试函数，含影像版结构、通关脚本、正式会话对照与《未结的账》的剧情事实 \\
+\texttt{tests/browser/} & 50 个浏览器用例（部分由 ZRS 编写），覆盖影像模式、调查台、存档点、手机布局、键盘、减少动态效果与声音 \\
+全部 Python 测试 & 本地 458 个通过、14 个跳过；CI 在 Python 3.10 与 3.13 下通过 \\
+剧本校验 & 5 个剧本全部通过，0 错误 0 警告 \\
+通关脚本 & 《未结的账》8 条脚本覆盖全部 5 个结局，并在命令行与正式会话两边逐步对照状态 \\
+PR \#32 & 12 项检查全部通过，包括浏览器测试与部署演练 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+除自动测试外，ZC 在浏览器里手动试玩了“行李签”和“第一次改写”两个单元，确认错答反馈、提示、拖动、点击、键盘排序和通过后的换场都正常。
+
+\section{AI 使用说明}
+
+\begin{itemize}
+  \item \textbf{Claude Code}：在 ZC 的指示下编写插件、剧本数据、播放器、调查台、画面与声音的代码，以及对应的测试和文档；本报告也由它起草。
+  \item \textbf{Codex}：撰写《未结的账》剧本初稿；在交接后修复了剧本分支对齐、回退后清除调查状态、调查台焦点交接三个问题，并调整了一处浏览器测试的等待条件。
+  \item \textbf{ZC 本人}：决定项目方向和第二轮主线，提出影像模式、失败惩罚、关键节点存档等需求，在浏览器和手机上试玩并提出修改意见，配置 Cloudflare 自定义域名与预览，决定合并与发布。
+\end{itemize}
+
+剧本文字来自 Codex 初稿，ZC 尚未逐字审阅；报告中的数据都来自仓库记录与实际运行过的测试。
+
+\section{不足与后续}
+
+\begin{itemize}
+  \item 各幕的游玩时长只是设计目标，尚未请首次玩家实测。
+  \item 《未结的账》有 9 处剧本问题等待剧本负责人确认。
+  \item 环境中没有 ElevenLabs 凭据和图像生成服务，画面与声音都是代码生成；需要实录音效时，剧本目录的说明文件列出了待补的素材清单。
+  \item 建议 LQ 在存档校验里加入调查单元进度的结构检查；目前插件把格式不对的进度当作未开始处理。
+  \item develop 发布到 main 后，需要在 Cloudflare 把生产分支从 develop 切换到 main。
+\end{itemize}
+
+\end{document}
