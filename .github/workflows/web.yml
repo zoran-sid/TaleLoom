@@ -9,10 +9,20 @@ on:
 permissions:
   contents: read
 
+# 同一个 PR 推了新提交，就取消还在跑的上一轮；main / develop 上的推送不取消。
+concurrency:
+  group: web-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  deploy-readiness:
-    name: web (build + browser + deploy dry-run)
+  # 浏览器用例分三组并行（分组见 playwright.config.js），总时长约等于最慢的一组。
+  browser:
+    name: browser (${{ matrix.group }})
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [clips, film, rest]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -24,10 +34,43 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npm run check:deploy
+      - run: npm run build
+      - run: npx playwright test --project=${{ matrix.group }}
       - uses: actions/upload-artifact@v5
         if: failure()
         with:
-          name: browser-test-results
+          name: browser-test-results-${{ matrix.group }}
           path: test-results/
           retention-days: 7
+
+  # 构建、Node 单元测试与部署演练。Python 测试、剧本校验与回放由 checks 工作流负责，这里不重复。
+  build:
+    name: build + deploy dry-run
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: '.node-version'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run test:storage
+      - run: npm run test:cinematic
+      - run: npx cf deploy --prebuilt --mode production --dry-run
+
+  # 分支保护要求的检查项沿用原名，汇总上面各项的结果。
+  # 必须写 always()：否则前面失败时这一项会被跳过，而被跳过的必需检查会算作通过。
+  deploy-readiness:
+    name: web (build + browser + deploy dry-run)
+    if: always()
+    needs: [browser, build]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: All web jobs passed
+        run: |
+          echo "browser: ${{ needs.browser.result }}  build: ${{ needs.build.result }}"
+          [ "${{ needs.browser.result }}" = "success" ] && [ "${{ needs.build.result }}" = "success" ]

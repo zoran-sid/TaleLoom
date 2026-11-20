@@ -138,6 +138,29 @@ test('字幕监听随播放进度触发一次，手动跳过可同步音频进�
   assert.equal(elements[0].currentTime, 80);
 });
 
+test('配音加载前连跳时保留最后一页，换场后清理旧录音的跳转', () => {
+  const { ctor, elements } = makeCtor();
+  const t = new AudioTrack({ map: MAP, audioCtor: ctor });
+  t.play('p01_dock');
+  const dock = elements[0];
+  dock.duration = NaN;
+  t.seekFraction(0.2);
+  t.seekFraction(0.4);
+  dock.duration = 100;
+  dock.emit('durationchange');
+  assert.equal(dock.currentTime, 40);
+
+  dock.duration = NaN;
+  t.seekFraction(0.8);
+  t.play('p02_lobby');
+  const lobby = elements[1];
+  dock.duration = 100;
+  dock.emit('loadedmetadata');
+  lobby.emit('loadedmetadata');
+  assert.equal(dock.currentTime, 40);
+  assert.equal(lobby.currentTime, 0);
+});
+
 test('播放进度事件为后续动画提供场景和时间，停止后不再发出', () => {
   const { ctor, elements } = makeCtor();
   const events = [];

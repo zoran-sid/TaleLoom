@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main, develop]
 
+# 同一个 PR 推了新提交，就取消还在跑的上一轮；main / develop 上的推送不取消。
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   # 每位成员的模块测试单独显示为一项检查，PR 页面能直接看出是谁的模块出了问题
   module:

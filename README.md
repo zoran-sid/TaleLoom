@@ -20,17 +20,33 @@ INT6181 应用 Python 程式设计 · 小组项目。
 
 《雾港旧案：未结的账》已改为通过剧情选择推进，发现与对质融入场景；九处分支已确认。序章与第一幕已有场景配音，字幕会跟随录音翻页；Seed Audio 新录音按时间戳接入，素材进度与动画接口见 [声音交接](stories/film/fog_harbor_ledger/AUDIO_HANDOFF.md)。玩法与存档见 [剧本说明](stories/film/fog_harbor_ledger/README.md)，早期配音记录见 [配音工作记录](配音工作记录.md)。
 
-本地网页：安装 Node（版本见 `.node-version`）与 Python 后运行 `npm ci`，再运行 `npm run dev -- --open`。
+## 本地安装与运行
 
-## 当前版本运行（CLI）
+### 本地网页版
 
-需要 Python 3.10 或以上，无第三方依赖。后续桌面版还需 Python 带 Tcl/Tk；网页运行时与构建依赖单独管理。
+在新电脑上安装 Python 3.10 或以上，以及 [`.node-version`](.node-version) 指定版本的 Node.js（包含 npm）。用 VS Code 打开项目文件夹，在终端运行：
 
 ```bash
+npm ci
+npm run dev -- --open
+```
+
+浏览器会打开本地书架。从书架可进入影像模式，也可以在终端显示的本地地址后加上 `/cinematic` 直接打开。服务运行期间保留终端，按 `Ctrl+C` 停止。
+
+`npm ci` 按 `package-lock.json` 安装网页依赖，首次设置或依赖清单更新后执行。平时打开项目只需运行第二条命令。本地试玩无需登录 Cloudflare。
+
+### 桌面版与命令行
+
+安装 Python 3.10 或以上，在项目根目录运行以下命令。游戏使用 Python 标准库，`requirements.txt` 目前没有第三方包需要安装。若系统的 Python 命令是 `python3`，请用它替换下面的 `python`。
+
+```bash
+python -m pip install -r requirements.txt
 python main.py
 ```
 
-无参数时打开桌面 GUI；GUI 尚未完成或当前 Python 没有 Tkinter 时，自动改用命令行并列出剧本供选择。VS Code 中可直接用“运行和调试”里的 **TaleLoom：启动游戏**。命令行游玩也可以直接指定剧本：
+桌面版需要 Python 提供 Tkinter（Tcl/Tk）。运行 `python -m tkinter`，弹出测试窗口即可启动桌面版。Windows 和 macOS 可使用 Python 官网安装包。Ubuntu 若使用系统 Python，可通过 `sudo apt install python3-tk` 安装 Tkinter。详见 [Python 的 Tkinter 文档](https://docs.python.org/3/library/tkinter.html)。
+
+VS Code 中可使用“运行和调试”里的 **TaleLoom：启动游戏**。没有 Tkinter 时，也可以通过命令行直接游玩：
 
 ```bash
 python main.py play fog_harbor

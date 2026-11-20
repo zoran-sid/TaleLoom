@@ -212,8 +212,8 @@ function waitForAdvance(audioFraction = null) {
   return new Promise(resolve => {
     let unwatch = () => {};
     const done = (manual) => {
-      if (manual && audioFraction !== null) audioTrack.seekFraction(audioFraction);
       unwatch();
+      if (manual && audioFraction !== null) audioTrack.seekFraction(audioFraction);
       if (sceneReading) sceneReading.rebind = null;
       delete $('frame').dataset.awaitingAdvance;
       poke = null;
