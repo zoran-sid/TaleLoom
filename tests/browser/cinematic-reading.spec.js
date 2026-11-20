@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 
 const first = '最后一班外海客船靠岸时，雨已经停了。码头的石缝里积着水，雾从水面慢慢涨到人的膝边。';
 
@@ -64,6 +65,46 @@ test('阅读中也能重新开始，不必先读完当前场景', async ({ page 
   await expect(page.locator('#subtitle .line')).toHaveText(first);
   await page.waitForTimeout(300);
   await expect(page.locator('#subtitle .line')).toHaveText(first);
+});
+
+test('进入大堂后立即跳过首句，迟到的配音会从第二句开始', async ({ page }) => {
+  await page.addInitScript(() => {
+    const BrowserAudio = window.Audio;
+    window.Audio = function (src) {
+      if (!src.includes('scene_p02_lobby')) return new BrowserAudio(src);
+      const audio = new EventTarget();
+      Object.assign(audio, {
+        duration: NaN,
+        currentTime: 0,
+        play: () => Promise.resolve(),
+        pause: () => {},
+      });
+      window.lobbyVoice = audio;
+      return audio;
+    };
+  });
+  await start(page);
+  await readToChoices(page);
+  for (const id of ['route', 'notice']) {
+    await page.locator(`[data-action="choice:${id}"]`).click();
+    await readToChoices(page);
+  }
+  await page.locator('[data-action="choice:inn"]').click();
+  const subtitle = page.locator('#subtitle .line');
+  await expect(subtitle).toContainText('大堂的炉火有些弱');
+  await page.locator('#skip').click();
+  await expect(subtitle).toHaveText('“商行来的？周文。我替掌柜记账。”');
+  const position = await page.evaluate(() => {
+    const audio = window.lobbyVoice;
+    audio.duration = 100;
+    audio.dispatchEvent(new Event('durationchange'));
+    audio.dispatchEvent(new Event('loadedmetadata'));
+    return audio.currentTime;
+  });
+  const timing = JSON.parse(readFileSync(new URL('../../web/cinematic/seed-runtime.json', import.meta.url)));
+  const { cues, duration } = timing.scenes.p02_lobby;
+  expect(position).toBeCloseTo(100 * cues[0] / duration);
+  await expect(subtitle).toHaveText('“商行来的？周文。我替掌柜记账。”');
 });
 
 test('同场对白准确交替显示陈掌柜、阿芸、周文，原剧情不变', async ({ page }) => {

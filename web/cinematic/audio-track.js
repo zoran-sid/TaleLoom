@@ -25,6 +25,7 @@ export class AudioTrack {
     this.volume = 0.8;
     this.current = null;   // 当前场景 id
     this.el = null;        // 当前音频元素
+    this.pendingSeek = null;
     this.suspendedScene = null;
     if (win && typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
@@ -55,7 +56,12 @@ export class AudioTrack {
     this.current = sceneId;
     this.progressListener = () => this.onProgress?.({ id: this.current, time: this.el?.currentTime || 0,
       duration: this.el?.duration || 0 });
+    this.seekWhenReady = () => {
+      if (this.pendingSeek !== null) this.seekFraction(this.pendingSeek);
+    };
     this.el.addEventListener?.('timeupdate', this.progressListener);
+    this.el.addEventListener?.('durationchange', this.seekWhenReady);
+    this.el.addEventListener?.('loadedmetadata', this.seekWhenReady);
     this._safePlay();
   }
 
@@ -92,18 +98,28 @@ export class AudioTrack {
   }
 
   seekFraction(fraction) {
-    if (this.el && Number.isFinite(fraction) && Number.isFinite(this.el.duration) && this.el.duration > 0) {
-      this.el.currentTime = Math.min(this.el.duration, Math.max(0, fraction) * this.el.duration);
+    if (!this.el || !Number.isFinite(fraction)) return;
+    const duration = this.el.duration;
+    // 换场后可能先收到跳页操作，再知道录音时长。只保留当前录音的最后一次跳转。
+    if (!Number.isFinite(duration) || duration <= 0) {
+      this.pendingSeek = fraction;
+      return;
     }
+    this.pendingSeek = null;
+    this.el.currentTime = Math.min(1, Math.max(0, fraction)) * duration;
   }
 
   release() {
     if (this.el) {
       if (this.progressListener) this.el.removeEventListener?.('timeupdate', this.progressListener);
+      this.el.removeEventListener?.('durationchange', this.seekWhenReady);
+      this.el.removeEventListener?.('loadedmetadata', this.seekWhenReady);
       try { this.el.pause(); } catch { /* 已释放 */ }
       this.el = null;
     }
     this.progressListener = null;
+    this.seekWhenReady = null;
+    this.pendingSeek = null;
     this.current = null;
   }
 
